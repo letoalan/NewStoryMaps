@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test:p0": "node --experimental-strip-types --no-warnings scripts/verify-p0.mjs"
+    "test:p0": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-p0.mjs",
+    "test:p1": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-p1.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.16.0",

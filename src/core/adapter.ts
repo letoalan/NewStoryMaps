@@ -2,7 +2,7 @@
  * StoryMap — Adaptateur de compatibilité historique (v1 / v2 / React)
  */
 
-import type { StoryMap } from '../types/story';
+import type { StoryMap, MapLayer } from '../types/story';
 import type { Step } from '../types/step';
 
 export interface LegacyV2Exchange {
@@ -13,20 +13,20 @@ export interface LegacyV2Exchange {
   story?: {
     title?: string;
     subtitle?: string;
-    description?: string;
+    byline?: string;
     style?: string;
+    mode?: string;
+    brand?: unknown;
+    data?: Array<Record<string, unknown>>;
     chapters?: Array<{
       id?: string;
       title?: string;
-      description?: string;
+      text?: string;
       image?: string;
-      caption?: string;
-      location?: {
-        center?: [number, number];
-        zoom?: number;
-        pitch?: number;
-        bearing?: number;
-      };
+      imageCaption?: string;
+      imageAlt?: string;
+      imageCredit?: string;
+      view?: { center?: [number, number]; zoom?: number; pitch?: number; bearing?: number };
     }>;
   };
   images?: Record<string, string>;
@@ -36,76 +36,84 @@ export interface LegacyV2Exchange {
 export function isModernStoryMap(data: unknown): data is StoryMap {
   if (!data || typeof data !== 'object') return false;
   const d = data as Record<string, unknown>;
-  return (
-    typeof d.title === 'string' &&
-    Array.isArray(d.steps) &&
-    typeof d.id === 'string'
-  );
+  return typeof d.title === 'string' && Array.isArray(d.steps) && typeof d.id === 'string';
 }
 
 export function isLegacyV2Story(data: unknown): data is LegacyV2Exchange {
   if (!data || typeof data !== 'object') return false;
   const d = data as Record<string, unknown>;
-  return (
-    (d.format === 'storymap' || d.format === 'atelier-storymap') &&
-    (d.version === 2 || !!d.story)
-  );
+  return (d.format === 'storymap' || d.format === 'atelier-storymap') && (d.version === 2 || !!d.story);
 }
 
 export function isLegacyV1Story(data: unknown): boolean {
   if (!data || typeof data !== 'object') return false;
   const d = data as Record<string, unknown>;
-  return (
-    d.format === 'maplibre-storymap' ||
-    (Array.isArray(d.chapters) && !d.steps)
-  );
+  return d.format === 'maplibre-storymap' || (Array.isArray(d.chapters) && !d.steps);
 }
 
 export function convertLegacyToModern(legacy: unknown): StoryMap {
-  if (isModernStoryMap(legacy)) {
-    return legacy;
+  if (isModernStoryMap(legacy)) return legacy;
+  if (!isLegacyV2Story(legacy) && !isLegacyV1Story(legacy)) {
+    throw new Error('Ce document n’est pas un format StoryMap reconnu.');
   }
 
   const data = legacy as Record<string, unknown>;
   const storyObj = (data.story as Record<string, unknown>) || data;
   const images = (data.images as Record<string, string>) || {};
+  const geodata = (data.geodata as Record<string, unknown>) || {};
 
-  const title = (storyObj.title as string) || 'Récit importé';
+  const title = (storyObj.title as string) || 'Récit sans titre';
   const subtitle = (storyObj.subtitle as string) || '';
-  const description = (storyObj.description as string) || '';
+  const author = (storyObj.byline as string) || (storyObj.author as string) || '';
   const mapStyle = (storyObj.style as string) || 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 
   const rawChapters = (storyObj.chapters as Array<Record<string, unknown>>) || [];
   const steps: Step[] = rawChapters.map((ch, idx) => {
-    const loc = (ch.location as Record<string, unknown>) || {};
-    const center = (loc.center as [number, number]) || [2.3522, 48.8566];
-    const zoom = typeof loc.zoom === 'number' ? loc.zoom : 12;
-    const pitch = typeof loc.pitch === 'number' ? loc.pitch : 0;
-    const bearing = typeof loc.bearing === 'number' ? loc.bearing : 0;
+    const view = (ch.view as Record<string, unknown>) || (ch.location as Record<string, unknown>) || {};
+    const center = (view.center as [number, number]) || [2.3522, 48.8566];
+    const zoom = typeof view.zoom === 'number' ? view.zoom : 12;
+    const pitch = typeof view.pitch === 'number' ? view.pitch : 0;
+    const bearing = typeof view.bearing === 'number' ? view.bearing : 0;
 
     let mediaUrl = (ch.image as string) || '';
-    if (mediaUrl && images[mediaUrl]) {
-      mediaUrl = images[mediaUrl];
-    }
+    if (mediaUrl && images[mediaUrl]) mediaUrl = images[mediaUrl];
+
+    const text = (ch.text as string) || (ch.description as string) || '';
+    const caption = (ch.imageCaption as string) || (ch.caption as string) || undefined;
+    const alt = (ch.imageAlt as string) || (ch.alt as string) || undefined;
+    const credit = (ch.imageCredit as string) || (ch.credit as string) || undefined;
 
     return {
-      id: (ch.id as string) || `step-${idx + 1}-${Math.random().toString(36).substr(2, 5)}`,
+      id: (ch.id as string) || `step-${idx + 1}-${Math.random().toString(36).slice(2, 6)}`,
       title: (ch.title as string) || `Étape ${idx + 1}`,
-      description: (ch.description as string) || '',
-      media: mediaUrl ? { type: 'image', url: mediaUrl, caption: ch.caption as string } : undefined,
+      description: text,
+      media: mediaUrl ? { type: 'image', url: mediaUrl, caption, alt, credit } : undefined,
       camera: { center, zoom, pitch, bearing },
     };
   });
 
+  const rawLayers = (storyObj.data as Array<Record<string, unknown>>) || [];
+  const layers: MapLayer[] = rawLayers.map((l, i) => {
+    const lid = (l.id as string) || `layer-${i + 1}`;
+    return {
+      id: lid,
+      name: (l.name as string) || `Calque ${i + 1}`,
+      type: 'geojson',
+      data: geodata[lid] || l.geojson,
+      visible: true,
+    };
+  });
+
   return {
-    id: (data.id as string) || `story-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+    id: (data.id as string) || `story-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     version: '2.0.0',
     title,
     subtitle,
-    description,
-    author: (storyObj.author as string) || '',
+    author,
     created: (data.createdAt as number) || Date.now(),
     modified: (data.updatedAt as number) || Date.now(),
+    mode: (storyObj.mode as any) || 'storymap',
+    brand: storyObj.brand as any,
     appearance: {
       theme: 'auto',
       font: 'Inter',
@@ -115,15 +123,13 @@ export function convertLegacyToModern(legacy: unknown): StoryMap {
       autoplayInterval: 5000,
     },
     mapStyle,
-    layers: [],
-    steps: steps.length > 0 ? steps : [
-      {
-        id: 'step-1',
-        title: 'Première étape',
-        description: '',
-        camera: { center: [2.3522, 48.8566], zoom: 12, pitch: 0, bearing: 0 },
-      },
-    ],
+    layers,
+    steps: steps.length > 0 ? steps : [{
+      id: 'step-1',
+      title: 'Première étape',
+      description: '',
+      camera: { center: [2.3522, 48.8566], zoom: 12, pitch: 0, bearing: 0 },
+    }],
   };
 }
 
@@ -143,10 +149,12 @@ export function convertModernToLegacyV2(story: StoryMap): LegacyV2Exchange {
     return {
       id: st.id,
       title: st.title,
-      description: st.description,
+      text: st.description,
       image: imgName,
-      caption: st.media?.caption,
-      location: {
+      imageCaption: st.media?.caption,
+      imageAlt: st.media?.alt,
+      imageCredit: st.media?.credit,
+      view: {
         center: st.camera.center,
         zoom: st.camera.zoom,
         pitch: st.camera.pitch,
@@ -155,20 +163,28 @@ export function convertModernToLegacyV2(story: StoryMap): LegacyV2Exchange {
     };
   });
 
+  const geodata: Record<string, unknown> = {};
+  const dataLayers = (story.layers || []).map((l) => {
+    if (l.data) geodata[l.id] = l.data;
+    return { id: l.id, name: l.name, type: l.type };
+  });
+
   return {
     format: 'storymap',
     version: 2,
-    generator: 'StoryMap React 2.0.0',
+    generator: 'StoryMap 2.0.0',
     exportedAt: new Date().toISOString(),
     story: {
       title: story.title,
       subtitle: story.subtitle,
-      description: story.description,
+      byline: story.author,
       style: story.mapStyle,
+      mode: story.mode,
+      brand: story.brand,
+      data: dataLayers.length > 0 ? dataLayers : undefined,
       chapters,
     },
     images,
-    geodata: {},
+    geodata,
   };
 }
-

@@ -7,6 +7,7 @@ import { StoryProvider, useStory } from './context/StoryContext';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { Editor } from './components/editor/Editor';
 import { Player } from './components/player/Player';
+import { ProjectBrand, ProjectMode } from './types/project';
 
 type AppView = 'dashboard' | 'editor' | 'player';
 
@@ -24,8 +25,8 @@ const AppContent: React.FC = () => {
     setView('player');
   };
 
-  const handleNewStory = (customTitle?: string) => {
-    newStory(customTitle);
+  const handleNewStory = (opts?: string | { title?: string; mode?: ProjectMode; brand?: ProjectBrand }) => {
+    newStory(opts);
     setView('editor');
   };
 
@@ -60,4 +61,3 @@ export const App: React.FC = () => {
 };
 
 export default App;
-

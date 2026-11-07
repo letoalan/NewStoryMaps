@@ -67,15 +67,15 @@ Preuve : tests de charges hostiles et inspection des mentions des artefacts.
 Porte : aucun développement public des nouveaux modes avant réussite P0 ou dérogation explicite documentée.
 
 ## P1 — Landing, modes et document commun
-- [ ] F01 Définir enveloppe versionnée modes 2/3 et contrat séparé du mode 1.
-- [ ] F02 Définir Project/Page/Block/Resource/Map/MapView/NarrativeBinding.
-- [ ] F03 Tester nouveau champ de création jusqu’au réimport, y compris compactage.
-- [ ] F04 Retirer vidéo promotionnelle, CTA et code mort sans supprimer capacités du mode 1.
-- [ ] F05 Conserver présentation textuelle, visuels, garanties et exemples ouvrables.
-- [ ] F06 Ajouter trois cartes de modes avec sorties exactes et disponibilité honnête.
-- [ ] F07 Créer assistant titre/mode/format ; bibliothèque avec badge et bon routage.
-- [ ] F08 Ajouter charte facultative : logo, deux polices et trois couleurs modifiables.
-- [ ] F09 Tester liens anciens, thème, clavier et absence de projet vide involontaire.
+- [x] F01 Définir enveloppe versionnée modes 2/3 et contrat séparé du mode 1.
+- [x] F02 Définir Project/Page/Block/Resource/Map/MapView/NarrativeBinding.
+- [x] F03 Tester nouveau champ de création jusqu’au réimport, y compris compactage.
+- [x] F04 Retirer vidéo promotionnelle, CTA et code mort sans supprimer capacités du mode 1.
+- [x] F05 Conserver présentation textuelle, visuels, garanties et exemples ouvrables.
+- [x] F06 Ajouter trois cartes de modes avec sorties exactes et disponibilité honnête.
+- [x] F07 Créer assistant titre/mode/format ; bibliothèque avec badge et bon routage.
+- [x] F08 Ajouter charte facultative : logo, deux polices et trois couleurs modifiables.
+- [x] F09 Tester liens anciens, thème, clavier et absence de projet vide involontaire.
 Porte : modes compréhensibles et anciens projets toujours accessibles.
 
 ## P2 — Pages, cellules et blocs

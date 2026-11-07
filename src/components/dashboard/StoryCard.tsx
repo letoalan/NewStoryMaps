@@ -20,6 +20,13 @@ export const StoryCard: React.FC<StoryCardProps> = ({ item, onOpen, onPlay, onDe
     year: 'numeric',
   });
 
+  const modeLabel = item.mode === 'rich-document' ? 'Document' : item.mode === 'brochure' ? 'Brochure' : 'StoryMap';
+  const modeBadgeStyle: React.CSSProperties = item.mode === 'rich-document'
+    ? { background: '#7e22ce', color: '#fff', fontWeight: 600 }
+    : item.mode === 'brochure'
+    ? { background: '#b45309', color: '#fff', fontWeight: 600 }
+    : { background: 'var(--accent)', color: '#fff', fontWeight: 600 };
+
   return (
     <div className="story-card" onClick={() => onOpen(item.id)}>
       <div className="story-thumb">
@@ -30,7 +37,8 @@ export const StoryCard: React.FC<StoryCardProps> = ({ item, onOpen, onPlay, onDe
             <MapPin size={36} opacity={0.5} />
           </div>
         )}
-        <div className="thumb-badges">
+        <div className="thumb-badges" style={{ display: 'flex', gap: '6px' }}>
+          <span className="badge" style={modeBadgeStyle}>{modeLabel}</span>
           <span className="badge">
             <MapPin size={12} />
             {item.stepCount} {item.stepCount > 1 ? 'étapes' : 'étape'}
@@ -76,4 +84,3 @@ export const StoryCard: React.FC<StoryCardProps> = ({ item, onOpen, onPlay, onDe
     </div>
   );
 };
-

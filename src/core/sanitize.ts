@@ -3,20 +3,8 @@
  */
 
 const DANGEROUS_TAGS = new Set([
-  'script',
-  'style',
-  'link',
-  'meta',
-  'base',
-  'object',
-  'embed',
-  'applet',
-  'frame',
-  'frameset',
-  'noscript',
-  'template',
-  'animate',
-  'set',
+  'script', 'style', 'link', 'meta', 'base', 'object', 'embed',
+  'applet', 'frame', 'frameset', 'noscript', 'template', 'animate', 'set',
 ]);
 
 const URL_ATTRS = new Set(['href', 'src', 'xlink:href', 'action', 'formaction', 'poster']);
@@ -35,9 +23,18 @@ export function sanitizeHTML(dirtyHtml: string): string {
   if (!dirtyHtml || typeof dirtyHtml !== 'string') return '';
   if (dirtyHtml.indexOf('<') === -1) return dirtyHtml;
 
+  if (typeof DOMParser === 'undefined') {
+    return dirtyHtml
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+      .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+      .replace(/\s*on\w+\s*=\s*(["'][^"']*["']|[^\s>]+)/gi, '')
+      .replace(/href\s*=\s*(["']\s*javascript:[^"']*["']|\s*javascript:[^\s>]+)/gi, '')
+      .replace(/src\s*=\s*(["']\s*javascript:[^"']*["']|\s*javascript:[^\s>]+)/gi, '');
+  }
+
   const parser = new DOMParser();
   const doc = parser.parseFromString(`<!DOCTYPE html><html><body>${dirtyHtml}</body></html>`, 'text/html');
-
   const elements = Array.from(doc.body.querySelectorAll('*'));
 
   for (const el of elements) {
@@ -52,21 +49,16 @@ export function sanitizeHTML(dirtyHtml: string): string {
       const name = attr.name.toLowerCase();
       const val = attr.value;
 
-      // Retrait des gestionnaires d'événements onclick, onerror, etc.
       if (name.startsWith('on')) {
         el.removeAttribute(attr.name);
         continue;
       }
 
-      // Filtrage des URLs javascript: etc.
-      if (URL_ATTRS.has(name)) {
-        if (!isSafeUrl(val, name, tagName)) {
-          el.removeAttribute(attr.name);
-        }
+      if (URL_ATTRS.has(name) && !isSafeUrl(val, name, tagName)) {
+        el.removeAttribute(attr.name);
       }
     }
   }
 
   return doc.body.innerHTML;
 }
-

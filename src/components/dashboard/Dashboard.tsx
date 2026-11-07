@@ -12,10 +12,12 @@ import { parseStoryFile, exportAllStoriesBackupZip } from '../../core/io';
 import { EXAMPLE_STORY } from '../../data/exampleStory';
 import { NewStoryModal } from '../dialogs/NewStoryModal';
 
+import { ProjectBrand, ProjectMode } from '../../types/project';
+
 interface DashboardProps {
   onOpenStory: (id: string) => void;
   onPlayStory: (id: string) => void;
-  onNewStory: (customTitle?: string) => void;
+  onNewStory: (opts?: string | { title?: string; mode?: ProjectMode; brand?: ProjectBrand }) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, onNewStory }) => {
@@ -161,7 +163,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
       <NewStoryModal
         isOpen={isNewModalOpen}
         onClose={() => setIsNewModalOpen(false)}
-        onCreate={(title) => onNewStory(title)}
+        onCreate={(opts) => onNewStory(opts)}
       />
     </div>
   );

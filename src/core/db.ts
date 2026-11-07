@@ -119,6 +119,7 @@ class StoryDatabase {
           id: s.id,
           title: s.title,
           subtitle: s.subtitle,
+          mode: s.mode || 'storymap',
           modified: s.modified,
           stepCount: s.steps ? s.steps.length : 0,
           coverImage: s.coverImage,

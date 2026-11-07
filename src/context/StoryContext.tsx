@@ -1,36 +1,17 @@
 /**
- * StoryMap — Contexte React pour l'état d'édition avec Undo/Redo & Sauvegarde sérialisée
+ * StoryMap — Contexte d'état, historique et persistance
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { StoryMap } from '../types/story';
 import { Step } from '../types/step';
+import { ProjectBrand, ProjectMode } from '../types/project';
+import { SaveStatus, StoryContextType } from '../types/context';
 import { db } from '../core/db';
-import { createDefaultStep, createDefaultStory } from '../core/defaults';
+import { createDefaultStory } from '../core/defaults';
+import { useStoryShortcuts } from './useStoryShortcuts';
 
-export type SaveStatus = 'saved' | 'saving' | 'dirty' | 'error';
-
-interface StoryContextType {
-  story: StoryMap | null;
-  activeStepIndex: number;
-  saveStatus: SaveStatus;
-  lastSaveError: string | null;
-  canUndo: boolean;
-  canRedo: boolean;
-  undo: () => void;
-  redo: () => void;
-  setStory: (story: StoryMap) => void;
-  setActiveStepIndex: (index: number) => void;
-  updateStory: (fields: Partial<StoryMap>) => void;
-  updateStoryTitle: (title: string) => void;
-  updateStep: (index: number, step: Partial<Step>) => void;
-  addStep: () => void;
-  deleteStep: (index: number) => void;
-  reorderSteps: (startIndex: number, endIndex: number) => void;
-  flushSave: () => Promise<void>;
-  loadStory: (id: string) => Promise<void>;
-  newStory: (customTitle?: string) => void;
-}
+export type { SaveStatus, StoryContextType };
 
 const StoryContext = createContext<StoryContextType | null>(null);
 
@@ -39,9 +20,9 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const [lastSaveError, setLastSaveError] = useState<string | null>(null);
-
   const historyRef = useRef<StoryMap[]>([]);
   const futureRef = useRef<StoryMap[]>([]);
+  const saveTimeoutRef = useRef<number | null>(null);
   const queueRef = useRef<Promise<void>>(Promise.resolve());
   const latestStoryRef = useRef<StoryMap | null>(null);
   latestStoryRef.current = story;
@@ -55,75 +36,80 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setStoryState(newStory);
   };
 
-  const undo = () => {
+  const undo = useCallback(() => {
     if (historyRef.current.length === 0 || !story) return;
     const prev = historyRef.current.pop()!;
     futureRef.current.push(story);
     setSaveStatus('dirty');
     setStoryState(prev);
-  };
+  }, [story]);
 
-  const redo = () => {
+  const redo = useCallback(() => {
     if (futureRef.current.length === 0 || !story) return;
     const next = futureRef.current.pop()!;
     historyRef.current.push(story);
     setSaveStatus('dirty');
     setStoryState(next);
-  };
+  }, [story]);
+
+  useStoryShortcuts({ saveStatus, undo, redo });
+
+  const persistToDB = useCallback(async (storyToSave: StoryMap) => {
+    setSaveStatus('saving');
+    setLastSaveError(null);
+    try {
+      await db.saveStory(storyToSave);
+      setSaveStatus('saved');
+    } catch (err) {
+      setSaveStatus('error');
+      setLastSaveError((err as Error).message || 'Erreur lors de l’enregistrement');
+    }
+  }, []);
 
   const flushSave = useCallback(async () => {
-    const toSave = latestStoryRef.current;
-    if (!toSave) return;
-    setSaveStatus('saving');
-    queueRef.current = queueRef.current
-      .then(async () => {
-        await db.saveStory(toSave);
-        setSaveStatus('saved');
-        setLastSaveError(null);
-      })
-      .catch((err) => {
-        setSaveStatus('error');
-        setLastSaveError(err.message || 'Erreur de sauvegarde');
-      });
-    await queueRef.current;
-  }, []);
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    const current = latestStoryRef.current;
+    if (current && saveStatus === 'dirty') {
+      queueRef.current = queueRef.current.then(() => persistToDB(current));
+      await queueRef.current;
+    }
+  }, [persistToDB, saveStatus]);
 
   useEffect(() => {
     if (!story || saveStatus !== 'dirty') return;
-    const timer = setTimeout(() => { flushSave(); }, 1200);
-    return () => clearTimeout(timer);
-  }, [story, saveStatus, flushSave]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isTargetInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName);
-      if (isTargetInput) return;
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-        if (e.shiftKey) redo(); else undo();
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-        redo();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  });
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = window.setTimeout(() => {
+      const current = latestStoryRef.current;
+      if (current) queueRef.current = queueRef.current.then(() => persistToDB(current));
+    }, 1000);
+    return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
+  }, [story, saveStatus, persistToDB]);
 
   const loadStory = async (id: string) => {
     await flushSave();
     const loaded = await db.getStory(id);
-    if (loaded) {
-      historyRef.current = [];
-      futureRef.current = [];
-      setStoryState(loaded);
-      setActiveStepIndex(0);
-      setSaveStatus('saved');
-    }
+    if (!loaded) throw new Error('Récit introuvable');
+    historyRef.current = [];
+    futureRef.current = [];
+    setStoryState(loaded);
+    setActiveStepIndex(0);
+    setSaveStatus('saved');
+    setLastSaveError(null);
   };
 
-  const newStory = async (customTitle?: string) => {
+  const newStory = async (opts?: string | { title?: string; mode?: ProjectMode; brand?: ProjectBrand }) => {
     await flushSave();
     const created = createDefaultStory();
-    if (customTitle) created.title = customTitle;
+    if (typeof opts === 'string') {
+      if (opts) created.title = opts;
+    } else if (opts) {
+      if (opts.title) created.title = opts.title;
+      if (opts.mode) created.mode = opts.mode;
+      if (opts.brand) created.brand = opts.brand;
+    }
     historyRef.current = [];
     futureRef.current = [];
     setStoryState(created);
@@ -138,17 +124,24 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setStory({ ...story, ...fields, modified: Date.now() });
   };
 
-  const updateStep = (index: number, updatedFields: Partial<Step>) => {
+  const updateStep = (index: number, stepPatch: Partial<Step>) => {
     if (!story || !story.steps[index]) return;
-    const steps = [...story.steps];
-    steps[index] = { ...steps[index], ...updatedFields };
-    setStory({ ...story, steps, modified: Date.now() });
+    const updated = [...story.steps];
+    updated[index] = { ...updated[index], ...stepPatch };
+    setStory({ ...story, steps: updated, modified: Date.now() });
   };
 
   const addStep = () => {
     if (!story) return;
-    const newStepItem = createDefaultStep(story.steps.length + 1);
-    setStory({ ...story, steps: [...story.steps, newStepItem], modified: Date.now() });
+    const last = story.steps[story.steps.length - 1];
+    const newStep: Step = {
+      id: 'step-' + Date.now(),
+      title: 'Nouvelle étape',
+      description: '<p>Description de l’étape...</p>',
+      camera: last ? { ...last.camera } : { center: [2.3522, 48.8566], zoom: 4, pitch: 0, bearing: 0 },
+      markers: [{ coordinates: last ? [...last.camera.center] : [2.3522, 48.8566], style: { color: story.appearance.accentColor || '#0b7fb0' } }],
+    };
+    setStory({ ...story, steps: [...story.steps, newStep], modified: Date.now() });
     setActiveStepIndex(story.steps.length);
   };
 
@@ -156,9 +149,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!story || story.steps.length <= 1) return;
     const steps = story.steps.filter((_, i) => i !== index);
     setStory({ ...story, steps, modified: Date.now() });
-    if (activeStepIndex >= steps.length) {
-      setActiveStepIndex(Math.max(0, steps.length - 1));
-    }
+    if (activeStepIndex >= steps.length) setActiveStepIndex(Math.max(0, steps.length - 1));
   };
 
   const reorderSteps = (startIndex: number, endIndex: number) => {

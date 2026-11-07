@@ -15,35 +15,4 @@
         location.replace('app.html' + location.hash);
         return;
     }
-
-    // Gestion du lecteur vidéo promotionnel
-    document.addEventListener('DOMContentLoaded', function () {
-        var video = document.getElementById('lp-player');
-        var play = document.getElementById('lp-play');
-        var box = document.getElementById('video');
-        var watchBtn = document.getElementById('lp-watch');
-
-        if (!video || !play || !box) return;
-
-        function start() {
-            var p = video.play();
-            if (p && p.catch) p.catch(function () { });
-        }
-
-        video.addEventListener('play', function () {
-            box.classList.add('is-started');
-        });
-
-        play.addEventListener('click', start);
-
-        if (watchBtn) {
-            watchBtn.addEventListener('click', function (e) {
-                e.preventDefault();
-                var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-                box.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'center' });
-                start();
-            });
-        }
-    });
 })();
-

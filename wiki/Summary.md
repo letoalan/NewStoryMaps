@@ -8,8 +8,10 @@ Ce document répertorie chaque fichier du projet StoryMap (conservé et nouvelle
 | :--- | :---: | :--- | :--- |
 | [`src/main.tsx`](file:///src/main.tsx) | 17 | Point d'entrée ReactDOM | [Documentation](file:///wiki/components/App.md) |
 | [`src/App.tsx`](file:///src/App.tsx) | 51 | Composant racine et routage | [Documentation](file:///wiki/components/App.md) |
-| [`src/types/story.ts`](file:///src/types/story.ts) | 47 | Modèle de données StoryMap | [Documentation](file:///wiki/types/story-types.md) |
-| [`src/types/step.ts`](file:///src/types/step.ts) | 41 | Modèle d'étape et caméra | [Documentation](file:///wiki/types/step-types.md) |
+| [`src/types/story.ts`](file:///src/types/story.ts) | 57 | Modèle de données StoryMap | [Documentation](file:///wiki/types/story-types.md) |
+| [`src/types/project.ts`](file:///src/types/project.ts) | 95 | Modèle unifié 3 modes (Project, Page, Block) | [Documentation](file:///wiki/types/project-types.md) |
+| [`src/types/context.ts`](file:///src/types/context.ts) | 30 | Types du contexte global | [Documentation](file:///wiki/context/story-context.md) |
+| [`src/types/step.ts`](file:///src/types/step.ts) | 51 | Modèle d'étape et caméra | [Documentation](file:///wiki/types/step-types.md) |
 | [`src/types/sheet.ts`](file:///src/types/sheet.ts) | 22 | Types du mode tableur | [Documentation](file:///wiki/editor/sheet-view.md) |
 | [`src/types/map.ts`](file:///src/types/map.ts) | 36 | Styles cartographiques | [Documentation](file:///wiki/types/map-types.md) |
 | [`src/core/db.ts`](file:///src/core/db.ts) | 80 | Persistance IndexedDB | [Documentation](file:///wiki/core/db.md) |
