@@ -2,11 +2,33 @@
  * StoryMap — Types pour le modèle principal de StoryMap
  */
 
-import { Step } from './step';
-import { ProjectBrand, ProjectMode } from './project';
+import type { Step } from './step';
+import type { ProjectBrand, ProjectMode, Page, ProjectMap } from './project';
+import type { PageFormat } from './grid';
 
 export type UITheme = 'light' | 'dark' | 'auto';
 export type StoryFont = 'Inter' | 'Lora' | 'Merriweather' | 'Roboto' | 'Cinzel';
+
+export type RouteLineStyle =
+  | 'solid'
+  | 'dashed'
+  | 'dotted'
+  | 'curved'
+  | 'arrow'
+  | 'double-arrow'
+  | 'airplane'
+  | 'ship'
+  | 'none';
+
+export type MarkerShape =
+  | 'pin'
+  | 'circle'
+  | 'square'
+  | 'number'
+  | 'airplane'
+  | 'ship'
+  | 'flag'
+  | 'star';
 
 export interface StoryAppearance {
   theme: UITheme;
@@ -15,6 +37,10 @@ export interface StoryAppearance {
   panelPosition: 'left' | 'right' | 'center';
   showProgress: boolean;
   autoplayInterval?: number;
+  routeStyle?: RouteLineStyle;
+  routeColor?: string;
+  markerShape?: MarkerShape;
+  showAllMarkers?: boolean;
 }
 
 export interface MapLayer {
@@ -40,6 +66,9 @@ export interface StoryMap {
   modified: number;
   mode?: ProjectMode;
   brand?: ProjectBrand;
+  format?: PageFormat;
+  pages?: Page[];
+  maps?: ProjectMap[];
   appearance: StoryAppearance;
   mapStyle: string;
   layers: MapLayer[];

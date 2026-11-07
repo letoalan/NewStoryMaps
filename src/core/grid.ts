@@ -2,8 +2,8 @@
  * StoryMap — Moteur mathématique de grille et manipulation de blocs (P2)
  */
 
-import { Block } from '../types/project';
-import { BlockRect, GridDimensions, GridOperationResult, PageFormat } from '../types/grid';
+import type { Block } from '../types/project';
+import type { BlockRect, GridDimensions, GridOperationResult, PageFormat } from '../types/grid';
 
 export function getGridDimensions(format: PageFormat): GridDimensions {
   switch (format) {

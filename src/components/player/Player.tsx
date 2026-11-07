@@ -1,14 +1,14 @@
 /**
- * StoryMap — Lecteur immersif de StoryMap (Player)
+ * StoryMap — Lecteur plein écran interactif avec tracé multi-styles & marqueurs stylisés
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Map as MLMap, Marker, GeoJSONSource } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useStory } from '../../context/StoryContext';
-import { X } from 'lucide-react';
 import { resolveMapStyle } from '../../types/map';
-import { createRouteGeoJSON } from '../../core/route';
+import { createRouteGeoJSON, getRouteLayerConfig } from '../../core/route';
+import { createMarkerElement } from '../common/markerElement';
 import { PlayerNarrative } from './PlayerNarrative';
 
 interface PlayerProps {
@@ -19,72 +19,71 @@ export const Player: React.FC<PlayerProps> = ({ onExit }) => {
   const { story } = useStory();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
-  const markerRef = useRef<Marker | null>(null);
+  const markersRef = useRef<Marker[]>([]);
 
-  const steps = story?.steps || [];
+  const steps = story?.steps.filter((s) => !s.hidden) || [];
   const currentStep = steps[currentIdx];
 
-  // Initialisation de la carte
+  // Initialisation carte
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current || !story || !currentStep) return;
+    if (!mapContainerRef.current || mapRef.current || !story) return;
 
+    const initialCamera = currentStep?.camera || { center: [2.3522, 48.8566], zoom: 10, pitch: 0, bearing: 0 };
     const map = new MLMap({
       container: mapContainerRef.current,
       style: resolveMapStyle(story.mapStyle),
-      center: currentStep.camera.center,
-      zoom: currentStep.camera.zoom,
-      pitch: currentStep.camera.pitch,
-      bearing: currentStep.camera.bearing,
+      center: initialCamera.center,
+      zoom: initialCamera.zoom,
+      pitch: initialCamera.pitch,
+      bearing: initialCamera.bearing,
+      interactive: true,
     });
 
     mapRef.current = map;
-
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
+    return () => { map.remove(); mapRef.current = null; };
   }, []);
 
+  // Style cartographique
   useEffect(() => {
     const map = mapRef.current;
     if (map && story?.mapStyle) map.setStyle(resolveMapStyle(story.mapStyle));
   }, [story?.mapStyle]);
 
-  // Tracé GeoJSON reliant les étapes
+  // Tracé GeoJSON multi-styles (pleine, pointillée, incurvée, avion, navire...)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !story) return;
 
-    const routeData = createRouteGeoJSON(story.steps);
+    const rStyle = story.appearance.routeStyle || 'dashed';
+    const rColor = story.appearance.routeColor || story.appearance.accentColor || '#0b7fb0';
+    const routeData = createRouteGeoJSON(story.steps, { style: rStyle, color: rColor });
+    const cfg = getRouteLayerConfig(rStyle, rColor);
+
     const updateRoute = () => {
       const src = map.getSource('player-route') as GeoJSONSource;
+      const layoutObj = cfg.layout || {};
       if (src) {
         src.setData(routeData);
-      } else {
+        if (map.getLayer('player-route-line')) {
+          map.removeLayer('player-route-line');
+          map.addLayer({ id: 'player-route-line', type: 'line', source: 'player-route', paint: cfg.paint as any, layout: layoutObj as any });
+        }
+      } else if (rStyle !== 'none') {
         map.addSource('player-route', { type: 'geojson', data: routeData });
-        map.addLayer({
-          id: 'player-route-line',
-          type: 'line',
-          source: 'player-route',
-          paint: {
-            'line-color': story.appearance.accentColor || '#0b7fb0',
-            'line-width': 3,
-            'line-dasharray': [2, 2],
-          },
-        });
+        map.addLayer({ id: 'player-route-line', type: 'line', source: 'player-route', paint: cfg.paint as any, layout: layoutObj as any });
       }
     };
 
-    if (map.isStyleLoaded()) updateRoute();
-    else map.once('style.load', updateRoute);
-  }, [story?.steps, story?.mapStyle, story?.appearance.accentColor]);
+    if (map.isStyleLoaded()) updateRoute(); else map.once('style.load', updateRoute);
+  }, [story?.steps, story?.mapStyle, story?.appearance.routeStyle, story?.appearance.accentColor, story?.appearance.routeColor]);
 
-  // Animation de caméra à chaque étape
+  // Synchronisation caméra et marqueurs stylisés
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !currentStep) return;
+    if (!map || !currentStep || !story) return;
 
     map.flyTo({
       center: currentStep.camera.center,
@@ -95,11 +94,29 @@ export const Player: React.FC<PlayerProps> = ({ onExit }) => {
       essential: true,
     });
 
-    if (markerRef.current) markerRef.current.remove();
-    markerRef.current = new Marker({ color: story?.appearance.accentColor || '#0b7fb0' })
-      .setLngLat(currentStep.camera.center)
-      .addTo(map);
-  }, [currentIdx, currentStep, story?.appearance.accentColor]);
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
+
+    const col = story.appearance.accentColor || '#0b7fb0';
+    const shape = story.appearance.markerShape || 'pin';
+    const showAll = story.appearance.showAllMarkers ?? true;
+
+    steps.forEach((step, idx) => {
+      const isActive = idx === currentIdx;
+      if (!showAll && !isActive) return;
+
+      const el = createMarkerElement({ shape, color: col, index: idx, isActive });
+      const marker = new Marker({ element: el })
+        .setLngLat(step.camera.center)
+        .addTo(map);
+
+      if (!isActive) {
+        el.addEventListener('click', (e) => { e.stopPropagation(); setCurrentIdx(idx); });
+      }
+
+      markersRef.current.push(marker);
+    });
+  }, [currentIdx, currentStep, story?.appearance.accentColor, story?.appearance.markerShape, story?.appearance.showAllMarkers, steps]);
 
   // Autoplay
   useEffect(() => {
@@ -121,36 +138,24 @@ export const Player: React.FC<PlayerProps> = ({ onExit }) => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [steps.length, onExit]);
-
-  if (!story || steps.length === 0 || !currentStep) return null;
+  }, [onExit, steps.length]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
-      <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
-
-      {onExit && (
-        <button
-          className="btn btn-ghost btn-icon"
-          onClick={onExit}
-          style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 20, background: 'var(--surface)' }}
-          title="Quitter la lecture (Échap)"
-        >
-          <X size={20} />
-        </button>
+    <div className="player">
+      <div ref={mapContainerRef} className="player-map" />
+      {currentStep && (
+        <PlayerNarrative
+          step={currentStep}
+          index={currentIdx}
+          total={steps.length}
+          isPlaying={isPlaying}
+          position={story?.appearance.panelPosition}
+          font={story?.appearance.font}
+          onPrev={prevStep}
+          onNext={nextStep}
+          onTogglePlay={() => setIsPlaying(!isPlaying)}
+        />
       )}
-
-      <PlayerNarrative
-        step={currentStep}
-        index={currentIdx}
-        total={steps.length}
-        isPlaying={isPlaying}
-        position={story.appearance.panelPosition}
-        font={story.appearance.font}
-        onPrev={prevStep}
-        onNext={nextStep}
-        onTogglePlay={() => setIsPlaying(!isPlaying)}
-      />
     </div>
   );
 };

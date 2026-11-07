@@ -2,9 +2,10 @@
  * StoryMap — Types du contexte StoryContext
  */
 
-import { StoryMap } from './story';
-import { Step } from './step';
-import { ProjectBrand, ProjectMode } from './project';
+import type { StoryMap } from './story';
+import type { Step } from './step';
+import type { ProjectBrand, ProjectMode } from './project';
+import type { PageFormat } from './grid';
 
 export type SaveStatus = 'saved' | 'saving' | 'dirty' | 'error';
 
@@ -27,6 +28,6 @@ export interface StoryContextType {
   reorderSteps: (startIndex: number, endIndex: number) => void;
   flushSave: () => Promise<void>;
   loadStory: (id: string) => Promise<void>;
-  newStory: (options?: string | { title?: string; mode?: ProjectMode; brand?: ProjectBrand }) => Promise<void>;
+  newStory: (options?: string | { title?: string; mode?: ProjectMode; format?: PageFormat; brand?: ProjectBrand }) => Promise<void>;
 }
 

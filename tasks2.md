@@ -79,28 +79,28 @@ Porte : aucun développement public des nouveaux modes avant réussite P0 ou dé
 Porte : modes compréhensibles et anciens projets toujours accessibles.
 
 ## P2 — Pages, cellules et blocs
-- [ ] G01 Séparer format, densité et résolution ; prototyper marges/gouttières.
-- [ ] G02 Implémenter cellules carrées et blocs rectangulaires sans collision.
-- [ ] G03 Ajouter + central, menu accessible et barre contextuelle.
-- [ ] G04 Fusion : une cellule ou aire paire complète ; tests 2/4/6/8/12 et rejet des L.
-- [ ] G05 Agrandir vers du vide ; interdire écrasement et perte au changement de format.
-- [ ] G06 Scinder, déplacer, dupliquer et supprimer avec undo/redo.
-- [ ] G07 Ajouter titre, texte, image, légende, source, tableau et encadré.
-- [ ] G08 Définir ordre mobile et composition de présentation ; préserver aperçus par résolution.
-- [ ] G09 Ajouter galerie/carrousel puis médias autorisés du mode enrichi.
-- [ ] G10 Tester clavier, débordements et réouverture/réimport de chaque opération.
+- [x] G01 Séparer format, densité et résolution ; prototyper marges/gouttières.
+- [x] G02 Implémenter cellules carrées et blocs rectangulaires sans collision.
+- [x] G03 Ajouter + central, menu accessible et barre contextuelle.
+- [x] G04 Fusion : une cellule ou aire paire complète ; tests 2/4/6/8/12 et rejet des L.
+- [x] G05 Agrandir vers du vide ; interdire écrasement et perte au changement de format.
+- [x] G06 Scinder, déplacer, dupliquer et supprimer avec undo/redo.
+- [x] G07 Ajouter titre, texte, image, légende, source, tableau et encadré.
+- [x] G08 Définir ordre mobile et composition de présentation ; préserver aperçus par résolution.
+- [x] G09 Ajouter galerie/carrousel puis médias autorisés du mode enrichi.
+- [x] G10 Tester clavier, débordements et réouverture/réimport de chaque opération.
 Porte : composition stable et éditable après fermeture et échange.
 
 ## P3 — Atelier carte et associations
-- [ ] H01 Ouvrir/fermer atelier dédié avec sélection de bloc préservée.
-- [ ] H02 Réutiliser imports ; points/lignes/polygones, figurés, annotations et couches.
-- [ ] H03 Séparer géométries, style et vue ; enregistrer emprises et cadrages par sortie.
-- [ ] H04 Résoudre état complet d’une scène indépendamment du parcours.
-- [ ] H05 Associer objets/couches à blocs via miniature et menu ; accès inverse.
-- [ ] H06 Gérer liaisons multiples, suppression et duplication par identifiants stables.
-- [ ] H07 Mode 2 : surbrillance, focus et actions explicites de zoom/couches.
-- [ ] H08 Mode 3 : numéros/symboles/renvois ; données toujours éditables.
-- [ ] H09 Tester objets supprimés, page déplacée et export/réimport des associations.
+- [x] H01 Ouvrir/fermer atelier dédié avec sélection de bloc préservée.
+- [x] H02 Réutiliser imports ; points/lignes/polygones, figurés, annotations et couches.
+- [x] H03 Séparer géométries, style et vue ; enregistrer emprises et cadrages par sortie.
+- [x] H04 Résoudre état complet d’une scène indépendamment du parcours.
+- [x] H05 Associer objets/couches à blocs via miniature et menu ; accès inverse.
+- [x] H06 Gérer liaisons multiples, suppression et duplication par identifiants stables.
+- [x] H07 Mode 2 : surbrillance, focus et actions explicites de zoom/couches.
+- [x] H08 Mode 3 : numéros/symboles/renvois ; données toujours éditables.
+- [x] H09 Tester objets supprimés, page déplacée et export/réimport des associations.
 Porte : carte et narration restent cohérentes après toutes les mutations.
 
 ## P4 — Lecture, présentation et publication enrichie

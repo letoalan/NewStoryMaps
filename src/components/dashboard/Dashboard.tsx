@@ -13,11 +13,12 @@ import { EXAMPLE_STORY } from '../../data/exampleStory';
 import { NewStoryModal } from '../dialogs/NewStoryModal';
 
 import { ProjectBrand, ProjectMode } from '../../types/project';
+import { PageFormat } from '../../types/grid';
 
 interface DashboardProps {
   onOpenStory: (id: string) => void;
   onPlayStory: (id: string) => void;
-  onNewStory: (opts?: string | { title?: string; mode?: ProjectMode; brand?: ProjectBrand }) => void;
+  onNewStory: (opts?: string | { title?: string; mode?: ProjectMode; format?: PageFormat; brand?: ProjectBrand }) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, onNewStory }) => {
@@ -25,6 +26,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [initialMode, setInitialMode] = useState<ProjectMode>('storymap');
 
   const loadAll = async () => {
     setLoading(true);
@@ -35,7 +37,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
     }
   };
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => {
+    loadAll();
+    const params = new URLSearchParams(window.location.search);
+    const m = params.get('mode');
+    if (m === 'storymap' || m === 'rich-document' || m === 'brochure') {
+      setInitialMode(m);
+      setIsNewModalOpen(true);
+    }
+  }, []);
 
   const handleDelete = async (id: string) => {
     await db.deleteStory(id);
@@ -162,6 +172,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
 
       <NewStoryModal
         isOpen={isNewModalOpen}
+        initialMode={initialMode}
         onClose={() => setIsNewModalOpen(false)}
         onCreate={(opts) => onNewStory(opts)}
       />

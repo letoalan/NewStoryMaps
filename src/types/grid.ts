@@ -2,7 +2,7 @@
  * StoryMap — Types du moteur de grille et de mise en page (P2)
  */
 
-import { Block } from './project';
+import type { Block } from './project';
 
 export interface GridCell {
   x: number;

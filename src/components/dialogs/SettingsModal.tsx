@@ -1,11 +1,11 @@
 /**
- * StoryMap — Modal des paramètres et de l'apparence du récit
+ * StoryMap — Modal des paramètres : apparence, tracé multi-styles & marqueurs
  */
 
 import React from 'react';
 import { useStory } from '../../context/StoryContext';
-import { StoryFont } from '../../types/story';
-import { X, Settings, Palette, Type, Clock, Layout } from 'lucide-react';
+import { StoryFont, RouteLineStyle, MarkerShape } from '../../types/story';
+import { X, Settings, Palette, Type, Clock, Layout, Navigation, MapPin } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -19,13 +19,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const { story, updateStory } = useStory();
 
   if (!isOpen || !story) return null;
-
   const app = story.appearance;
 
   const updateApp = (partial: Partial<typeof app>) => {
-    updateStory({
-      appearance: { ...app, ...partial },
-    });
+    updateStory({ appearance: { ...app, ...partial } });
   };
 
   return (
@@ -47,35 +44,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           background: 'var(--surface)',
           borderRadius: 'var(--r-lg)',
           width: '100%',
-          maxWidth: '520px',
+          maxWidth: '540px',
           border: '1px solid var(--border)',
           boxShadow: 'var(--shadow-lg)',
           overflow: 'hidden',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div
-          style={{
-            padding: '16px 20px',
-            borderBottom: '1px solid var(--border)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Settings size={18} color="var(--accent)" />
             <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Paramètres du récit</h2>
           </div>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}>
-            <X size={18} />
-          </button>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
 
-        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* Couleur d'accentuation */}
           <div>
             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-              <Palette size={14} /> Couleur d'accentuation
+              <Palette size={14} /> Couleur d'accentuation & tracé
             </label>
             <div style={{ display: 'flex', gap: '10px' }}>
               {ACCENT_COLORS.map((col) => (
@@ -95,9 +83,65 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </div>
           </div>
 
+          {/* Style du tracé & Forme des marqueurs */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+                <Navigation size={14} /> Style du tracé
+              </label>
+              <select
+                className="select"
+                style={{ width: '100%' }}
+                value={app.routeStyle || 'dashed'}
+                onChange={(e) => updateApp({ routeStyle: e.target.value as RouteLineStyle })}
+              >
+                <option value="dashed">Pointillés standards</option>
+                <option value="solid">Ligne pleine</option>
+                <option value="dotted">Petits points fins</option>
+                <option value="curved">Ligne incurvée (arc)</option>
+                <option value="arrow">Flèches directrices</option>
+                <option value="double-arrow">Doubles flèches</option>
+                <option value="airplane">Avion (Indiana Jones)</option>
+                <option value="ship">Navire (Croisière)</option>
+                <option value="none">Aucun tracé</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+                <MapPin size={14} /> Forme des marqueurs
+              </label>
+              <select
+                className="select"
+                style={{ width: '100%' }}
+                value={app.markerShape || 'pin'}
+                onChange={(e) => updateApp({ markerShape: e.target.value as MarkerShape })}
+              >
+                <option value="pin">Épingle classique</option>
+                <option value="number">Numéroté (1, 2, 3...)</option>
+                <option value="circle">Pastille circulaire</option>
+                <option value="square">Diamant / Carré</option>
+                <option value="airplane">Avion ✈️</option>
+                <option value="ship">Navire 🚢</option>
+                <option value="flag">Drapeau 🚩</option>
+                <option value="star">Étoile ⭐</option>
+              </select>
+            </div>
+          </div>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer', userSelect: 'none' }}>
+            <input
+              type="checkbox"
+              checked={app.showAllMarkers ?? true}
+              onChange={(e) => updateApp({ showAllMarkers: e.target.checked })}
+            />
+            <span>Afficher tous les marqueurs des étapes sur la carte</span>
+          </label>
+
+          {/* Police narrative */}
           <div>
             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-              <Type size={14} /> Police d'écriture narrative
+              <Type size={14} /> Police narrative
             </label>
             <select
               className="select"
@@ -111,17 +155,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </select>
           </div>
 
+          {/* Volet et Défilement */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
                 <Layout size={14} /> Volet narratif
               </label>
-              <select
-                className="select"
-                style={{ width: '100%' }}
-                value={app.panelPosition}
-                onChange={(e) => updateApp({ panelPosition: e.target.value as 'left' | 'right' })}
-              >
+              <select className="select" style={{ width: '100%' }} value={app.panelPosition} onChange={(e) => updateApp({ panelPosition: e.target.value as 'left' | 'right' })}>
                 <option value="left">À gauche</option>
                 <option value="right">À droite</option>
               </select>
@@ -130,16 +170,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
                 <Clock size={14} /> Défilement auto
               </label>
-              <select
-                className="select"
-                style={{ width: '100%' }}
-                value={app.autoplayInterval || 5000}
-                onChange={(e) => updateApp({ autoplayInterval: Number(e.target.value) })}
-              >
-                <option value={3000}>3 secondes</option>
-                <option value={5000}>5 secondes</option>
-                <option value={8000}>8 secondes</option>
-                <option value={12000}>12 secondes</option>
+              <select className="select" style={{ width: '100%' }} value={app.autoplayInterval || 5000} onChange={(e) => updateApp({ autoplayInterval: Number(e.target.value) })}>
+                <option value={3000}>3 s</option>
+                <option value={5000}>5 s</option>
+                <option value={8000}>8 s</option>
+                <option value={12000}>12 s</option>
               </select>
             </div>
           </div>

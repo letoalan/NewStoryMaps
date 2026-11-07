@@ -91,8 +91,16 @@ export function generateStandaloneHTML(story: StoryMap): string {
             if (!map) return;
             const coords = steps.map(s => s.camera.center);
             if (coords.length < 2) return;
+            const rStyle = (story.appearance && story.appearance.routeStyle) || 'dashed';
+            if (rStyle === 'none') return;
+            let dash = [4, 2];
+            if (rStyle === 'solid') dash = undefined;
+            else if (rStyle === 'dotted') dash = [1, 2];
+            else if (rStyle === 'ship') dash = [5, 3];
+            const paint = { 'line-color': '${safeAccent}', 'line-width': 3 };
+            if (dash) paint['line-dasharray'] = dash;
             map.addSource('route', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } } });
-            map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '${safeAccent}', 'line-width': 3, 'line-dasharray': [2, 2] } });
+            map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: paint });
         }
 
         function renderStep() {

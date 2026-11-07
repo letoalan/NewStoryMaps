@@ -2,10 +2,10 @@
  * StoryMap — Import et Export (JSON, HTML autonome et archives ZIP)
  */
 
-import { StoryMap } from '../types/story';
+import type { StoryMap } from '../types/story';
 import { generateStandaloneHTML, extractStoryFromHTML } from './publish';
 import { convertLegacyToModern, convertModernToLegacyV2 } from './adapter';
-import { createZip, readZip, ZipReadEntry } from './zip';
+import { createZip, readZip, type ZipReadEntry } from './zip';
 
 export function exportStoryToJSON(story: StoryMap): void {
   const blob = new Blob([JSON.stringify(story, null, 2)], { type: 'application/json;charset=utf-8' });
@@ -72,10 +72,10 @@ export async function exportAllStoriesBackupZip(stories: StoryMap[]): Promise<vo
   downloadBlob(zipBlob, `storymap-sauvegarde-${new Date().toISOString().slice(0, 10)}.zip`);
 }
 
-export async function parseStoryFile(file: File): Promise<StoryMap[]> {
-  const name = file.name.toLowerCase();
+export async function parseStoryFile(file: File | Blob): Promise<StoryMap[]> {
+  const name = ((file as File).name || '').toLowerCase();
   if (name.endsWith('.zip') || file.type.includes('zip')) return parseZipArchive(file);
-  const text = await file.text();
+  const text = await (file as Blob).text();
   if (name.endsWith('.html') || name.endsWith('.htm') || /^\s*<(!doctype|html)/i.test(text)) {
     return [parseStoryHTML(text)];
   }
@@ -102,10 +102,18 @@ async function resolveRelativeImages(story: StoryMap, entries: ZipReadEntry[]): 
 
   for (const step of story.steps) {
     if (step.media?.url && !step.media.url.startsWith('http') && !step.media.url.startsWith('data:')) {
-      const targetName = step.media.url.replace(/^\.?\//, '').toLowerCase();
-      const match = imageEntries.find(e => e.name.toLowerCase().endsWith(targetName) || targetName.endsWith(e.name.toLowerCase().split('/').pop() || ''));
-      if (match) {
-        step.media.url = uint8ArrayToDataUrl(await match.bytes(), match.name);
+      const target = step.media.url.replace(/^\.?\//, '').toLowerCase();
+      const match = imageEntries.find(e => e.name.toLowerCase().endsWith(target) || target.endsWith(e.name.toLowerCase().split('/').pop() || ''));
+      if (match) step.media.url = uint8ArrayToDataUrl(await match.bytes(), match.name);
+    }
+    if (step.description && /<img\b/i.test(step.description)) {
+      for (const ie of imageEntries) {
+        const bname = ie.name.split('/').pop() || ie.name;
+        const re = new RegExp(`src=["'][^"']*${bname}["']`, 'gi');
+        if (re.test(step.description)) {
+          const durl = uint8ArrayToDataUrl(await ie.bytes(), ie.name);
+          step.description = step.description.replace(re, `src="${durl}"`);
+        }
       }
     }
   }
@@ -135,7 +143,7 @@ async function parseZipArchive(file: Blob): Promise<StoryMap[]> {
     try {
       const story = parseStoryJSON(await e.text());
       stories.push(await resolveRelativeImages(story, entries));
-    } catch { /* ignorer fichiers non storymap */ }
+    } catch { /* ignorer */ }
   }
 
   if (stories.length > 0) return stories;
@@ -144,7 +152,7 @@ async function parseZipArchive(file: Blob): Promise<StoryMap[]> {
     try {
       const story = parseStoryHTML(await e.text());
       stories.push(await resolveRelativeImages(story, entries));
-    } catch { /* ignorer pages sans storymap */ }
+    } catch { /* ignorer */ }
   }
 
   if (stories.length === 0) throw new Error('Aucune storymap valide n’a été trouvée dans cette archive ZIP.');

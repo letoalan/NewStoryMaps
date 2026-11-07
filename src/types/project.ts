@@ -3,7 +3,7 @@
  * Mode 1 (StoryMap classique), Mode 2 (Document enrichi), Mode 3 (Brochure A4)
  */
 
-import { StoryMap } from './story';
+import type { StoryMap } from './story';
 
 export type ProjectMode = 'storymap' | 'rich-document' | 'brochure';
 
@@ -30,6 +30,26 @@ export interface NarrativeBinding {
   targetFeatureId?: string;
   action?: 'highlight' | 'zoom' | 'filter';
   description?: string;
+  numberIndex?: number; // Pour le Mode 3 (renvoi brochure numéroté)
+}
+
+export interface MapFeature {
+  id: string;
+  name: string;
+  geometryType: 'Point' | 'LineString' | 'Polygon';
+  coordinates: number[] | number[][] | number[][][];
+  color?: string;
+  description?: string;
+  numberIndex?: number;
+}
+
+export interface MapSceneLayer {
+  id: string;
+  name: string;
+  visible: boolean;
+  opacity?: number;
+  color?: string;
+  features: MapFeature[];
 }
 
 export interface Block {
@@ -70,7 +90,7 @@ export interface ProjectMap {
   name: string;
   mapStyle: string;
   view: MapView;
-  layers?: unknown[];
+  layers?: MapSceneLayer[];
 }
 
 export interface ProjectResource {

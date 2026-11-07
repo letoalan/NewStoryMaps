@@ -1,5 +1,5 @@
 /**
- * StoryMap — Contexte d'état, historique et persistance
+ * StoryMap — Contexte d'état, historique et persistance sécurisée
  */
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
@@ -10,6 +10,7 @@ import { SaveStatus, StoryContextType } from '../types/context';
 import { db } from '../core/db';
 import { createDefaultStory } from '../core/defaults';
 import { useStoryShortcuts } from './useStoryShortcuts';
+import { performAddStep, performDeleteStep, performUpdateStep, performReorderSteps } from './stepOperations';
 
 export type { SaveStatus, StoryContextType };
 
@@ -20,11 +21,14 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const [lastSaveError, setLastSaveError] = useState<string | null>(null);
+
   const historyRef = useRef<StoryMap[]>([]);
   const futureRef = useRef<StoryMap[]>([]);
   const saveTimeoutRef = useRef<number | null>(null);
   const queueRef = useRef<Promise<void>>(Promise.resolve());
   const latestStoryRef = useRef<StoryMap | null>(null);
+  const revisionRef = useRef<number>(0);
+  const savedRevisionRef = useRef<number>(0);
   latestStoryRef.current = story;
 
   const setStory = (newStory: StoryMap, trackHistory = true) => {
@@ -32,6 +36,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       historyRef.current.push(story);
       futureRef.current = [];
     }
+    revisionRef.current += 1;
     setSaveStatus('dirty');
     setStoryState(newStory);
   };
@@ -40,6 +45,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (historyRef.current.length === 0 || !story) return;
     const prev = historyRef.current.pop()!;
     futureRef.current.push(story);
+    revisionRef.current += 1;
     setSaveStatus('dirty');
     setStoryState(prev);
   }, [story]);
@@ -48,21 +54,25 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (futureRef.current.length === 0 || !story) return;
     const next = futureRef.current.pop()!;
     historyRef.current.push(story);
+    revisionRef.current += 1;
     setSaveStatus('dirty');
     setStoryState(next);
   }, [story]);
 
   useStoryShortcuts({ saveStatus, undo, redo });
 
-  const persistToDB = useCallback(async (storyToSave: StoryMap) => {
+  const persistToDB = useCallback(async (storyToSave: StoryMap, revToSave: number) => {
     setSaveStatus('saving');
     setLastSaveError(null);
     try {
       await db.saveStory(storyToSave);
-      setSaveStatus('saved');
+      savedRevisionRef.current = Math.max(savedRevisionRef.current, revToSave);
+      setSaveStatus(revisionRef.current === revToSave ? 'saved' : 'dirty');
     } catch (err) {
       setSaveStatus('error');
-      setLastSaveError((err as Error).message || 'Erreur lors de l’enregistrement');
+      const msg = (err as Error).message || 'Erreur lors de l’enregistrement';
+      setLastSaveError(msg);
+      throw err;
     }
   }, []);
 
@@ -72,21 +82,25 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       saveTimeoutRef.current = null;
     }
     const current = latestStoryRef.current;
-    if (current && saveStatus === 'dirty') {
-      queueRef.current = queueRef.current.then(() => persistToDB(current));
-      await queueRef.current;
+    const currentRev = revisionRef.current;
+    if (current && savedRevisionRef.current < currentRev) {
+      queueRef.current = queueRef.current.then(() => persistToDB(current, currentRev));
     }
-  }, [persistToDB, saveStatus]);
+    await queueRef.current;
+  }, [persistToDB]);
 
   useEffect(() => {
-    if (!story || saveStatus !== 'dirty') return;
+    if (!story || savedRevisionRef.current >= revisionRef.current) return;
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = window.setTimeout(() => {
       const current = latestStoryRef.current;
-      if (current) queueRef.current = queueRef.current.then(() => persistToDB(current));
+      const currentRev = revisionRef.current;
+      if (current && savedRevisionRef.current < currentRev) {
+        queueRef.current = queueRef.current.then(() => persistToDB(current, currentRev));
+      }
     }, 1000);
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
-  }, [story, saveStatus, persistToDB]);
+  }, [story, persistToDB]);
 
   const loadStory = async (id: string) => {
     await flushSave();
@@ -94,6 +108,8 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!loaded) throw new Error('Récit introuvable');
     historyRef.current = [];
     futureRef.current = [];
+    revisionRef.current = 0;
+    savedRevisionRef.current = 0;
     setStoryState(loaded);
     setActiveStepIndex(0);
     setSaveStatus('saved');
@@ -112,6 +128,8 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     historyRef.current = [];
     futureRef.current = [];
+    revisionRef.current = 0;
+    savedRevisionRef.current = 0;
     setStoryState(created);
     setActiveStepIndex(0);
     setSaveStatus('saving');
@@ -125,39 +143,27 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateStep = (index: number, stepPatch: Partial<Step>) => {
-    if (!story || !story.steps[index]) return;
-    const updated = [...story.steps];
-    updated[index] = { ...updated[index], ...stepPatch };
-    setStory({ ...story, steps: updated, modified: Date.now() });
+    if (!story) return;
+    setStory(performUpdateStep(story, index, stepPatch));
   };
 
   const addStep = () => {
     if (!story) return;
-    const last = story.steps[story.steps.length - 1];
-    const newStep: Step = {
-      id: 'step-' + Date.now(),
-      title: 'Nouvelle étape',
-      description: '<p>Description de l’étape...</p>',
-      camera: last ? { ...last.camera } : { center: [2.3522, 48.8566], zoom: 4, pitch: 0, bearing: 0 },
-      markers: [{ coordinates: last ? [...last.camera.center] : [2.3522, 48.8566], style: { color: story.appearance.accentColor || '#0b7fb0' } }],
-    };
-    setStory({ ...story, steps: [...story.steps, newStep], modified: Date.now() });
-    setActiveStepIndex(story.steps.length);
+    const { updatedStory, newIndex } = performAddStep(story);
+    setStory(updatedStory);
+    setActiveStepIndex(newIndex);
   };
 
   const deleteStep = (index: number) => {
-    if (!story || story.steps.length <= 1) return;
-    const steps = story.steps.filter((_, i) => i !== index);
-    setStory({ ...story, steps, modified: Date.now() });
-    if (activeStepIndex >= steps.length) setActiveStepIndex(Math.max(0, steps.length - 1));
+    if (!story) return;
+    const { updatedStory, newIndex } = performDeleteStep(story, index, activeStepIndex);
+    setStory(updatedStory);
+    setActiveStepIndex(newIndex);
   };
 
   const reorderSteps = (startIndex: number, endIndex: number) => {
     if (!story) return;
-    const steps = [...story.steps];
-    const [removed] = steps.splice(startIndex, 1);
-    steps.splice(endIndex, 0, removed);
-    setStory({ ...story, steps, modified: Date.now() });
+    setStory(performReorderSteps(story, startIndex, endIndex));
     setActiveStepIndex(endIndex);
   };
 
