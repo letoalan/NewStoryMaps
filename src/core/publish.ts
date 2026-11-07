@@ -1,8 +1,9 @@
 /**
- * StoryMap — Générateur de page HTML autonome (Export HTML autonome)
+ * StoryMap — Générateur et extracteur de page HTML autonome
  */
 
-import { StoryMap } from '../types/story';
+import type { StoryMap } from '../types/story';
+import { convertLegacyToModern } from './adapter';
 
 export function generateStandaloneHTML(story: StoryMap): string {
   const storyJson = JSON.stringify(story).replace(/</g, '\\u003c');
@@ -16,15 +17,13 @@ export function generateStandaloneHTML(story: StoryMap): string {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>${escapeHtml(title)}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
     <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
     <style>
         * { box-sizing: border-box; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #0f1216; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: system-ui, -apple-system, sans-serif; overflow: hidden; background: #0f1216; }
         #map { position: absolute; inset: 0; width: 100%; height: 100%; }
+        #map-fallback { display: none; position: absolute; inset: 0; background: #1a202c; color: #a0aec0; align-items: center; justify-content: center; text-align: center; padding: 2rem; }
         .panel { position: absolute; top: 20px; ${isRight ? 'right: 20px; left: auto;' : 'left: 20px;'} bottom: 20px; width: min(420px, calc(100vw - 40px)); background: #ffffff; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 10; display: flex; flex-direction: column; overflow: hidden; }
         .panel-header { padding: 16px 20px; border-bottom: 1px solid #e2e5eb; }
         .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #e5f2f8; color: ${accent}; font-size: 11px; font-weight: 600; }
@@ -39,6 +38,7 @@ export function generateStandaloneHTML(story: StoryMap): string {
 </head>
 <body>
     <div id="map"></div>
+    <div id="map-fallback"><div><h3>Mode dégradé hors-ligne</h3><p>Fond cartographique indisponible sans connexion.</p></div></div>
     <div class="panel">
         <div class="panel-header">
             <span class="badge" id="step-badge">Étape 1</span>
@@ -53,9 +53,10 @@ export function generateStandaloneHTML(story: StoryMap): string {
         <div class="panel-meta">StoryMap (MIT) · Cartographie © OpenStreetMap, CARTO, Esri</div>
     </div>
 
+    <script id="storymap-data" type="application/json">${storyJson}</script>
     <script id="story-data" type="application/json">${storyJson}</script>
     <script>
-        const story = JSON.parse(document.getElementById('story-data').textContent);
+        const story = JSON.parse(document.getElementById('storymap-data').textContent);
         let currentIdx = 0;
         let map, marker;
 
@@ -82,21 +83,28 @@ export function generateStandaloneHTML(story: StoryMap): string {
         }
 
         function initMap() {
-            const step = story.steps[0];
-            map = new maplibregl.Map({
-                container: 'map',
-                style: getStyle(),
-                center: step.camera.center,
-                zoom: step.camera.zoom,
-                pitch: step.camera.pitch,
-                bearing: step.camera.bearing
-            });
-            map.on('load', addRoute);
+            try {
+                if (typeof maplibregl === 'undefined') throw new Error('CDN indisponible');
+                const step = story.steps[0] || { camera: { center: [2.35, 48.85], zoom: 4, pitch: 0, bearing: 0 } };
+                map = new maplibregl.Map({
+                    container: 'map',
+                    style: getStyle(),
+                    center: step.camera.center,
+                    zoom: step.camera.zoom,
+                    pitch: step.camera.pitch,
+                    bearing: step.camera.bearing
+                });
+                map.on('error', () => { document.getElementById('map-fallback').style.display = 'flex'; });
+                map.on('load', addRoute);
+            } catch (e) {
+                document.getElementById('map-fallback').style.display = 'flex';
+            }
             renderStep();
         }
 
         function addRoute() {
-            const coords = story.steps.map(s => s.camera.center);
+            if (!map) return;
+            const coords = (story.steps || []).map(s => s.camera.center);
             if (coords.length < 2) return;
             map.addSource('route', {
                 type: 'geojson',
@@ -111,7 +119,7 @@ export function generateStandaloneHTML(story: StoryMap): string {
         }
 
         function renderStep() {
-            const step = story.steps[currentIdx];
+            const step = (story.steps && story.steps[currentIdx]) || { title: '', description: '' };
             document.getElementById('step-badge').textContent = 'Étape ' + (currentIdx + 1);
             document.getElementById('step-title').textContent = step.title;
             let html = '';
@@ -120,11 +128,12 @@ export function generateStandaloneHTML(story: StoryMap): string {
             }
             html += step.description || '';
             document.getElementById('step-body').innerHTML = html;
-            document.getElementById('step-count').textContent = (currentIdx + 1) + ' / ' + story.steps.length;
+            const total = (story.steps && story.steps.length) || 1;
+            document.getElementById('step-count').textContent = (currentIdx + 1) + ' / ' + total;
             document.getElementById('btn-prev').disabled = currentIdx === 0;
-            document.getElementById('btn-next').disabled = currentIdx === story.steps.length - 1;
+            document.getElementById('btn-next').disabled = currentIdx === total - 1;
 
-            if (map) {
+            if (map && step.camera) {
                 map.flyTo({
                     center: step.camera.center,
                     zoom: step.camera.zoom,
@@ -141,7 +150,7 @@ export function generateStandaloneHTML(story: StoryMap): string {
         }
 
         function nextStep() {
-            if (currentIdx < story.steps.length - 1) { currentIdx++; renderStep(); }
+            if (story.steps && currentIdx < story.steps.length - 1) { currentIdx++; renderStep(); }
         }
 
         function prevStep() {
@@ -152,6 +161,26 @@ export function generateStandaloneHTML(story: StoryMap): string {
     </script>
 </body>
 </html>`;
+}
+
+export function extractStoryFromHTML(html: string): StoryMap {
+  let content = '';
+  if (typeof DOMParser !== 'undefined') {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const el = doc.getElementById('storymap-data') ||
+               doc.getElementById('story-data') ||
+               doc.getElementById('atelier-storymap-data');
+    content = el?.textContent || '';
+  } else {
+    const match = html.match(/<script[^>]*id="(?:storymap-data|story-data|atelier-storymap-data)"[^>]*>([\s\S]*?)<\/script>/i);
+    content = match ? match[1] : '';
+  }
+
+  if (!content) {
+    throw new Error('Aucune donnée StoryMap intégrée trouvée dans ce document HTML.');
+  }
+  const raw = JSON.parse(content);
+  return convertLegacyToModern(raw);
 }
 
 function escapeHtml(text: string): string {

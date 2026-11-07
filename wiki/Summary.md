@@ -14,7 +14,8 @@ Ce document répertorie chaque fichier du projet StoryMap (conservé et nouvelle
 | [`src/types/map.ts`](file:///src/types/map.ts) | 36 | Styles cartographiques | [Documentation](file:///wiki/types/map-types.md) |
 | [`src/core/db.ts`](file:///src/core/db.ts) | 80 | Persistance IndexedDB | [Documentation](file:///wiki/core/db.md) |
 | [`src/core/defaults.ts`](file:///src/core/defaults.ts) | 49 | Fabriques de données | [Documentation](file:///wiki/core/defaults.md) |
-| [`src/core/io.ts`](file:///src/core/io.ts) | 55 | Import et export JSON/HTML/Blob | [Documentation](file:///wiki/core/io.md) |
+| [`src/core/io.ts`](file:///src/core/io.ts) | 160 | Import et export JSON/HTML/ZIP/Blob | [Documentation](file:///wiki/core/io.md) |
+| [`src/core/zip.ts`](file:///src/core/zip.ts) | 178 | Moteur natif d'archives ZIP | [Documentation](file:///wiki/core/zip.md) |
 | [`src/core/adapter.ts`](file:///src/core/adapter.ts) | 160 | Pont de compatibilité v1/v2/React | [Documentation](file:///wiki/core/adapter.md) |
 | [`src/core/sanitize.ts`](file:///src/core/sanitize.ts) | 65 | Assainissement HTML sécurisé | [Documentation](file:///wiki/core/sanitize.md) |
 | [`src/core/publish.ts`](file:///src/core/publish.ts) | 170 | Générateur HTML autonome | [Documentation](file:///wiki/core/publish.md) |

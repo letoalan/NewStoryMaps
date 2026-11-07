@@ -1,0 +1,95 @@
+/**
+ * StoryMap — Types d'architecture unifiée des trois modes
+ * Mode 1 (StoryMap classique), Mode 2 (Document enrichi), Mode 3 (Brochure A4)
+ */
+
+import { StoryMap } from './story';
+
+export type ProjectMode = 'storymap' | 'rich-document' | 'brochure';
+
+export interface ProjectBrand {
+  logo?: string;
+  primaryFont: string;
+  secondaryFont: string;
+  colors: [string, string, string]; // [Primaire, Secondaire, Accent]
+}
+
+export type BlockType =
+  | 'title'
+  | 'text'
+  | 'image'
+  | 'map'
+  | 'legend'
+  | 'source'
+  | 'table'
+  | 'callout'
+  | 'gallery';
+
+export interface NarrativeBinding {
+  mapId: string;
+  targetFeatureId?: string;
+  action?: 'highlight' | 'zoom' | 'filter';
+  description?: string;
+}
+
+export interface Block {
+  id: string;
+  type: BlockType;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  data: Record<string, unknown>;
+  binding?: NarrativeBinding;
+}
+
+export interface PageLayout {
+  format: 'a4-portrait' | 'a4-landscape' | 'screen-16-9' | 'responsive';
+  gridColumns: number;
+  gridRows: number;
+  marginMm?: number;
+}
+
+export interface Page {
+  id: string;
+  title: string;
+  layout: PageLayout;
+  blocks: Block[];
+}
+
+export interface MapView {
+  center: [number, number];
+  zoom: number;
+  pitch?: number;
+  bearing?: number;
+  bounds?: [[number, number], [number, number]];
+}
+
+export interface ProjectMap {
+  id: string;
+  name: string;
+  mapStyle: string;
+  view: MapView;
+  layers?: unknown[];
+}
+
+export interface ProjectResource {
+  id: string;
+  name: string;
+  mimeType: string;
+  url: string;
+}
+
+export interface UnifiedProject {
+  id: string;
+  version: '2.0.0';
+  title: string;
+  mode: ProjectMode;
+  created: number;
+  modified: number;
+  brand?: ProjectBrand;
+  storymapData?: StoryMap;
+  pages?: Page[];
+  maps?: ProjectMap[];
+  resources?: ProjectResource[];
+}

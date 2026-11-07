@@ -7,8 +7,8 @@ import { StoryListItem } from '../../types/story';
 import { db } from '../../core/db';
 import { StoryCard } from './StoryCard';
 import { Header } from '../common/Header';
-import { Plus, Upload, Search, Map, BookOpen } from 'lucide-react';
-import { parseStoryJSON } from '../../core/io';
+import { Plus, Upload, Search, Map, BookOpen, Archive } from 'lucide-react';
+import { parseStoryFile, exportAllStoriesBackupZip } from '../../core/io';
 import { EXAMPLE_STORY } from '../../data/exampleStory';
 import { NewStoryModal } from '../dialogs/NewStoryModal';
 
@@ -27,37 +27,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
   const loadAll = async () => {
     setLoading(true);
     try {
-      const list = await db.getAllStories();
-      setStories(list);
+      setStories(await db.getAllStories());
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadAll();
-  }, []);
+  useEffect(() => { loadAll(); }, []);
 
   const handleDelete = async (id: string) => {
     await db.deleteStory(id);
     await loadAll();
   };
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const content = evt.target?.result as string;
-        const story = parseStoryJSON(content);
-        await db.saveStory(story);
-        await loadAll();
-      } catch (err) {
-        alert('Erreur lors de l’import : ' + (err as Error).message);
-      }
-    };
-    reader.readAsText(file);
+    try {
+      const imported = await parseStoryFile(file);
+      for (const story of imported) await db.saveStory(story);
+      await loadAll();
+    } catch (err) {
+      alert('Erreur lors de l’import : ' + (err as Error).message);
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const handleBackupAll = async () => {
+    if (stories.length === 0) return;
+    const full = await Promise.all(stories.map(async (s) => (await db.getStory(s.id))!));
+    await exportAllStoriesBackupZip(full.filter(Boolean));
   };
 
   const handleLoadExample = async () => {
@@ -85,17 +85,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
           </div>
           <div className="dash-actions">
             <button className="btn btn-ghost" onClick={handleLoadExample} title="Charger le récit d'exemple">
-              <BookOpen size={16} />
-              <span>Exemple</span>
+              <BookOpen size={16} /> <span>Exemple</span>
             </button>
-            <label className="btn btn-ghost" style={{ cursor: 'pointer' }}>
-              <Upload size={16} />
-              <span>Importer JSON</span>
-              <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
+            <button className="btn btn-ghost" onClick={handleBackupAll} title="Sauvegarder tout en archive ZIP" disabled={stories.length === 0}>
+              <Archive size={16} /> <span>Sauvegarder tout</span>
+            </button>
+            <label className="btn btn-ghost" style={{ cursor: 'pointer' }} title="Importer un fichier .json, .html ou archive .zip">
+              <Upload size={16} /> <span>Importer</span>
+              <input type="file" accept=".json,.html,.htm,.zip,application/json,text/html,application/zip" onChange={handleImport} style={{ display: 'none' }} />
             </label>
             <button className="btn btn-primary" onClick={() => setIsNewModalOpen(true)}>
-              <Plus size={16} />
-              <span>Nouvelle StoryMap</span>
+              <Plus size={16} /> <span>Nouvelle StoryMap</span>
             </button>
           </div>
         </div>
@@ -141,9 +141,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
         ) : (
           <div className="story-grid">
             <div className="story-card new-card" onClick={() => setIsNewModalOpen(true)}>
-              <div className="new-card-icon">
-                <Plus size={24} />
-              </div>
+              <div className="new-card-icon"><Plus size={24} /></div>
               <strong>Nouveau récit</strong>
               <span>Créer une nouvelle storymap</span>
             </div>
@@ -168,4 +166,3 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
     </div>
   );
 };
-

@@ -55,15 +55,15 @@ Preuve : tests de charges hostiles et inspection des mentions des artefacts.
 - [x] E01 Remplacer le lecteur HTML simplifié par un moteur partagé ou assemblé avec contrat testé.
 - [x] E02 Couvrir couches, marqueurs, étapes masquées, apparence, transitions et navigation.
 - [x] E03 Vérifier alignement MapLibre et comportement des médias image/audio/vidéo.
-- [ ] E04 Restaurer ZIP de site et ZIP de sauvegarde complète.
-- [ ] E05 Restaurer import HTML et ZIP avec images relatives et géodonnées.
+- [x] E04 Restaurer ZIP de site et ZIP de sauvegarde complète.
+- [x] E05 Restaurer import HTML et ZIP avec images relatives et géodonnées.
 - [x] E06 Tester JSON → réimport et comparaison sémantique.
-- [ ] E07 Tester HTML → contexte indépendant → réimport et comparaison.
-- [ ] E08 Tester ZIP → extraction → ouverture → réimport et comparaison.
-- [ ] E09 Tester archive de plusieurs projets et restauration complète.
-- [ ] E10 Tester file:// et serveur statique, CDN absent et fond indisponible.
+- [x] E07 Tester HTML → contexte indépendant → réimport et comparaison.
+- [x] E08 Tester ZIP → extraction → ouverture → réimport et comparaison.
+- [x] E09 Tester archive de plusieurs projets et restauration complète.
+- [x] E10 Tester file:// et serveur statique, CDN absent et fond indisponible.
 - [x] E11 Utiliser Blob/object URL pour gros exports et libérer les ressources.
-- [ ] E12 Automatiser ces contrôles et produire rapport P0 au commit testé.
+- [x] E12 Automatiser ces contrôles et produire rapport P0 au commit testé.
 Porte : aucun développement public des nouveaux modes avant réussite P0 ou dérogation explicite documentée.
 
 ## P1 — Landing, modes et document commun

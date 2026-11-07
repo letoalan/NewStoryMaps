@@ -2,8 +2,8 @@
  * StoryMap — Adaptateur de compatibilité historique (v1 / v2 / React)
  */
 
-import { StoryMap } from '../types/story';
-import { Step } from '../types/step';
+import type { StoryMap } from '../types/story';
+import type { Step } from '../types/step';
 
 export interface LegacyV2Exchange {
   format?: string;

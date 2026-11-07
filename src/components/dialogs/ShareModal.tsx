@@ -4,8 +4,13 @@
 
 import React, { useState } from 'react';
 import { useStory } from '../../context/StoryContext';
-import { exportStoryToJSON, exportStoryToLegacyV2JSON, exportStoryToStandaloneHTML } from '../../core/io';
-import { X, Copy, Check, Download, FileCode } from 'lucide-react';
+import {
+  exportStoryToJSON,
+  exportStoryToLegacyV2JSON,
+  exportStoryToStandaloneHTML,
+  exportStoryToSiteZip,
+} from '../../core/io';
+import { X, Copy, Check, Download, FileCode, Archive } from 'lucide-react';
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -15,6 +20,7 @@ interface ShareModalProps {
 export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose }) => {
   const { story } = useStory();
   const [copied, setCopied] = useState(false);
+  const [zipping, setZipping] = useState(false);
 
   if (!isOpen || !story) return null;
 
@@ -22,6 +28,15 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose }) => {
     await navigator.clipboard.writeText(JSON.stringify(story, null, 2));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExportZip = async () => {
+    try {
+      setZipping(true);
+      await exportStoryToSiteZip(story);
+    } finally {
+      setZipping(false);
+    }
   };
 
   return (
@@ -68,15 +83,19 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose }) => {
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <h3 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-              Page HTML autonome (Offline)
+              Publications autonomes
             </h3>
             <p style={{ fontSize: '12px', color: 'var(--text-2)', marginBottom: '8px' }}>
-              Génère un fichier HTML complet incluant vos récits et le visualiseur cartographique,
-              consultable directement sans serveur.
+              Fichiers consultables directement sans serveur ni dépendance.
             </p>
-            <button className="btn btn-primary" onClick={() => exportStoryToStandaloneHTML(story)}>
-              <FileCode size={16} /> Télécharger le HTML autonome
-            </button>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button className="btn btn-primary" onClick={() => exportStoryToStandaloneHTML(story)}>
+                <FileCode size={16} /> HTML autonome
+              </button>
+              <button className="btn btn-ghost" onClick={handleExportZip} disabled={zipping}>
+                <Archive size={16} /> {zipping ? 'Création...' : 'Site web ZIP'}
+              </button>
+            </div>
           </div>
 
           <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: 0 }} />
@@ -104,4 +123,3 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose }) => {
     </div>
   );
 };
-
