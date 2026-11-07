@@ -1,0 +1,118 @@
+/* ==========================================================================
+   StoryMap — système de design (Boîtes de Dialogue & Fenêtres Modales)
+   ========================================================================== */
+
+dialog.modal {
+    width: min(var(--modal-w, 540px), calc(100vw - 32px));
+    max-width: none;
+    max-height: calc(100vh - 48px);
+    padding: 0;
+    border: 0;
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+dialog.modal[open] {
+    display: flex;
+    flex-direction: column;
+    animation: modal-in .18s var(--ease);
+}
+
+dialog.modal::backdrop {
+    background: var(--overlay);
+    backdrop-filter: blur(2px);
+    animation: fade-in .18s ease;
+}
+
+.modal-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 18px 20px 10px;
+}
+
+.modal-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex: none;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.modal-icon.danger {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.modal-icon.warning {
+    background: var(--warning-soft);
+    color: var(--warning);
+}
+
+.modal-titles {
+    flex: 1;
+    min-width: 0;
+    padding-top: 2px;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.modal-subtitle {
+    margin: 3px 0 0;
+    color: var(--text-2);
+    font-size: 13px;
+}
+
+.modal-close {
+    margin: -4px -6px 0 0;
+}
+
+.modal-body {
+    padding: 8px 20px 20px;
+    overflow: auto;
+    line-height: 1.55;
+}
+
+.modal-body>p {
+    margin: 0 0 10px;
+    color: var(--text-2);
+}
+
+.modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface-2);
+}
+
+.modal-footer .spacer {
+    flex: 1;
+}
+
+@keyframes modal-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(.985);
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+}
+

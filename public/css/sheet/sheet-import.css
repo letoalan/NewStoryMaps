@@ -1,0 +1,79 @@
+/* ==========================================================================
+   StoryMap — tableur (Fenêtre d'Import & Rendu Adaptatif)
+   ========================================================================== */
+
+.sheet-import-group {
+    margin: 4px 0 8px;
+    color: var(--text-3);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.sheet-import-notes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.sheet-import-notes:empty {
+    display: none;
+}
+
+.places .sheet-import-notes .callout {
+    margin-top: 0;
+}
+
+.sheet-preview-coords {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-variant-numeric: tabular-nums;
+}
+
+.sheet-preview-coords.is-missing {
+    color: var(--warning);
+}
+
+.field-hint.is-warning {
+    color: var(--warning);
+}
+
+/* ---------- Petits écrans ---------- */
+
+@media (max-width: 720px) {
+    .tb-mode button span {
+        display: none;
+    }
+
+    .tb-mode button {
+        padding: 0 8px;
+    }
+
+    .sheet-toolbar {
+        padding: 8px;
+    }
+
+    .sheet-toolbar .btn:not(.btn-icon) .btn-label {
+        display: none;
+    }
+
+    .sheet-scroll {
+        margin: 0 8px;
+    }
+
+    .sheet-intro {
+        margin: 0 8px 8px;
+    }
+
+    .sheet-status {
+        padding: 4px 8px 6px;
+    }
+
+    .sheet-status-hint {
+        display: none;
+    }
+}
+

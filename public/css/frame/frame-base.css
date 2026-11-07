@@ -1,0 +1,147 @@
+/* ==========================================================================
+   StoryMap — cadre de rendu WYSIWYG de l'éditeur (Base & conteneur)
+   ========================================================================== */
+
+/* Cadre d'appareil : taille réelle (ex. 1440 × 900) mise à l'échelle.
+   La transformation en fait le bloc conteneur de la carte et de la
+   mini-carte (position fixe) ; container-type donne aux unités cqh la
+   hauteur de l'écran simulé. */
+.sm-frame.is-editing {
+    position: absolute;
+    left: 0;
+    top: 0;
+    overflow: hidden;
+    transform-origin: 0 0;
+    container-type: size;
+    background: #d9dde3;
+    color-scheme: light;
+    -webkit-font-smoothing: auto;
+    -moz-osx-font-smoothing: auto;
+}
+
+/* Le récit défile dans le cadre (dans la page publiée, c'est la page qui défile) */
+.sm-frame.is-editing .sm-story {
+    position: absolute;
+    inset: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.sm-frame.is-editing .sm-story::-webkit-scrollbar {
+    display: none;
+}
+
+/* Pied de page : affiché en bas de l'écran, comme à la fin de la storymap */
+.sm-frame.is-editing .sm-story.is-footer {
+    display: flex;
+    flex-direction: column;
+}
+
+.sm-frame.is-editing .sm-story.is-footer>.sm-footer {
+    margin-top: auto;
+}
+
+.sm-frame [data-ed],
+.sm-frame [data-ed] *,
+.sm-frame [data-ed]::before,
+.sm-frame [data-ed]::after {
+    box-sizing: border-box;
+}
+
+.sm-frame ::selection {
+    background: rgba(56, 150, 230, .38);
+}
+
+/* ==========================================================================
+   Aides d'édition (présentes uniquement dans l'éditeur)
+   ========================================================================== */
+
+/* L'espace sous le panneau n'est pas nécessaire dans l'éditeur (un seul chapitre affiché) */
+.sm-frame.is-editing .step {
+    padding-bottom: 12cqh;
+}
+
+/* Chapitre : panneau centré verticalement, comme dans la storymap publiée quand
+   le lecteur y arrive (navigation, lien direct) ; en haut s'il est plus haut que l'écran */
+.sm-frame.is-editing .sm-story.is-chapter>.sm-features {
+    display: flex;
+    flex-direction: column;
+    min-height: 100cqh;
+    padding: 0;
+}
+
+.sm-frame.is-editing .sm-story.is-chapter .step {
+    margin-top: auto;
+    margin-bottom: auto;
+    padding: 5cqh 0;
+}
+
+.sm-frame .step>.sm-panel {
+    position: relative;
+}
+
+/* Zones éditables */
+.sm-frame [contenteditable] {
+    outline: none;
+    border-radius: 3px;
+    cursor: text;
+    transition: box-shadow .12s;
+    -webkit-user-modify: read-write;
+}
+
+.sm-frame [contenteditable]:hover {
+    box-shadow: 0 0 0 1px rgba(56, 169, 222, .55), 0 0 0 4px rgba(56, 169, 222, .12);
+}
+
+.sm-frame [contenteditable]:focus {
+    box-shadow: 0 0 0 1.5px #38a9de, 0 0 0 5px rgba(56, 169, 222, .22);
+}
+
+.sm-frame [contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    opacity: .5;
+    font-style: italic;
+    pointer-events: none;
+}
+
+/* Zones de texte : cliquables même vides */
+.sm-frame .sm-desc {
+    min-height: 25px;
+}
+
+.sm-frame .sm-desc p:first-child {
+    margin-top: 0;
+}
+
+.sm-frame .sm-footer .sm-footer-text {
+    min-height: 25px;
+}
+
+.sm-frame .sm-footer .sm-footer-text:empty,
+.sm-frame .sm-header [contenteditable]:empty {
+    min-width: 40px;
+}
+
+/* Pied de page / en-tête vides : visibles uniquement pour l'édition */
+.sm-frame .sm-header.is-empty,
+.sm-frame .sm-footer.is-empty {
+    opacity: .72;
+    outline: 1.5px dashed rgba(56, 169, 222, .8);
+    outline-offset: -6px;
+}
+
+.sm-frame .ed-empty-note {
+    display: none;
+    padding: 0 0 10px;
+    font: 500 12px/1.4 Inter, system-ui, sans-serif;
+    font-style: italic;
+    text-align: center;
+    opacity: .75;
+    pointer-events: none;
+}
+
+.sm-frame .is-empty>.ed-empty-note {
+    display: block;
+}
+

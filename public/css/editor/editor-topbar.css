@@ -1,0 +1,172 @@
+/* ==========================================================================
+   StoryMap — éditeur (Disposition & Barre Supérieure)
+   ========================================================================== */
+
+.app-loading {
+    height: 100%;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 16px;
+    color: var(--text-2);
+}
+
+.app-loading-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ---------- Disposition ---------- */
+
+.editor {
+    --outline-w: 268px;
+    --inspector-w: 336px;
+    display: grid;
+    grid-template-rows: var(--topbar-h) minmax(0, 1fr);
+    grid-template-columns: var(--outline-w) minmax(0, 1fr) var(--inspector-w);
+    grid-template-areas: "top top top" "outline canvas inspector";
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    background: var(--bg);
+    transition: grid-template-columns .22s var(--ease);
+}
+
+.editor.no-outline {
+    --outline-w: 0px;
+}
+
+.editor.no-inspector {
+    --inspector-w: 0px;
+}
+
+.editor.no-outline .outline,
+.editor.no-inspector .inspector {
+    visibility: hidden;
+}
+
+@media (max-width: 1280px) {
+    .editor {
+        --outline-w: 236px;
+        --inspector-w: 304px;
+    }
+}
+
+/* ---------- Barre supérieure ---------- */
+
+.topbar {
+    grid-area: top;
+    position: relative;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 0 10px 0 8px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.tb-left,
+.tb-right,
+.tb-center {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.tb-right {
+    justify-content: flex-end;
+}
+
+.tb-center {
+    gap: 2px;
+}
+
+.tb-sep {
+    width: 1px;
+    height: 20px;
+    margin: 0 6px;
+    background: var(--border);
+}
+
+.tb-logo {
+    display: inline-flex;
+    margin: 0 4px 0 0;
+}
+
+.tb-titlebox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+.tb-title {
+    min-width: 60px;
+    max-width: 420px;
+    flex: 0 1 auto;
+    width: 100%;
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid transparent;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--text);
+    font: 600 14.5px var(--font);
+    text-overflow: ellipsis;
+    transition: border-color .12s, background-color .12s, box-shadow .12s;
+}
+
+.tb-title:hover {
+    background: var(--surface-3);
+}
+
+.tb-title:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--surface);
+    box-shadow: var(--focus-ring);
+}
+
+.save-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    height: 26px;
+    padding: 0 9px 0 7px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-3);
+    font: 500 12px var(--font);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.save-status:hover {
+    background: var(--surface-3);
+    color: var(--text-2);
+}
+
+.save-status.saved .icon {
+    color: var(--success);
+}
+
+.save-status.error {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.save-status .dot {
+    width: 7px;
+    height: 7px;
+    margin: 0 2px;
+    border-radius: 50%;
+    background: var(--warning);
+}
+

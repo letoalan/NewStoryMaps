@@ -1,0 +1,94 @@
+/* ==========================================================================
+   StoryMap — système de design (Jetons de conception / Tokens)
+   ========================================================================== */
+
+:root {
+    color-scheme: light;
+    --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --mono: ui-monospace, 'Cascadia Code', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+
+    --bg: #f3f4f7;
+    --surface: #ffffff;
+    --surface-2: #f7f8fa;
+    --surface-3: #eef0f4;
+    --surface-hover: #f2f4f7;
+    --border: #e2e5eb;
+    --border-strong: #ccd2db;
+    --text: #161b25;
+    --text-2: #4d5667;
+    --text-3: #858e9e;
+
+    --accent: #0b7fb0;
+    --accent-hover: #096d98;
+    --accent-active: #075b80;
+    --accent-soft: #e5f2f8;
+    --accent-soft-2: #cde6f2;
+    --accent-contrast: #ffffff;
+    --focus-ring: 0 0 0 3px rgba(11, 127, 176, .28);
+
+    --danger: #d13a3a;
+    --danger-hover: #b52f2f;
+    --danger-soft: #fcebeb;
+    --warning: #a86400;
+    --warning-soft: #fff3dc;
+    --success: #1a8652;
+    --success-soft: #e2f4eb;
+
+    --canvas: #e4e7ec;
+    --canvas-dot: #d0d5dd;
+    --overlay: rgba(14, 19, 28, .48);
+
+    --shadow-xs: 0 1px 2px rgba(16, 24, 40, .05);
+    --shadow-sm: 0 1px 3px rgba(16, 24, 40, .09), 0 1px 2px rgba(16, 24, 40, .05);
+    --shadow: 0 8px 20px -6px rgba(16, 24, 40, .16), 0 2px 6px -2px rgba(16, 24, 40, .07);
+    --shadow-lg: 0 28px 56px -14px rgba(16, 24, 40, .3), 0 6px 16px -4px rgba(16, 24, 40, .1);
+
+    --r-xs: 4px;
+    --r-sm: 6px;
+    --r: 8px;
+    --r-lg: 12px;
+    --r-xl: 16px;
+
+    --topbar-h: 54px;
+    --ease: cubic-bezier(.2, .7, .2, 1);
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f1216;
+    --surface: #181c22;
+    --surface-2: #1e232a;
+    --surface-3: #262c34;
+    --surface-hover: #222830;
+    --border: #2b313a;
+    --border-strong: #3a424e;
+    --text: #e7eaef;
+    --text-2: #a8b0bc;
+    --text-3: #717b8a;
+
+    --accent: #3aa9d9;
+    --accent-hover: #58b8e2;
+    --accent-active: #72c4e8;
+    --accent-soft: #13303d;
+    --accent-soft-2: #1a3e50;
+    --accent-contrast: #051218;
+    --focus-ring: 0 0 0 3px rgba(58, 169, 217, .35);
+
+    --danger: #ee6767;
+    --danger-hover: #f38080;
+    --danger-soft: #3a1b1e;
+    --warning: #e2a647;
+    --warning-soft: #372a13;
+    --success: #43c38a;
+    --success-soft: #15301f;
+
+    --canvas: #0b0d10;
+    --canvas-dot: #1d2229;
+    --overlay: rgba(0, 0, 0, .62);
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, .3);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, .4), 0 1px 2px rgba(0, 0, 0, .3);
+    --shadow: 0 8px 22px -6px rgba(0, 0, 0, .55), 0 2px 6px -2px rgba(0, 0, 0, .35);
+    --shadow-lg: 0 28px 60px -12px rgba(0, 0, 0, .7), 0 6px 16px -4px rgba(0, 0, 0, .4);
+}
+

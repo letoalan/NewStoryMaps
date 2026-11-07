@@ -1,0 +1,166 @@
+/* ==========================================================================
+   StoryMap — tableur (Tableau, En-têtes & Redimensionnement)
+   ========================================================================== */
+
+.sheet-scroll {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    margin: 0 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    background: var(--surface);
+    box-shadow: var(--shadow-xs);
+}
+
+.sheet.is-dropping .sheet-scroll {
+    box-shadow: 0 0 0 2px var(--accent);
+}
+
+.sheet-table {
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+    outline: none;
+}
+
+.sheet-table th,
+.sheet-table td {
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.sheet-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    height: 36px;
+    padding: 0 10px;
+    overflow: hidden;
+    background: var(--surface-2);
+    color: var(--text-2);
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    user-select: none;
+}
+
+.sheet-table thead th.is-inrange {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.sheet-th .hint-icon {
+    margin-left: 5px;
+    color: var(--text-3);
+    vertical-align: -2px;
+    cursor: help;
+}
+
+.sheet-corner,
+.sheet-rowhead {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--surface-2);
+}
+
+.sheet-table thead .sheet-corner {
+    z-index: 4;
+}
+
+/* Poignée de largeur des colonnes */
+.sheet-resize {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+}
+
+.sheet-resize::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    right: 3px;
+    width: 2px;
+    border-radius: 2px;
+    background: transparent;
+}
+
+.sheet-th:hover .sheet-resize::after {
+    background: var(--border-strong);
+}
+
+.sheet.is-resizing,
+.sheet.is-resizing * {
+    cursor: col-resize !important;
+    user-select: none;
+}
+
+/* Numéros de ligne */
+.sheet-rowhead {
+    padding: 0 22px 0 14px;
+    color: var(--text-3);
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.sheet-rowhead.is-inrange {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.sheet-grip {
+    position: absolute;
+    top: 50%;
+    left: 2px;
+    display: grid;
+    color: var(--text-3);
+    opacity: 0;
+    cursor: grab;
+    transform: translateY(-50%);
+}
+
+.sheet-rowmenu {
+    position: absolute;
+    top: 50%;
+    right: 1px;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-2);
+    opacity: 0;
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+
+.sheet-row:hover .sheet-grip {
+    opacity: .8;
+}
+
+.sheet-row:hover .sheet-rowmenu,
+.sheet-rowmenu[aria-expanded="true"] {
+    opacity: 1;
+}
+
+.sheet-rowmenu:hover {
+    background: var(--surface-3);
+    color: var(--text);
+}
+

@@ -1,0 +1,132 @@
+/* ==========================================================================
+   StoryMap — éditeur (Panneaux Latéraux & Éléments du Plan)
+   ========================================================================== */
+
+.outline,
+.inspector {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--surface);
+}
+
+.outline {
+    grid-area: outline;
+    border-right: 1px solid var(--border);
+}
+
+.inspector {
+    grid-area: inspector;
+    border-left: 1px solid var(--border);
+}
+
+.panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 46px;
+    padding: 0 8px 0 16px;
+    flex: none;
+}
+
+.panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* ---------- Plan ---------- */
+
+.ol-list {
+    position: relative;
+    flex: 1;
+    padding: 2px 8px 12px;
+    outline: none;
+}
+
+.ol-section-label {
+    margin: 12px 8px 6px;
+    color: var(--text-3);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.ol-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 54px;
+    margin-bottom: 2px;
+    padding: 7px 6px 7px 4px;
+    border: 1px solid transparent;
+    border-radius: var(--r);
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+    transition: background-color .1s, border-color .1s;
+}
+
+.ol-item:hover {
+    background: var(--surface-3);
+}
+
+.ol-item:focus-visible {
+    box-shadow: var(--focus-ring);
+}
+
+.ol-item[aria-selected="true"] {
+    border-color: var(--accent-soft-2);
+    background: var(--accent-soft);
+}
+
+.ol-item.dragging {
+    opacity: .4;
+}
+
+.ol-special {
+    min-height: 46px;
+    padding-left: 8px;
+}
+
+.ol-grip {
+    display: grid;
+    place-items: center;
+    width: 14px;
+    flex: none;
+    color: var(--text-3);
+    opacity: 0;
+    cursor: grab;
+    transition: opacity .1s;
+}
+
+.ol-item:hover .ol-grip {
+    opacity: .8;
+}
+
+.ol-num {
+    width: 18px;
+    flex: none;
+    color: var(--text-3);
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
+.ol-item[aria-selected="true"] .ol-num {
+    color: var(--accent);
+}
+
+.ol-thumb {
+    display: block;
+    width: 46px;
+}
+

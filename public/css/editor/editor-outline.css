@@ -1,0 +1,116 @@
+/* ==========================================================================
+   StoryMap — éditeur (Vignettes, Métadonnées du Plan & Drag-Drop)
+   ========================================================================== */
+
+.ol-thumb {
+    height: 34px;
+    flex: none;
+    border-radius: 5px;
+    background: var(--surface-3);
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .06);
+}
+
+.ol-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ol-thumb-icon {
+    display: grid;
+    place-items: center;
+    color: var(--text-3);
+}
+
+.ol-thumb-icon.warn {
+    color: var(--warning);
+}
+
+.ol-special .ol-thumb {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+}
+
+.ol-item[aria-selected="true"] .ol-thumb-icon {
+    background: var(--surface);
+    color: var(--accent);
+}
+
+.ol-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.ol-title {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.ol-title.untitled {
+    color: var(--text-3);
+    font-style: italic;
+}
+
+.ol-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    color: var(--text-3);
+    font-size: 11.5px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.ol-flags {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.ol-flags .warn {
+    color: var(--warning);
+}
+
+.ol-more {
+    flex: none;
+    opacity: 0;
+}
+
+.ol-item:hover .ol-more,
+.ol-item[aria-selected="true"] .ol-more,
+.ol-more[aria-expanded="true"] {
+    opacity: 1;
+}
+
+.ol-drop-indicator {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    height: 3px;
+    border-radius: 3px;
+    background: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.ol-foot {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px 12px;
+    border-top: 1px solid var(--border);
+}
+

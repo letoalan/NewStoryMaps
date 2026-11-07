@@ -1,0 +1,150 @@
+/* ==========================================================================
+   StoryMap — éditeur (Barre HUD de la Carte & Boussole)
+   ========================================================================== */
+
+.map-hud {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex: none;
+    flex-wrap: wrap;
+    min-height: 54px;
+    padding: 6px 14px 12px;
+}
+
+.hud-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 36px;
+    padding: 0 4px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+}
+
+.hud-info {
+    gap: 8px;
+    padding: 0 12px 0 11px;
+    color: var(--text-2);
+    font-size: 12px;
+}
+
+.hud-info>.icon {
+    color: var(--accent);
+}
+
+.hud-label {
+    white-space: nowrap;
+}
+
+.hud-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 0;
+    overflow: hidden;
+    color: var(--success);
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    transition: max-width .3s var(--ease), opacity .3s;
+}
+
+.hud-status.show {
+    max-width: 180px;
+    opacity: 1;
+}
+
+.hud-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-2);
+    font: 600 12px var(--font);
+    cursor: pointer;
+}
+
+.hud-btn:hover {
+    background: var(--surface-3);
+    color: var(--text);
+}
+
+.hud-btn.on {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.hud-text {
+    min-width: 34px;
+}
+
+.hud-play {
+    padding: 0 10px;
+}
+
+.hud-value {
+    min-width: 36px;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
+.hud-compass {
+    display: inline-flex;
+    color: var(--danger);
+    transition: transform .1s linear;
+}
+
+/* Adaptation à la largeur réelle du canevas */
+.canvas {
+    container-type: inline-size;
+    container-name: canvas;
+}
+
+@container canvas (max-width: 900px) {
+    .hud-label {
+        display: none;
+    }
+
+    .canvas-label .subtle {
+        display: none;
+    }
+}
+
+@container canvas (max-width: 700px) {
+    .hud-play span {
+        display: none;
+    }
+
+    .device-btn .subtle {
+        display: none;
+    }
+
+    .canvas-label {
+        display: none;
+    }
+}
+
+@container canvas (max-width: 520px) {
+    .device-btn span {
+        display: none;
+    }
+
+    .geo {
+        max-width: none;
+        flex: 1;
+    }
+}
+

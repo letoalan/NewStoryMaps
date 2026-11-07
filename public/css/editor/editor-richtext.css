@@ -1,0 +1,96 @@
+/* ==========================================================================
+   StoryMap — éditeur (Barre de Mise en Forme Flottante)
+   ========================================================================== */
+
+.rt-toolbar {
+    position: fixed;
+    z-index: 60;
+    display: none;
+    align-items: center;
+    gap: 1px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
+}
+
+.rt-toolbar.show {
+    display: flex;
+    animation: pop-in .12s var(--ease);
+}
+
+.rt-btn {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+}
+
+.rt-btn:hover {
+    background: var(--surface-3);
+    color: var(--text);
+}
+
+.rt-btn.on {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.rt-sep {
+    width: 1px;
+    height: 18px;
+    margin: 0 3px;
+    background: var(--border);
+}
+
+.rt-color-menu {
+    min-width: 0;
+    padding: 8px;
+}
+
+.rt-colors {
+    display: grid;
+    grid-template-columns: repeat(6, 24px);
+    gap: 6px;
+}
+
+.rt-colors button:not(.rt-color-reset) {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 2px solid var(--surface);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px var(--border-strong);
+    cursor: pointer;
+}
+
+.rt-colors button:not(.rt-color-reset):hover {
+    transform: scale(1.1);
+}
+
+.rt-color-reset {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 28px;
+    margin-top: 2px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface-2);
+    color: var(--text-2);
+    font: 500 12px var(--font);
+    cursor: pointer;
+}
+
+.rt-color-reset:hover {
+    background: var(--surface-3);
+}
+

@@ -1,0 +1,78 @@
+/* ==========================================================================
+   StoryMap — tableur (Mode tableur & Barre d'outils)
+   ========================================================================== */
+
+.editor.mode-sheet {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "top" "sheet";
+}
+
+.editor.mode-sheet .outline,
+.editor.mode-sheet .canvas,
+.editor.mode-sheet .inspector,
+.editor.mode-sheet .tb-visual {
+    display: none;
+}
+
+.sheet {
+    grid-area: sheet;
+    display: none;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: var(--bg);
+}
+
+.editor.mode-sheet .sheet {
+    display: flex;
+}
+
+.tb-mode {
+    flex: none;
+}
+
+.tb-mode button {
+    padding: 0 10px;
+}
+
+/* ---------- Barre d'outils ---------- */
+
+.sheet-toolbar {
+    display: flex;
+    flex: none;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-height: 54px;
+    padding: 8px 16px;
+}
+
+.sheet-toolbar .spacer {
+    flex: 1;
+}
+
+.sheet-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 8px 0 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.sheet-title>.icon {
+    color: var(--accent);
+}
+
+.sheet-intro {
+    flex: none;
+    margin: 0 16px 10px;
+}
+
+.sheet-intro-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+

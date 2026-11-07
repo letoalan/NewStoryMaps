@@ -1,0 +1,42 @@
+/* ==========================================================================
+   StoryMap — tableau de bord (Règles Responsives)
+   ========================================================================== */
+
+@media (max-width: 860px) {
+    .dash-empty {
+        grid-template-columns: 1fr;
+        padding: 26px;
+    }
+
+    .dash-empty-art {
+        display: none;
+    }
+
+    .app-header {
+        padding: 0 16px;
+    }
+
+    .dash-main {
+        padding: 24px 16px 40px;
+    }
+
+    .brand-tag {
+        display: none;
+    }
+}
+
+@media (max-width: 560px) {
+    .choice-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dash-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .dash-toolbar .input-affix {
+        max-width: none;
+        flex-basis: 100%;
+    }
+}
+

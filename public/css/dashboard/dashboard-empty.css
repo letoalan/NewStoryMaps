@@ -1,0 +1,147 @@
+/* ==========================================================================
+   StoryMap — tableau de bord (État Vide, Dépôt de Fichiers & Pied)
+   ========================================================================== */
+
+.dash-empty {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 40px;
+    align-items: center;
+    padding: 40px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    background: var(--surface);
+    box-shadow: var(--shadow-xs);
+}
+
+.dash-empty h2 {
+    margin: 0 0 10px;
+    font-size: 22px;
+    letter-spacing: -.015em;
+}
+
+.dash-empty p {
+    margin: 0 0 18px;
+    color: var(--text-2);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.dash-empty .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 0 24px;
+    padding: 0;
+    list-style: none;
+}
+
+.dash-empty .steps li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    color: var(--text-2);
+}
+
+.dash-empty .steps .num {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.dash-empty .empty-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.dash-empty-art {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.dash-empty-art svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.no-results {
+    padding: 50px 20px;
+    color: var(--text-3);
+    text-align: center;
+}
+
+/* ---------- Pied ---------- */
+
+.dash-footer {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 36px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    color: var(--text-3);
+    font-size: 12px;
+}
+
+.dash-footer .item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dash-footer .spacer {
+    flex: 1;
+}
+
+/* ---------- Dépôt de fichiers ---------- */
+
+.drop-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    display: grid;
+    place-items: center;
+    background: color-mix(in srgb, var(--accent) 16%, rgba(10, 14, 20, .5));
+    backdrop-filter: blur(3px);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .15s;
+}
+
+.drop-overlay.show {
+    opacity: 1;
+}
+
+.drop-overlay .drop-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 34px 48px;
+    border: 2px dashed rgba(255, 255, 255, .8);
+    border-radius: var(--r-xl);
+    background: rgba(12, 18, 26, .55);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.drop-overlay .drop-box span {
+    font-size: 13px;
+    font-weight: 400;
+    opacity: .85;
+}
+

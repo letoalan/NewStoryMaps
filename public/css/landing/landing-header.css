@@ -1,0 +1,137 @@
+/* ==========================================================================
+   StoryMap — page de présentation (Base, Header & Navigation)
+   ========================================================================== */
+
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 84px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+}
+
+body.landing {
+    height: auto;
+    min-height: 100%;
+    background: var(--bg);
+    font-size: 17px;
+    line-height: 1.6;
+}
+
+/* Remise à zéro sans poids (:where) */
+:where(.landing) :where(h1, h2, h3, p, ul, ol) {
+    margin: 0;
+}
+
+:where(.landing) :where(ul, ol) {
+    padding: 0;
+    list-style: none;
+}
+
+.lp-wrap {
+    width: 100%;
+    max-width: 1128px;
+    margin: 0 auto;
+}
+
+/* ---------- En-tête ---------- */
+
+.lp-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: saturate(1.4) blur(10px);
+}
+
+.lp-header-in {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    max-width: 1128px;
+    height: 64px;
+    margin: 0 auto;
+}
+
+.lp-brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.lp-brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.lp-brand-name {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+}
+
+.lp-brand-tag {
+    color: var(--text-3);
+    font-size: 12px;
+}
+
+.lp-nav {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.lp-nav a {
+    padding: 7px 12px;
+    border-radius: var(--r-sm);
+    color: var(--text-2);
+    font-size: 14.5px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color .12s, color .12s;
+}
+
+.lp-nav a:hover {
+    background: var(--surface-3);
+    color: var(--text);
+}
+
+.lp-nav a:focus-visible,
+.lp-brand:focus-visible {
+    outline: none;
+    border-radius: var(--r-sm);
+    box-shadow: var(--focus-ring);
+}
+
+.lp-btn-header {
+    --btn-h: 38px;
+    padding: 0 16px;
+    font-size: 14.5px;
+    font-weight: 600;
+    border-radius: var(--r);
+}
+
+/* Grands boutons de la page */
+.lp-btn {
+    --btn-h: 50px;
+    gap: 9px;
+    padding: 0 24px;
+    border-radius: 12px;
+    font-size: 16.5px;
+    font-weight: 600;
+}
+
+.lp-btn .icon .fill,
+.lp-btn .icon path {
+    fill: currentColor;
+    stroke: none;
+}
+

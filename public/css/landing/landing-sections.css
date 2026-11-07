@@ -1,0 +1,148 @@
+/* ==========================================================================
+   StoryMap — page de présentation (Sections, Cartes & Étapes)
+   ========================================================================== */
+
+.lp-section {
+    padding: 88px 24px;
+}
+
+.lp-alt {
+    border-block: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.lp-kicker {
+    color: var(--accent);
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+}
+
+.lp-section h2 {
+    max-width: 760px;
+    margin-top: 10px;
+    font-size: clamp(28px, 3.5vw, 40px);
+    font-weight: 800;
+    line-height: 1.14;
+    letter-spacing: -.028em;
+    text-wrap: balance;
+}
+
+.lp-sub {
+    max-width: 700px;
+    margin-top: 16px;
+    color: var(--text-2);
+    font-size: 18px;
+    text-wrap: pretty;
+}
+
+.lp-card {
+    padding: 28px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: var(--shadow-xs);
+}
+
+.lp-alt .lp-card {
+    background: var(--surface-2);
+}
+
+.lp-ico {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.lp-card h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -.015em;
+}
+
+.lp-num {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.lp-card p {
+    margin-top: 10px;
+    color: var(--text-2);
+    font-size: 16px;
+    line-height: 1.58;
+}
+
+.lp-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    margin-top: 44px;
+}
+
+.lp-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 26px;
+}
+
+.lp-tags li {
+    padding: 7px 15px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-2);
+    font-size: 14.5px;
+    font-weight: 500;
+}
+
+/* Partager : texte et liste */
+.lp-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+    align-items: center;
+    gap: 60px;
+}
+
+.lp-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 26px;
+}
+
+.lp-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 16.5px;
+    font-weight: 500;
+}
+
+.lp-list .icon {
+    margin-top: 4px;
+    padding: 3px;
+    border-radius: 50%;
+    background: var(--success-soft);
+    color: var(--success);
+    stroke-width: 3;
+    box-sizing: content-box;
+}

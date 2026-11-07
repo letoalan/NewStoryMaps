@@ -1,0 +1,125 @@
+/* ==========================================================================
+   StoryMap — système de design (Base, Réinitialisation & Défilement)
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 400 13px/1.45 var(--font);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+.app {
+    height: 100%;
+}
+
+::selection {
+    background: var(--accent-soft-2);
+}
+
+.icon {
+    display: inline-block;
+    flex: none;
+    vertical-align: middle;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.icon .fill {
+    fill: currentColor;
+    stroke: none;
+}
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.muted {
+    color: var(--text-2);
+}
+
+.subtle {
+    color: var(--text-3);
+}
+
+.mono {
+    font-family: var(--mono);
+}
+
+kbd,
+.kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border: 1px solid var(--border-strong);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background: var(--surface-2);
+    color: var(--text-2);
+    font: 500 11px/1 var(--font);
+}
+
+a.link,
+.link {
+    color: var(--accent);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+a.link:hover,
+.link:hover {
+    text-decoration: underline;
+}
+
+/* Barres de défilement discrètes */
+.scroll {
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+}
+
+.scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.scroll::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 10px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+}
+
+.scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+

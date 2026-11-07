@@ -1,0 +1,177 @@
+/* ==========================================================================
+   StoryMap — cadre de rendu WYSIWYG de l'éditeur (Outils & Interactions)
+   ========================================================================== */
+
+/* Image : zone d'ajout + outils */
+/* Le <img> reste « inline » comme dans la storymap publiée (même espacement vertical) */
+.sm-frame .ed-img-wrap {
+    position: relative;
+    display: block;
+}
+
+.sm-frame .ed-img-tools {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity .12s;
+    line-height: 1;
+}
+
+.sm-frame .ed-img-wrap:hover .ed-img-tools,
+.sm-frame .ed-img-wrap:focus-within .ed-img-tools {
+    opacity: 1;
+}
+
+.sm-frame .ed-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 11px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(18, 22, 30, .78);
+    color: #fff;
+    font: 600 12px/1 Inter, system-ui, sans-serif;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+}
+
+.sm-frame .ed-chip:hover {
+    background: rgba(18, 22, 30, .92);
+}
+
+.sm-frame .ed-chip.danger:hover {
+    background: #c93434;
+}
+
+.sm-frame .ed-chip .icon {
+    stroke: currentColor;
+}
+
+.sm-frame .ed-img-add {
+    display: none;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 8px;
+    width: 100%;
+    min-height: 58px;
+    padding: 8px 12px;
+    text-align: center;
+    margin: 4px 0 2px;
+    border: 1.5px dashed currentColor;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    opacity: .55;
+    font: 500 12.5px/1.2 Inter, system-ui, sans-serif;
+    cursor: pointer;
+    transition: opacity .12s, background-color .12s;
+}
+
+.sm-frame .sm-panel:hover .ed-img-add,
+.sm-frame .sm-panel:focus-within .ed-img-add,
+.sm-frame .sm-panel.is-dragover .ed-img-add,
+.sm-frame .sm-panel.is-empty .ed-img-add {
+    display: flex;
+}
+
+.sm-frame .ed-img-add:hover {
+    opacity: .9;
+    background: rgba(127, 127, 127, .12);
+}
+
+.sm-frame .ed-img-add small {
+    flex-basis: 100%;
+    font-size: 11px;
+    font-weight: 400;
+    opacity: .75;
+}
+
+.sm-frame .sm-panel.is-dragover {
+    box-shadow: 0 0 0 3px #38a9de, 0 0 0 7px rgba(56, 169, 222, .3);
+}
+
+.sm-frame .sm-panel.is-dragover .ed-img-add {
+    opacity: 1;
+    background: rgba(56, 169, 222, .15);
+}
+
+.sm-frame .ed-img-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 90px;
+    font: 500 12.5px Inter, system-ui, sans-serif;
+    opacity: .75;
+}
+
+/* Chapitre masqué : visible en fantôme dans l'éditeur */
+.sm-frame.is-editing .step.hidden {
+    visibility: visible;
+}
+
+.sm-frame .step.hidden>.sm-panel {
+    opacity: .38;
+    outline: 2px dashed currentColor;
+    outline-offset: -2px;
+}
+
+.sm-frame .ed-hidden-badge {
+    position: absolute;
+    top: -30px;
+    left: 0;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: #2a313b;
+    color: #fff;
+    font: 600 11.5px/1 Inter, system-ui, sans-serif;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.sm-frame .step.hidden .ed-hidden-badge {
+    display: inline-flex;
+}
+
+.sm-frame .step {
+    position: relative;
+}
+
+/* Chapitre 1 affiché sous la couverture (non éditable ici) */
+.sm-frame .step.is-ghost>.sm-panel {
+    cursor: pointer;
+}
+
+.sm-frame .step.is-ghost>.sm-panel:hover {
+    box-shadow: 0 0 0 2px rgba(56, 169, 222, .7);
+}
+
+/* Pendant la lecture d'une transition, masque les aides */
+.sm-frame.is-playing .ed-img-add,
+.sm-frame.is-playing .ed-img-tools {
+    display: none !important;
+}
+
+.sm-frame.is-playing [contenteditable]:hover {
+    box-shadow: none;
+}
+
+/* Légende et crédit de l'image : champs vides visibles au survol du panneau ou pendant la saisie */
+.sm-frame.is-editing .sm-panel:not(:hover):not(:focus-within) .sm-figcaption.is-empty,
+.sm-frame.is-editing .sm-panel:not(:hover):not(:focus-within) .sm-figcaption> :empty,
+.sm-frame.is-playing .sm-figcaption.is-empty,
+.sm-frame.is-playing .sm-figcaption> :empty {
+    display: none;
+}
+
