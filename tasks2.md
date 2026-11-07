@@ -5,64 +5,64 @@ Toutes les cases sont ouvertes ; présence de code ne vaut pas preuve de recette
 Ordre : P0 → P1 → P2 → P3 → P4/P5 → P6.
 
 ## P0-A — Baseline et construction
-- [ ] A01 Sauvegarder baseline historique et React ; coordonner l’agent wiki/refactoring.
-- [ ] A02 Recenser fonctions, formats et comportements historiques avec fixtures v1/v2/React.
-- [ ] A03 Exécuter npm ci puis npm run build ; consigner Node, navigateur et journaux.
-- [ ] A04 Corriger types, dépendances, worker et écarts documentaires React 18/19.
-- [ ] A05 Inspecter dist et supprimer le risque de collision entre les deux index.
-- [ ] A06 Définir landing, ateliers et accès de secours à l’application historique.
-- [ ] A07 Tester sous-chemin GitHub Pages, liens directs et rechargement.
-- [ ] A08 Configurer CI avec typecheck, lint et tests adaptés, sans annoncer de commande inexistante.
-- [ ] A09 Ajouter contrôle 199 lignes et exemptions explicites ; inclure le périmètre historique réel.
+- [x] A01 Sauvegarder baseline historique et React ; coordonner l’agent wiki/refactoring.
+- [x] A02 Recenser fonctions, formats et comportements historiques avec fixtures v1/v2/React.
+- [x] A03 Exécuter npm ci puis npm run build ; consigner Node, navigateur et journaux.
+- [x] A04 Corriger types, dépendances, worker et écarts documentaires React 18/19.
+- [x] A05 Inspecter dist et supprimer le risque de collision entre les deux index.
+- [x] A06 Définir landing, ateliers et accès de secours à l’application historique.
+- [x] A07 Tester sous-chemin GitHub Pages, liens directs et rechargement.
+- [x] A08 Configurer CI avec typecheck, lint et tests adaptés, sans annoncer de commande inexistante.
+- [x] A09 Ajouter contrôle 199 lignes et exemptions explicites ; inclure le périmètre historique réel.
 Preuve : build reproductible et artefact ouvrable sous le chemin de déploiement cible.
 
 ## P0-B — Compatibilité et stockage
-- [ ] B01 Ajouter détecteurs des échanges historiques et du modèle React.
-- [ ] B02 Valider profondément données, caméras, références et médias.
-- [ ] B03 Adapter ancien format vers le modèle retenu avec rapport des incompatibilités.
-- [ ] B04 Garantir export v2 du mode 1 ou maintenir son parcours historique explicitement.
-- [ ] B05 Lire atelier-storymap et migrer par copie vers le stockage cible.
-- [ ] B06 Tester sauvegarde préalable, collisions, interruption et reprise idempotente.
-- [ ] B07 Ne jamais effacer automatiquement l’ancienne base ; fournir récupération/export.
-- [ ] B08 Documenter changement de domaine/origine et réimport manuel nécessaire.
-- [ ] B09 Conserver préférences et redirections historiques #/edit/.
-- [ ] B10 Refuser versions futures inconnues sans normalisation destructrice.
+- [x] B01 Ajouter détecteurs des échanges historiques et du modèle React.
+- [x] B02 Valider profondément données, caméras, références et médias.
+- [x] B03 Adapter ancien format vers le modèle retenu avec rapport des incompatibilités.
+- [x] B04 Garantir export v2 du mode 1 ou maintenir son parcours historique explicitement.
+- [x] B05 Lire atelier-storymap et migrer par copie vers le stockage cible.
+- [x] B06 Tester sauvegarde préalable, collisions, interruption et reprise idempotente.
+- [x] B07 Ne jamais effacer automatiquement l’ancienne base ; fournir récupération/export.
+- [x] B08 Documenter changement de domaine/origine et réimport manuel nécessaire.
+- [x] B09 Conserver préférences et redirections historiques #/edit/.
+- [x] B10 Refuser versions futures inconnues sans normalisation destructrice.
 Preuve : anciens projets complets retrouvés et aller-retour normalisé sans perte.
 
 ## P0-C — Sauvegarde, erreurs et historique
-- [ ] C01 Résoudre les écritures uniquement à transaction.oncomplete.
-- [ ] C02 Gérer abort, quota, accès refusé, base bloquée et versionchange.
-- [ ] C03 Ajouter états dirty/saving/saved/error et export de secours.
-- [ ] C04 Sérialiser les sauvegardes et rattacher confirmation à la version persistée.
-- [ ] C05 Flush contrôlé avant navigation/changement de récit ; avertissement avant sortie.
-- [ ] C06 Tester édition pendant sauvegarde et fermeture avant expiration du debounce.
-- [ ] C07 Restaurer détection multi-onglets et avertissements de conflits.
-- [ ] C08 Borne d’historique, regroupement de saisie et cohérence de sélection.
-- [ ] C09 Préserver undo natif des champs et supprimer les conflits de raccourcis.
+- [x] C01 Résoudre les écritures uniquement à transaction.oncomplete.
+- [x] C02 Gérer abort, quota, accès refusé, base bloquée et versionchange.
+- [x] C03 Ajouter états dirty/saving/saved/error et export de secours.
+- [x] C04 Sérialiser les sauvegardes et rattacher confirmation à la version persistée.
+- [x] C05 Flush contrôlé avant navigation/changement de récit ; avertissement avant sortie.
+- [x] C06 Tester édition pendant sauvegarde et fermeture avant expiration du debounce.
+- [x] C07 Restaurer détection multi-onglets et avertissements de conflits.
+- [x] C08 Borne d’historique, regroupement de saisie et cohérence de sélection.
+- [x] C09 Préserver undo natif des champs et supprimer les conflits de raccourcis.
 Preuve : aucun échec ne laisse une confirmation Enregistré et aucune écriture périmée n’écrase une plus récente.
 
 ## P0-D — Sécurité et licences
-- [ ] D01 Assainir HTML commun à l’éditeur, au lecteur et à l’export.
-- [ ] D02 Construire les attributs sans concaténation dangereuse et filtrer les URL.
-- [ ] D03 Tester XSS importée, attributs hostiles et fermeture script dans le JSON.
-- [ ] D04 Borner imports, ressources et décompression ZIP ; erreurs récupérables.
-- [ ] D05 Réintégrer avis de licence requis dans les artefacts publiés.
-- [ ] D06 Restaurer attributions des fonds, crédits et textes alternatifs.
-- [ ] D07 Corriger libellé Offline et documenter toutes les ressources réseau.
+- [x] D01 Assainir HTML commun à l’éditeur, au lecteur et à l’export.
+- [x] D02 Construire les attributs sans concaténation dangereuse et filtrer les URL.
+- [x] D03 Tester XSS importée, attributs hostiles et fermeture script dans le JSON.
+- [x] D04 Borner imports, ressources et décompression ZIP ; erreurs récupérables.
+- [x] D05 Réintégrer avis de licence requis dans les artefacts publiés.
+- [x] D06 Restaurer attributions des fonds, crédits et textes alternatifs.
+- [x] D07 Corriger libellé Offline et documenter toutes les ressources réseau.
 Preuve : tests de charges hostiles et inspection des mentions des artefacts.
 
 ## P0-E — Exports, parité et réimports
-- [ ] E01 Remplacer le lecteur HTML simplifié par un moteur partagé ou assemblé avec contrat testé.
-- [ ] E02 Couvrir couches, marqueurs, étapes masquées, apparence, transitions et navigation.
-- [ ] E03 Vérifier alignement MapLibre et comportement des médias image/audio/vidéo.
+- [x] E01 Remplacer le lecteur HTML simplifié par un moteur partagé ou assemblé avec contrat testé.
+- [x] E02 Couvrir couches, marqueurs, étapes masquées, apparence, transitions et navigation.
+- [x] E03 Vérifier alignement MapLibre et comportement des médias image/audio/vidéo.
 - [ ] E04 Restaurer ZIP de site et ZIP de sauvegarde complète.
 - [ ] E05 Restaurer import HTML et ZIP avec images relatives et géodonnées.
-- [ ] E06 Tester JSON → réimport et comparaison sémantique.
+- [x] E06 Tester JSON → réimport et comparaison sémantique.
 - [ ] E07 Tester HTML → contexte indépendant → réimport et comparaison.
 - [ ] E08 Tester ZIP → extraction → ouverture → réimport et comparaison.
 - [ ] E09 Tester archive de plusieurs projets et restauration complète.
 - [ ] E10 Tester file:// et serveur statique, CDN absent et fond indisponible.
-- [ ] E11 Utiliser Blob/object URL pour gros exports et libérer les ressources.
+- [x] E11 Utiliser Blob/object URL pour gros exports et libérer les ressources.
 - [ ] E12 Automatiser ces contrôles et produire rapport P0 au commit testé.
 Porte : aucun développement public des nouveaux modes avant réussite P0 ou dérogation explicite documentée.
 

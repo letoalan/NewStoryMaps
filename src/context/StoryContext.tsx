@@ -1,17 +1,20 @@
 /**
- * StoryMap — Contexte React pour l'état d'édition avec Undo/Redo
+ * StoryMap — Contexte React pour l'état d'édition avec Undo/Redo & Sauvegarde sérialisée
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { StoryMap } from '../types/story';
-import { StoryStep } from '../types/step';
+import { Step } from '../types/step';
 import { db } from '../core/db';
 import { createDefaultStep, createDefaultStory } from '../core/defaults';
+
+export type SaveStatus = 'saved' | 'saving' | 'dirty' | 'error';
 
 interface StoryContextType {
   story: StoryMap | null;
   activeStepIndex: number;
-  isSaving: boolean;
+  saveStatus: SaveStatus;
+  lastSaveError: string | null;
   canUndo: boolean;
   canRedo: boolean;
   undo: () => void;
@@ -20,11 +23,11 @@ interface StoryContextType {
   setActiveStepIndex: (index: number) => void;
   updateStory: (fields: Partial<StoryMap>) => void;
   updateStoryTitle: (title: string) => void;
-  updateStep: (index: number, step: Partial<StoryStep>) => void;
+  updateStep: (index: number, step: Partial<Step>) => void;
   addStep: () => void;
   deleteStep: (index: number) => void;
   reorderSteps: (startIndex: number, endIndex: number) => void;
-  saveCurrentStory: () => Promise<void>;
+  flushSave: () => Promise<void>;
   loadStory: (id: string) => Promise<void>;
   newStory: (customTitle?: string) => void;
 }
@@ -34,16 +37,21 @@ const StoryContext = createContext<StoryContextType | null>(null);
 export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [story, setStoryState] = useState<StoryMap | null>(null);
   const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
+  const [lastSaveError, setLastSaveError] = useState<string | null>(null);
 
   const historyRef = useRef<StoryMap[]>([]);
   const futureRef = useRef<StoryMap[]>([]);
+  const queueRef = useRef<Promise<void>>(Promise.resolve());
+  const latestStoryRef = useRef<StoryMap | null>(null);
+  latestStoryRef.current = story;
 
   const setStory = (newStory: StoryMap, trackHistory = true) => {
     if (trackHistory && story) {
       historyRef.current.push(story);
       futureRef.current = [];
     }
+    setSaveStatus('dirty');
     setStoryState(newStory);
   };
 
@@ -51,6 +59,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (historyRef.current.length === 0 || !story) return;
     const prev = historyRef.current.pop()!;
     futureRef.current.push(story);
+    setSaveStatus('dirty');
     setStoryState(prev);
   };
 
@@ -58,34 +67,39 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (futureRef.current.length === 0 || !story) return;
     const next = futureRef.current.pop()!;
     historyRef.current.push(story);
+    setSaveStatus('dirty');
     setStoryState(next);
   };
 
-  const saveCurrentStory = useCallback(async () => {
-    if (!story) return;
-    setIsSaving(true);
-    try {
-      await db.saveStory(story);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [story]);
+  const flushSave = useCallback(async () => {
+    const toSave = latestStoryRef.current;
+    if (!toSave) return;
+    setSaveStatus('saving');
+    queueRef.current = queueRef.current
+      .then(async () => {
+        await db.saveStory(toSave);
+        setSaveStatus('saved');
+        setLastSaveError(null);
+      })
+      .catch((err) => {
+        setSaveStatus('error');
+        setLastSaveError(err.message || 'Erreur de sauvegarde');
+      });
+    await queueRef.current;
+  }, []);
 
-  // Sauvegarde automatique temporisée
   useEffect(() => {
-    if (!story) return;
-    const timer = setTimeout(() => {
-      saveCurrentStory();
-    }, 1200);
+    if (!story || saveStatus !== 'dirty') return;
+    const timer = setTimeout(() => { flushSave(); }, 1200);
     return () => clearTimeout(timer);
-  }, [story, saveCurrentStory]);
+  }, [story, saveStatus, flushSave]);
 
-  // Raccourcis clavier Undo / Redo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const isTargetInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName);
+      if (isTargetInput) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-        if (e.shiftKey) redo();
-        else undo();
+        if (e.shiftKey) redo(); else undo();
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
         redo();
       }
@@ -95,23 +109,28 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const loadStory = async (id: string) => {
+    await flushSave();
     const loaded = await db.getStory(id);
     if (loaded) {
       historyRef.current = [];
       futureRef.current = [];
       setStoryState(loaded);
       setActiveStepIndex(0);
+      setSaveStatus('saved');
     }
   };
 
-  const newStory = (customTitle?: string) => {
+  const newStory = async (customTitle?: string) => {
+    await flushSave();
     const created = createDefaultStory();
     if (customTitle) created.title = customTitle;
     historyRef.current = [];
     futureRef.current = [];
     setStoryState(created);
     setActiveStepIndex(0);
-    db.saveStory(created);
+    setSaveStatus('saving');
+    await db.saveStory(created);
+    setSaveStatus('saved');
   };
 
   const updateStory = (fields: Partial<StoryMap>) => {
@@ -119,11 +138,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setStory({ ...story, ...fields, modified: Date.now() });
   };
 
-  const updateStoryTitle = (title: string) => {
-    updateStory({ title });
-  };
-
-  const updateStep = (index: number, updatedFields: Partial<StoryStep>) => {
+  const updateStep = (index: number, updatedFields: Partial<Step>) => {
     if (!story || !story.steps[index]) return;
     const steps = [...story.steps];
     steps[index] = { ...steps[index], ...updatedFields };
@@ -133,9 +148,8 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addStep = () => {
     if (!story) return;
     const newStepItem = createDefaultStep(story.steps.length + 1);
-    const steps = [...story.steps, newStepItem];
-    setStory({ ...story, steps, modified: Date.now() });
-    setActiveStepIndex(steps.length - 1);
+    setStory({ ...story, steps: [...story.steps, newStepItem], modified: Date.now() });
+    setActiveStepIndex(story.steps.length);
   };
 
   const deleteStep = (index: number) => {
@@ -159,24 +173,12 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <StoryContext.Provider
       value={{
-        story,
-        activeStepIndex,
-        isSaving,
+        story, activeStepIndex, saveStatus, lastSaveError,
         canUndo: historyRef.current.length > 0,
         canRedo: futureRef.current.length > 0,
-        undo,
-        redo,
-        setStory,
-        setActiveStepIndex,
-        updateStory,
-        updateStoryTitle,
-        updateStep,
-        addStep,
-        deleteStep,
-        reorderSteps,
-        saveCurrentStory,
-        loadStory,
-        newStory,
+        undo, redo, setStory, setActiveStepIndex, updateStory,
+        updateStoryTitle: (title: string) => updateStory({ title }),
+        updateStep, addStep, deleteStep, reorderSteps, flushSave, loadStory, newStory,
       }}
     >
       {children}

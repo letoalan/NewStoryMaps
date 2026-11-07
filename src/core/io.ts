@@ -4,36 +4,56 @@
 
 import { StoryMap } from '../types/story';
 import { generateStandaloneHTML } from './publish';
+import { convertLegacyToModern, convertModernToLegacyV2 } from './adapter';
 
 export function exportStoryToJSON(story: StoryMap): void {
-  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(story, null, 2));
-  downloadFile(dataStr, getFilename(story, 'storymap.json'));
+  const blob = new Blob([JSON.stringify(story, null, 2)], { type: 'application/json;charset=utf-8' });
+  downloadBlob(blob, getFilename(story, 'storymap.json'));
+}
+
+export function exportStoryToLegacyV2JSON(story: StoryMap): void {
+  const legacy = convertModernToLegacyV2(story);
+  const blob = new Blob([JSON.stringify(legacy, null, 2)], { type: 'application/json;charset=utf-8' });
+  downloadBlob(blob, getFilename(story, 'v2.storymap.json'));
 }
 
 export function exportStoryToStandaloneHTML(story: StoryMap): void {
   const html = generateStandaloneHTML(story);
-  const dataStr = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
-  downloadFile(dataStr, getFilename(story, 'html'));
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  downloadBlob(blob, getFilename(story, 'html'));
 }
 
 function getFilename(story: StoryMap, ext: string): string {
-  const slug = story.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'storymap';
+  const slug =
+    story.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') || 'storymap';
   return `${slug}.${ext}`;
 }
 
-function downloadFile(dataUrl: string, filename: string): void {
+function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
-  anchor.setAttribute('href', dataUrl);
-  anchor.setAttribute('download', filename);
+  anchor.href = url;
+  anchor.download = filename;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export function parseStoryJSON(jsonString: string): StoryMap {
-  const parsed = JSON.parse(jsonString);
-  if (!parsed.id || !parsed.title || !Array.isArray(parsed.steps)) {
-    throw new Error('Format de fichier StoryMap invalide');
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonString);
+  } catch {
+    throw new Error('Le fichier n’est pas un document JSON valide.');
   }
-  return parsed as StoryMap;
+
+  try {
+    return convertLegacyToModern(parsed);
+  } catch (err) {
+    throw new Error('Impossible de convertir ce document en StoryMap : ' + (err as Error).message);
+  }
 }

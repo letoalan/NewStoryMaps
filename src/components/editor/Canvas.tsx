@@ -2,22 +2,21 @@
  * StoryMap — Canevas de carte interactif MapLibre GL
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Map as MLMap, Marker } from 'maplibre-gl';
+import React, { useEffect, useRef } from 'react';
+import { Map as MLMap, Marker, GeoJSONSource } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useStory } from '../../context/StoryContext';
-import { Compass, Camera, ZoomIn, ZoomOut, Search, MapPin } from 'lucide-react';
-import { searchPlaces, GeoSearchResult } from '../../core/geocoder';
+import { Compass, Camera, ZoomIn, ZoomOut } from 'lucide-react';
 import { resolveMapStyle } from '../../types/map';
+import { createRouteGeoJSON } from '../../core/route';
+import { GeocoderSearch } from './GeocoderSearch';
+import { GeoSearchResult } from '../../core/geocoder';
 
 export const Canvas: React.FC = () => {
   const { story, activeStepIndex, updateStep } = useStory();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<GeoSearchResult[]>([]);
 
   const currentStep = story?.steps[activeStepIndex];
 
@@ -52,11 +51,12 @@ export const Canvas: React.FC = () => {
   // Synchronisation dynamique du style vectoriel ou satellite
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !story?.mapStyle) return;
-    map.setStyle(resolveMapStyle(story.mapStyle));
+    if (map && story?.mapStyle) {
+      map.setStyle(resolveMapStyle(story.mapStyle));
+    }
   }, [story?.mapStyle]);
 
-  // Synchronisation lors du changement d'étape
+  // Synchronisation de la caméra et du marqueur
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !currentStep) return;
@@ -71,7 +71,7 @@ export const Canvas: React.FC = () => {
     });
 
     if (markerRef.current) markerRef.current.remove();
-    const marker = new Marker({ color: '#0b7fb0', draggable: true })
+    const marker = new Marker({ color: story?.appearance.accentColor || '#0b7fb0', draggable: true })
       .setLngLat(currentStep.camera.center)
       .addTo(map);
 
@@ -83,7 +83,37 @@ export const Canvas: React.FC = () => {
     });
 
     markerRef.current = marker;
-  }, [activeStepIndex, currentStep?.camera]);
+  }, [activeStepIndex, currentStep?.camera, story?.appearance.accentColor]);
+
+  // Tracé GeoJSON de parcours reliant les étapes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !story) return;
+
+    const routeData = createRouteGeoJSON(story.steps);
+
+    const updateRoute = () => {
+      const src = map.getSource('story-route') as GeoJSONSource;
+      if (src) {
+        src.setData(routeData);
+      } else {
+        map.addSource('story-route', { type: 'geojson', data: routeData });
+        map.addLayer({
+          id: 'story-route-line',
+          type: 'line',
+          source: 'story-route',
+          paint: {
+            'line-color': story.appearance.accentColor || '#0b7fb0',
+            'line-width': 3,
+            'line-dasharray': [2, 2],
+          },
+        });
+      }
+    };
+
+    if (map.isStyleLoaded()) updateRoute();
+    else map.once('style.load', updateRoute);
+  }, [story?.steps, story?.mapStyle, story?.appearance.accentColor]);
 
   const handleCaptureView = () => {
     const map = mapRef.current;
@@ -100,31 +130,13 @@ export const Canvas: React.FC = () => {
     });
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    try {
-      const results = await searchPlaces(searchQuery);
-      setSearchResults(results);
-    } catch {
-      setSearchResults([]);
-    }
-  };
-
-  const handleSelectPlace = (place: GeoSearchResult) => {
+  const handleSelectPlace = (r: GeoSearchResult) => {
     const map = mapRef.current;
     if (!map) return;
-    map.flyTo({ center: [place.lng, place.lat], zoom: 12 });
+    map.flyTo({ center: [r.lng, r.lat], zoom: 13, essential: true });
     updateStep(activeStepIndex, {
-      camera: {
-        center: [place.lng, place.lat],
-        zoom: 12,
-        pitch: map.getPitch(),
-        bearing: map.getBearing(),
-      },
+      camera: { ...currentStep?.camera, center: [r.lng, r.lat], zoom: 13, pitch: 0, bearing: 0 },
     });
-    setSearchResults([]);
-    setSearchQuery('');
   };
 
   return (
@@ -134,32 +146,7 @@ export const Canvas: React.FC = () => {
           Étape <strong>{activeStepIndex + 1}</strong> : {currentStep?.title || 'Sans titre'}
         </span>
 
-        {/* Barre de recherche de lieu */}
-        <form onSubmit={handleSearch} style={{ position: 'relative', width: '260px' }}>
-          <div className="input-affix">
-            <Search size={14} className="icon" />
-            <input
-              type="text"
-              className="input input-sm"
-              placeholder="Chercher un lieu, une ville…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          {searchResults.length > 0 && (
-            <div className="geo-results open" style={{ top: '34px', width: '320px' }}>
-              {searchResults.map((r, i) => (
-                <div key={i} className="geo-item" onClick={() => handleSelectPlace(r)}>
-                  <MapPin size={14} className="icon" />
-                  <div className="geo-text">
-                    <div className="geo-label">{r.name}</div>
-                    <div className="geo-sub">{r.displayName}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </form>
+        <GeocoderSearch onSelectPlace={handleSelectPlace} />
 
         <div className="spacer" />
         <button className="btn btn-ghost btn-sm" onClick={handleCaptureView}>
@@ -171,7 +158,6 @@ export const Canvas: React.FC = () => {
       <div className="canvas-stage" style={{ position: 'relative', width: '100%', height: '100%' }}>
         <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
-        {/* Contrôles HUD de la carte */}
         <div style={{ position: 'absolute', bottom: '24px', right: '24px', display: 'flex', flexDirection: 'column', gap: '6px', zIndex: 10 }}>
           <button className="btn btn-ghost btn-icon" onClick={() => mapRef.current?.easeTo({ zoom: (mapRef.current?.getZoom() || 10) + 1 })}>
             <ZoomIn size={18} />

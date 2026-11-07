@@ -7,6 +7,7 @@ import { useStory } from '../../context/StoryContext';
 import {
   ArrowLeft,
   Check,
+  AlertCircle,
   Eye,
   Play,
   RotateCcw,
@@ -40,7 +41,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenShare,
   onOpenSettings,
 }) => {
-  const { story, updateStoryTitle, isSaving, undo, redo, canUndo, canRedo } = useStory();
+  const { story, updateStoryTitle, saveStatus, lastSaveError, undo, redo, canUndo, canRedo } = useStory();
 
   if (!story) return null;
 
@@ -59,17 +60,30 @@ export const TopBar: React.FC<TopBarProps> = ({
             placeholder="Titre de la storymap"
           />
         </div>
-        <div className={`save-status ${isSaving ? '' : 'saved'}`}>
-          {isSaving ? (
+        <div className={`save-status ${saveStatus}`}>
+          {saveStatus === 'saving' && (
             <>
               <span className="dot" />
               <span>Enregistrement…</span>
             </>
-          ) : (
+          )}
+          {saveStatus === 'dirty' && (
+            <>
+              <span className="dot" style={{ backgroundColor: 'var(--warning, #f59e0b)' }} />
+              <span>Modifié…</span>
+            </>
+          )}
+          {saveStatus === 'saved' && (
             <>
               <Check size={14} className="icon" />
               <span>Enregistré</span>
             </>
+          )}
+          {saveStatus === 'error' && (
+            <span style={{ color: 'var(--danger, #ef4444)', display: 'inline-flex', alignItems: 'center', gap: '4px' }} title={lastSaveError || 'Erreur'}>
+              <AlertCircle size={14} />
+              <span>Erreur sauvegarde</span>
+            </span>
           )}
         </div>
       </div>

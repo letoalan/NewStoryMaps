@@ -7,6 +7,8 @@ import { StoryMap } from '../types/story';
 export function generateStandaloneHTML(story: StoryMap): string {
   const storyJson = JSON.stringify(story).replace(/</g, '\\u003c');
   const title = story.title || 'StoryMap';
+  const accent = story.appearance?.accentColor || '#0b7fb0';
+  const isRight = story.appearance?.panelPosition === 'right';
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -23,13 +25,14 @@ export function generateStandaloneHTML(story: StoryMap): string {
         * { box-sizing: border-box; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #0f1216; }
         #map { position: absolute; inset: 0; width: 100%; height: 100%; }
-        .panel { position: absolute; top: 20px; left: 20px; bottom: 20px; width: min(420px, calc(100vw - 40px)); background: #ffffff; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 10; display: flex; flex-direction: column; overflow: hidden; }
+        .panel { position: absolute; top: 20px; ${isRight ? 'right: 20px; left: auto;' : 'left: 20px;'} bottom: 20px; width: min(420px, calc(100vw - 40px)); background: #ffffff; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 10; display: flex; flex-direction: column; overflow: hidden; }
         .panel-header { padding: 16px 20px; border-bottom: 1px solid #e2e5eb; }
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #e5f2f8; color: #0b7fb0; font-size: 11px; font-weight: 600; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #e5f2f8; color: ${accent}; font-size: 11px; font-weight: 600; }
         .panel-title { margin: 8px 0 0; font-size: 18px; font-weight: 700; color: #161b25; }
         .panel-body { flex: 1; padding: 20px; overflow-y: auto; font-size: 14px; line-height: 1.6; color: #4d5667; }
         .panel-body img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; }
         .panel-footer { padding: 12px 20px; border-top: 1px solid #e2e5eb; display: flex; align-items: center; justify-content: space-between; background: #f7f8fa; }
+        .panel-meta { padding: 6px 16px; font-size: 10.5px; color: #858e9e; border-top: 1px solid #e2e5eb; background: #fafbfc; }
         .btn { padding: 8px 14px; border: 1px solid #ccd2db; border-radius: 6px; background: #fff; cursor: pointer; font-weight: 600; font-size: 13px; }
         .btn:disabled { opacity: 0.4; cursor: default; }
     </style>
@@ -47,6 +50,7 @@ export function generateStandaloneHTML(story: StoryMap): string {
             <span id="step-count" style="font-size:12px;color:#858e9e"></span>
             <button class="btn" id="btn-next" onclick="nextStep()">Suivant</button>
         </div>
+        <div class="panel-meta">StoryMap (MIT) · Cartographie © OpenStreetMap, CARTO, Esri</div>
     </div>
 
     <script id="story-data" type="application/json">${storyJson}</script>
@@ -87,7 +91,23 @@ export function generateStandaloneHTML(story: StoryMap): string {
                 pitch: step.camera.pitch,
                 bearing: step.camera.bearing
             });
+            map.on('load', addRoute);
             renderStep();
+        }
+
+        function addRoute() {
+            const coords = story.steps.map(s => s.camera.center);
+            if (coords.length < 2) return;
+            map.addSource('route', {
+                type: 'geojson',
+                data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } }
+            });
+            map.addLayer({
+                id: 'route-line',
+                type: 'line',
+                source: 'route',
+                paint: { 'line-color': '${accent}', 'line-width': 3, 'line-dasharray': [2, 2] }
+            });
         }
 
         function renderStep() {
@@ -110,27 +130,22 @@ export function generateStandaloneHTML(story: StoryMap): string {
                     zoom: step.camera.zoom,
                     pitch: step.camera.pitch,
                     bearing: step.camera.bearing,
+                    essential: true,
                     duration: 1800
                 });
                 if (marker) marker.remove();
-                marker = new maplibregl.Marker({ color: '#0b7fb0' })
+                marker = new maplibregl.Marker({ color: '${accent}' })
                     .setLngLat(step.camera.center)
                     .addTo(map);
             }
         }
 
         function nextStep() {
-            if (currentIdx < story.steps.length - 1) {
-                currentIdx++;
-                renderStep();
-            }
+            if (currentIdx < story.steps.length - 1) { currentIdx++; renderStep(); }
         }
 
         function prevStep() {
-            if (currentIdx > 0) {
-                currentIdx--;
-                renderStep();
-            }
+            if (currentIdx > 0) { currentIdx--; renderStep(); }
         }
 
         window.addEventListener('DOMContentLoaded', initMap);
@@ -147,4 +162,3 @@ function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
-

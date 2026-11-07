@@ -47,6 +47,15 @@ export const Header: React.FC<HeaderProps> = ({ onNewStory, onGoHome, title }) =
         </button>
       )}
 
+      <a
+        href="./app.html"
+        className="btn btn-ghost btn-sm"
+        title="Accéder à l'ancienne version historique (secours)"
+        style={{ fontSize: '12px', color: 'var(--text-3)' }}
+      >
+        Version historique
+      </a>
+
       <button
         className="btn btn-ghost btn-icon"
         onClick={toggleTheme}

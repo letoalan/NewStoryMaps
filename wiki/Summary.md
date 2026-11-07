@@ -14,28 +14,32 @@ Ce document répertorie chaque fichier du projet StoryMap (conservé et nouvelle
 | [`src/types/map.ts`](file:///src/types/map.ts) | 36 | Styles cartographiques | [Documentation](file:///wiki/types/map-types.md) |
 | [`src/core/db.ts`](file:///src/core/db.ts) | 80 | Persistance IndexedDB | [Documentation](file:///wiki/core/db.md) |
 | [`src/core/defaults.ts`](file:///src/core/defaults.ts) | 49 | Fabriques de données | [Documentation](file:///wiki/core/defaults.md) |
-| [`src/core/io.ts`](file:///src/core/io.ts) | 45 | Import et export JSON/HTML | [Documentation](file:///wiki/core/io.md) |
-| [`src/core/publish.ts`](file:///src/core/publish.ts) | 137 | Générateur HTML autonome | [Documentation](file:///wiki/core/publish.md) |
+| [`src/core/io.ts`](file:///src/core/io.ts) | 55 | Import et export JSON/HTML/Blob | [Documentation](file:///wiki/core/io.md) |
+| [`src/core/adapter.ts`](file:///src/core/adapter.ts) | 160 | Pont de compatibilité v1/v2/React | [Documentation](file:///wiki/core/adapter.md) |
+| [`src/core/sanitize.ts`](file:///src/core/sanitize.ts) | 65 | Assainissement HTML sécurisé | [Documentation](file:///wiki/core/sanitize.md) |
+| [`src/core/publish.ts`](file:///src/core/publish.ts) | 170 | Générateur HTML autonome | [Documentation](file:///wiki/core/publish.md) |
 | [`src/core/geocoder.ts`](file:///src/core/geocoder.ts) | 38 | Recherche d'adresses Nominatim | [Documentation](file:///wiki/core/geocoder.md) |
 | [`src/core/exif.ts`](file:///src/core/exif.ts) | 95 | Extraction GPS EXIF JPEG | [Documentation](file:///wiki/core/exif.md) |
 | [`src/core/route.ts`](file:///src/core/route.ts) | 35 | Tracé GeoJSON des étapes | [Documentation](file:///wiki/core/route.md) |
 | [`src/data/exampleStory.ts`](file:///src/data/exampleStory.ts) | 143 | Récit de démonstration | [Documentation](file:///wiki/data/example-story.md) |
-| [`src/context/StoryContext.tsx`](file:///src/context/StoryContext.tsx) | 175 | Gestionnaire d'état & Undo/Redo | [Documentation](file:///wiki/context/story-context.md) |
-| [`src/components/common/Header.tsx`](file:///src/components/common/Header.tsx) | 51 | En-tête globale de navigation | [Documentation](file:///wiki/components/Header.md) |
+| [`src/context/StoryContext.tsx`](file:///src/context/StoryContext.tsx) | 193 | État, Undo/Redo & Sauvegarde | [Documentation](file:///wiki/context/story-context.md) |
+| [`src/components/common/Header.tsx`](file:///src/components/common/Header.tsx) | 70 | En-tête avec lien historique | [Documentation](file:///wiki/components/Header.md) |
 | [`src/components/dashboard/Dashboard.tsx`](file:///src/components/dashboard/Dashboard.tsx) | 165 | Tableau de bord des récits | [Documentation](file:///wiki/components/Dashboard.md) |
 | [`src/components/dashboard/StoryCard.tsx`](file:///src/components/dashboard/StoryCard.tsx) | 73 | Carte individuelle de récit | [Documentation](file:///wiki/components/StoryCard.md) |
 | [`src/components/editor/Editor.tsx`](file:///src/components/editor/Editor.tsx) | 100 | Agencement de l'éditeur | [Documentation](file:///wiki/components/Editor.md) |
-| [`src/components/editor/TopBar.tsx`](file:///src/components/editor/TopBar.tsx) | 135 | Barre supérieure d'édition | [Documentation](file:///wiki/components/TopBar.md) |
+| [`src/components/editor/TopBar.tsx`](file:///src/components/editor/TopBar.tsx) | 146 | Barre supérieure d'édition | [Documentation](file:///wiki/components/TopBar.md) |
 | [`src/components/editor/Outline.tsx`](file:///src/components/editor/Outline.tsx) | 85 | Plan et liste des étapes | [Documentation](file:///wiki/components/Outline.md) |
-| [`src/components/editor/Canvas.tsx`](file:///src/components/editor/Canvas.tsx) | 185 | Carte interactive MapLibre | [Documentation](file:///wiki/components/Canvas.md) |
+| [`src/components/editor/Canvas.tsx`](file:///src/components/editor/Canvas.tsx) | 170 | Carte interactive MapLibre | [Documentation](file:///wiki/components/Canvas.md) |
+| [`src/components/editor/GeocoderSearch.tsx`](file:///src/components/editor/GeocoderSearch.tsx) | 65 | Recherche de lieux Nominatim | [Documentation](file:///wiki/editor/geocoder-search.md) |
 | [`src/components/editor/Inspector.tsx`](file:///src/components/editor/Inspector.tsx) | 175 | Inspecteur de propriétés | [Documentation](file:///wiki/components/Inspector.md) |
 | [`src/components/editor/SheetView.tsx`](file:///src/components/editor/SheetView.tsx) | 170 | Mode Tableur d'étapes | [Documentation](file:///wiki/editor/sheet-view.md) |
 | [`src/components/editor/RichTextToolbar.tsx`](file:///src/components/editor/RichTextToolbar.tsx) | 60 | Formatage de texte rapide | [Documentation](file:///wiki/editor/richtext-toolbar.md) |
-| [`src/components/dialogs/StylePickerModal.tsx`](file:///src/components/dialogs/StylePickerModal.tsx) | 85 | Sélecteur de fonds de carte | [Documentation](file:///wiki/dialogs/dialogs-overview.md) |
-| [`src/components/dialogs/ShareModal.tsx`](file:///src/components/dialogs/ShareModal.tsx) | 100 | Partage & Exports | [Documentation](file:///wiki/dialogs/dialogs-overview.md) |
+| [`src/components/dialogs/StylePickerModal.tsx`](file:///src/components/dialogs/StylePickerModal.tsx) | 100 | Sélecteur de fonds de carte | [Documentation](file:///wiki/dialogs/dialogs-overview.md) |
+| [`src/components/dialogs/ShareModal.tsx`](file:///src/components/dialogs/ShareModal.tsx) | 107 | Partage & Exports v2/modernes | [Documentation](file:///wiki/dialogs/dialogs-overview.md) |
 | [`src/components/dialogs/NewStoryModal.tsx`](file:///src/components/dialogs/NewStoryModal.tsx) | 115 | Création de récit & modèles | [Documentation](file:///wiki/dialogs/dialogs-overview.md) |
 | [`src/components/dialogs/SettingsModal.tsx`](file:///src/components/dialogs/SettingsModal.tsx) | 125 | Paramètres & Thème du récit | [Documentation](file:///wiki/dialogs/settings-modal.md) |
-| [`src/components/player/Player.tsx`](file:///src/components/player/Player.tsx) | 175 | Lecteur immersif plein écran | [Documentation](file:///wiki/components/Player.md) |
+| [`src/components/player/Player.tsx`](file:///src/components/player/Player.tsx) | 150 | Lecteur immersif plein écran | [Documentation](file:///wiki/components/Player.md) |
+| [`src/components/player/PlayerNarrative.tsx`](file:///src/components/player/PlayerNarrative.tsx) | 85 | Panneau narratif sécurisé | [Documentation](file:///wiki/player/player-narrative.md) |
 
 ---
 

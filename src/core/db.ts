@@ -1,17 +1,20 @@
 /**
- * StoryMap — Service de persistance IndexedDB
+ * StoryMap — Service de persistance IndexedDB robuste et migration v1/v2
  */
 
 import { StoryMap, StoryListItem } from '../types/story';
+import { convertLegacyToModern } from './adapter';
 
 const DB_NAME = 'storymap-db';
 const DB_VERSION = 1;
 const STORE_STORIES = 'stories';
+const LEGACY_DB_NAME = 'atelier-storymap';
 
 class StoryDatabase {
   private dbPromise: Promise<IDBDatabase> | null = null;
+  private migrated = false;
 
-  private getDB(): Promise<IDBDatabase> {
+  private async getDB(): Promise<IDBDatabase> {
     if (!this.dbPromise) {
       this.dbPromise = new Promise((resolve, reject) => {
         const req = indexedDB.open(DB_NAME, DB_VERSION);
@@ -22,11 +25,86 @@ class StoryDatabase {
             store.createIndex('modified', 'modified', { unique: false });
           }
         };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
+        req.onsuccess = () => {
+          const db = req.result;
+          db.onversionchange = () => {
+            db.close();
+            this.dbPromise = null;
+          };
+          resolve(db);
+        };
+        req.onerror = () => reject(req.error || new Error('Erreur ouverture IndexedDB'));
+        req.onblocked = () => {
+          reject(new Error('La base IndexedDB est bloquée par un autre onglet.'));
+        };
       });
     }
-    return this.dbPromise;
+
+    const db = await this.dbPromise;
+    if (!this.migrated) {
+      this.migrated = true;
+      await this.tryMigrateLegacy(db).catch((err) =>
+        console.warn('Migration atelier-storymap ignorée:', err)
+      );
+    }
+    return db;
+  }
+
+  private async tryMigrateLegacy(currentDB: IDBDatabase): Promise<void> {
+    return new Promise((resolve) => {
+      let legacyReq: IDBOpenDBRequest;
+      try {
+        legacyReq = indexedDB.open(LEGACY_DB_NAME, 1);
+      } catch {
+        return resolve();
+      }
+
+      legacyReq.onupgradeneeded = () => {
+        legacyReq.transaction?.abort();
+        resolve();
+      };
+
+      legacyReq.onsuccess = () => {
+        const legacyDB = legacyReq.result;
+        if (!legacyDB.objectStoreNames.contains('stories')) {
+          legacyDB.close();
+          return resolve();
+        }
+
+        const ltx = legacyDB.transaction('stories', 'readonly');
+        const lstore = ltx.objectStore('stories');
+        const getAllReq = lstore.getAll();
+
+        getAllReq.onsuccess = async () => {
+          const legacyItems = (getAllReq.result || []) as Array<Record<string, unknown>>;
+          legacyDB.close();
+          if (legacyItems.length === 0) return resolve();
+
+          const ctx = currentDB.transaction(STORE_STORIES, 'readwrite');
+          const cstore = ctx.objectStore(STORE_STORIES);
+
+          for (const item of legacyItems) {
+            try {
+              const adapted = convertLegacyToModern(item.config || item);
+              adapted.id = (item.id as string) || adapted.id;
+              cstore.put(adapted);
+            } catch (err) {
+              console.warn('Erreur migration item:', err);
+            }
+          }
+
+          ctx.oncomplete = () => resolve();
+          ctx.onerror = () => resolve();
+        };
+
+        getAllReq.onerror = () => {
+          legacyDB.close();
+          resolve();
+        };
+      };
+
+      legacyReq.onerror = () => resolve();
+    });
   }
 
   async getAllStories(): Promise<StoryListItem[]> {
@@ -36,7 +114,7 @@ class StoryDatabase {
       const store = tx.objectStore(STORE_STORIES);
       const req = store.getAll();
       req.onsuccess = () => {
-        const stories = req.result as StoryMap[];
+        const stories = (req.result || []) as StoryMap[];
         const list: StoryListItem[] = stories.map((s) => ({
           id: s.id,
           title: s.title,
@@ -58,7 +136,7 @@ class StoryDatabase {
       const tx = db.transaction(STORE_STORIES, 'readonly');
       const store = tx.objectStore(STORE_STORIES);
       const req = store.get(id);
-      req.onsuccess = () => resolve(req.result || null);
+      req.onsuccess = () => resolve((req.result as StoryMap) || null);
       req.onerror = () => reject(req.error);
     });
   }
@@ -68,9 +146,10 @@ class StoryDatabase {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_STORIES, 'readwrite');
       const store = tx.objectStore(STORE_STORIES);
-      const req = store.put({ ...story, modified: Date.now() });
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
+      store.put({ ...story, modified: Date.now() });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error('Erreur sauvegarde'));
+      tx.onabort = () => reject(tx.error || new Error('Transaction annulée'));
     });
   }
 
@@ -79,12 +158,12 @@ class StoryDatabase {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_STORIES, 'readwrite');
       const store = tx.objectStore(STORE_STORIES);
-      const req = store.delete(id);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
+      store.delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error('Erreur suppression'));
+      tx.onabort = () => reject(tx.error || new Error('Transaction annulée'));
     });
   }
 }
 
 export const db = new StoryDatabase();
-

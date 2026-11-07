@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { useStory } from '../../context/StoryContext';
-import { exportStoryToJSON, exportStoryToStandaloneHTML } from '../../core/io';
+import { exportStoryToJSON, exportStoryToLegacyV2JSON, exportStoryToStandaloneHTML } from '../../core/io';
 import { X, Copy, Check, Download, FileCode } from 'lucide-react';
 
 interface ShareModalProps {
@@ -86,9 +86,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose }) => {
             <p style={{ fontSize: '12px', color: 'var(--text-2)', marginBottom: '8px' }}>
               Sauvegardez vos données brutes pour les réimporter ultérieurement.
             </p>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="btn btn-ghost" onClick={() => exportStoryToJSON(story)}>
-                <Download size={16} /> Exporter JSON
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button className="btn btn-ghost" onClick={() => exportStoryToJSON(story)} title="Format JSON moderne (StoryMap 2.0)">
+                <Download size={16} /> JSON Standard
+              </button>
+              <button className="btn btn-ghost" onClick={() => exportStoryToLegacyV2JSON(story)} title="Format JSON historique compatible v1/v2">
+                <Download size={16} /> JSON Historique (v2)
               </button>
               <button className="btn btn-ghost" onClick={handleCopyJSON}>
                 {copied ? <Check size={16} color="var(--success)" /> : <Copy size={16} />}

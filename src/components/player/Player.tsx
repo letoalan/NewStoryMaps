@@ -3,11 +3,13 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Map as MLMap, Marker } from 'maplibre-gl';
+import { Map as MLMap, Marker, GeoJSONSource } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useStory } from '../../context/StoryContext';
-import { ChevronLeft, ChevronRight, Play, Pause, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { resolveMapStyle } from '../../types/map';
+import { createRouteGeoJSON } from '../../core/route';
+import { PlayerNarrative } from './PlayerNarrative';
 
 interface PlayerProps {
   onExit?: () => void;
@@ -50,6 +52,35 @@ export const Player: React.FC<PlayerProps> = ({ onExit }) => {
     if (map && story?.mapStyle) map.setStyle(resolveMapStyle(story.mapStyle));
   }, [story?.mapStyle]);
 
+  // Tracé GeoJSON reliant les étapes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !story) return;
+
+    const routeData = createRouteGeoJSON(story.steps);
+    const updateRoute = () => {
+      const src = map.getSource('player-route') as GeoJSONSource;
+      if (src) {
+        src.setData(routeData);
+      } else {
+        map.addSource('player-route', { type: 'geojson', data: routeData });
+        map.addLayer({
+          id: 'player-route-line',
+          type: 'line',
+          source: 'player-route',
+          paint: {
+            'line-color': story.appearance.accentColor || '#0b7fb0',
+            'line-width': 3,
+            'line-dasharray': [2, 2],
+          },
+        });
+      }
+    };
+
+    if (map.isStyleLoaded()) updateRoute();
+    else map.once('style.load', updateRoute);
+  }, [story?.steps, story?.mapStyle, story?.appearance.accentColor]);
+
   // Animation de caméra à chaque étape
   useEffect(() => {
     const map = mapRef.current;
@@ -60,15 +91,15 @@ export const Player: React.FC<PlayerProps> = ({ onExit }) => {
       zoom: currentStep.camera.zoom,
       pitch: currentStep.camera.pitch,
       bearing: currentStep.camera.bearing,
-      duration: 2000,
+      duration: 1800,
       essential: true,
     });
 
     if (markerRef.current) markerRef.current.remove();
-    markerRef.current = new Marker({ color: '#0b7fb0' })
+    markerRef.current = new Marker({ color: story?.appearance.accentColor || '#0b7fb0' })
       .setLngLat(currentStep.camera.center)
       .addTo(map);
-  }, [currentIdx, currentStep]);
+  }, [currentIdx, currentStep, story?.appearance.accentColor]);
 
   // Autoplay
   useEffect(() => {
@@ -92,106 +123,34 @@ export const Player: React.FC<PlayerProps> = ({ onExit }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [steps.length, onExit]);
 
-  if (!story || steps.length === 0) return null;
+  if (!story || steps.length === 0 || !currentStep) return null;
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
-      {/* Bouton Quitter */}
       {onExit && (
         <button
           className="btn btn-ghost btn-icon"
           onClick={onExit}
           style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 20, background: 'var(--surface)' }}
-          title="Quitter la lecture"
+          title="Quitter la lecture (Échap)"
         >
           <X size={20} />
         </button>
       )}
 
-      {/* Panneau latéral du récit */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          bottom: '20px',
-          width: 'min(420px, calc(100vw - 40px))',
-          background: 'var(--surface)',
-          borderRadius: '16px',
-          boxShadow: 'var(--shadow-lg)',
-          display: 'flex',
-          flexDirection: 'column',
-          zIndex: 10,
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
-          <span className="badge badge-accent">
-            Étape {currentIdx + 1} sur {steps.length}
-          </span>
-          <h2 style={{ margin: '8px 0 0', fontSize: '18px', fontWeight: 700 }}>
-            {currentStep.title}
-          </h2>
-        </div>
-
-        <div className="scroll" style={{ flex: 1, padding: '20px' }}>
-          {currentStep.media?.url && (
-            <div style={{ marginBottom: '16px' }}>
-              <img
-                src={currentStep.media.url}
-                alt={currentStep.title}
-                style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '8px' }}
-              />
-              {currentStep.media.caption && (
-                <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-3)', fontStyle: 'italic' }}>
-                  {currentStep.media.caption}
-                </p>
-              )}
-            </div>
-          )}
-
-          <div
-            style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text)' }}
-            dangerouslySetInnerHTML={{ __html: currentStep.description }}
-          />
-        </div>
-
-        {/* Barre de navigation */}
-        <div
-          style={{
-            padding: '12px 20px',
-            borderTop: '1px solid var(--border)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: 'var(--surface-2)',
-          }}
-        >
-          <button className="btn btn-ghost btn-icon" onClick={prevStep} disabled={currentIdx === 0}>
-            <ChevronLeft size={20} />
-          </button>
-
-          <button
-            className="btn btn-ghost"
-            onClick={() => setIsPlaying(!isPlaying)}
-            style={{ gap: '6px' }}
-          >
-            {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-            <span>{isPlaying ? 'Pause' : 'Lecture auto'}</span>
-          </button>
-
-          <button
-            className="btn btn-ghost btn-icon"
-            onClick={nextStep}
-            disabled={currentIdx === steps.length - 1}
-          >
-            <ChevronRight size={20} />
-          </button>
-        </div>
-      </div>
+      <PlayerNarrative
+        step={currentStep}
+        index={currentIdx}
+        total={steps.length}
+        isPlaying={isPlaying}
+        position={story.appearance.panelPosition}
+        font={story.appearance.font}
+        onPrev={prevStep}
+        onNext={nextStep}
+        onTogglePlay={() => setIsPlaying(!isPlaying)}
+      />
     </div>
   );
 };
-
