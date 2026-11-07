@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>StoryMap — éditeur de storymaps</title>
+    <meta name="description" content="Éditeur visuel (WYSIWYG) de storymaps : récits interactifs sur une carte MapLibre GL JS.">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b7fb0'/%3E%3Cpath d='M7.5 10.2 13 8l6 2.2L24.5 8v13.8L19 24l-6-2.2-5.5 2.2z' fill='none' stroke='%23fff' stroke-width='1.9' stroke-linejoin='round'/%3E%3Cpath d='M13 8v13.8M19 10.2V24' stroke='%23fff' stroke-width='1.9' opacity='.6'/%3E%3C/svg%3E">
+
+    <!-- Thème appliqué avant le premier rendu pour éviter un flash -->
+    <script>
+        (function () {
+            var pref = 'auto';
+            try { pref = JSON.parse(localStorage.getItem('atelier-storymap:prefs') || '{}').uiTheme || 'auto'; } catch (e) { }
+            var dark = pref === 'dark' || (pref === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+            document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Même version de MapLibre GL JS que les pages publiées (SM.publish.MAPLIBRE_VERSION) -->
+    <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+    <link href="css/app.css" rel="stylesheet">
+    <link href="css/dashboard.css" rel="stylesheet">
+    <link href="css/editor.css" rel="stylesheet">
+    <link href="css/sheet.css" rel="stylesheet">
+    <link href="css/frame.css" rel="stylesheet">
+</head>
+
+<body>
+    <div id="app" class="app" aria-live="polite"></div>
+
+    <noscript>
+        <p style="padding:2rem;font-family:sans-serif">StoryMap nécessite JavaScript.</p>
+    </noscript>
+
+    <!-- Lecteur de storymap (partagé avec les pages publiées) -->
+    <script src="js/player/player.js"></script>
+
+    <!-- Noyau -->
+    <script src="js/core/util.js"></script>
+    <script src="js/core/icons.js"></script>
+    <script src="js/core/prefs.js"></script>
+    <script src="js/core/db.js"></script>
+    <script src="js/core/sanitize.js"></script>
+    <script src="js/core/appearance.js"></script>
+    <script src="js/core/geodata.js"></script>
+    <script src="js/core/model.js"></script>
+    <script src="js/core/images.js"></script>
+    <script src="js/core/zip.js"></script>
+    <script src="js/core/publish.js"></script>
+    <script src="js/core/io.js"></script>
+    <script src="js/core/places.js"></script>
+    <script src="js/core/csv.js"></script>
+    <script src="js/core/sheet.js"></script>
+
+    <!-- Interface -->
+    <script src="js/ui/ui.js"></script>
+    <script src="js/ui/controls.js"></script>
+    <script src="js/ui/dialogs.js"></script>
+    <script src="js/ui/places.js"></script>
+    <script src="js/ui/sheet.js"></script>
+
+    <!-- Tableau de bord -->
+    <script src="js/dashboard.js"></script>
+
+    <!-- Éditeur -->
+    <script src="js/editor/store.js"></script>
+    <script src="js/editor/richtext.js"></script>
+    <script src="js/editor/geocoder.js"></script>
+    <script src="js/editor/canvas.js"></script>
+    <script src="js/editor/outline.js"></script>
+    <script src="js/editor/sheet.js"></script>
+    <script src="js/editor/inspector.js"></script>
+    <script src="js/editor/preview.js"></script>
+    <script src="js/editor/share.js"></script>
+    <script src="js/editor/editor.js"></script>
+
+    <!-- Application -->
+    <script src="js/app.js"></script>
+</body>
+
+</html>

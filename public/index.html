@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>StoryMap — racontez vos histoires sur une carte</title>
+    <meta name="description" content="StoryMap est un éditeur visuel, libre et gratuit, pour créer des récits interactifs sur une carte : sans compte, sans installation et sans une ligne de code.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="StoryMap — racontez vos histoires sur une carte">
+    <meta property="og:description" content="Un éditeur visuel, libre et gratuit, pour créer des récits interactifs sur une carte : sans compte, sans installation et sans une ligne de code.">
+    <meta property="og:locale" content="fr_FR">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b7fb0'/%3E%3Cpath d='M7.5 10.2 13 8l6 2.2L24.5 8v13.8L19 24l-6-2.2-5.5 2.2z' fill='none' stroke='%23fff' stroke-width='1.9' stroke-linejoin='round'/%3E%3Cpath d='M13 8v13.8M19 10.2V24' stroke='%23fff' stroke-width='1.9' opacity='.6'/%3E%3C/svg%3E">
+
+    <script>
+        // L'éditeur était auparavant servi à cette adresse : ses liens directs (…/#/edit/…) le suivent dans app.html
+        if (/^#\//.test(location.hash)) location.replace('app.html' + location.hash);
+
+        // Thème appliqué avant le premier rendu, selon la même préférence que l'éditeur
+        (function () {
+            var pref = 'auto';
+            try { pref = JSON.parse(localStorage.getItem('atelier-storymap:prefs') || '{}').uiTheme || 'auto'; } catch (e) { }
+            var dark = pref === 'dark' || (pref === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+            document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link href="css/app.css" rel="stylesheet">
+    <link href="css/landing.css" rel="stylesheet">
+</head>
+
+<body class="landing">
+    <header class="lp-header">
+        <div class="lp-header-in">
+            <a class="lp-brand" href="./" aria-label="StoryMap — accueil">
+                <svg class="lp-logo" width="34" height="34" viewBox="0 0 32 32" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="lp-lg-logo" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#15a3d6" />
+                            <stop offset="1" stop-color="#0a6f9c" />
+                        </linearGradient>
+                    </defs>
+                    <rect width="32" height="32" rx="8" fill="url(#lp-lg-logo)" />
+                    <path d="M7.5 10.2 13 8l6 2.2L24.5 8v13.8L19 24l-6-2.2-5.5 2.2z" fill="rgba(255,255,255,.14)" stroke="#fff" stroke-width="1.9" stroke-linejoin="round" />
+                    <path d="M13 8v13.8M19 10.2V24" stroke="#fff" stroke-width="1.9" opacity=".62" />
+                    <circle cx="21.6" cy="10.4" r="3.1" fill="#ffcf5c" stroke="#0a6f9c" stroke-width="1.2" />
+                </svg>
+                <span class="lp-brand-text">
+                    <span class="lp-brand-name">StoryMap</span>
+                    <span class="lp-brand-tag">Éditeur visuel de storymaps</span>
+                </span>
+            </a>
+            <nav class="lp-nav" aria-label="Sections de la page">
+                <a href="#creer">Créer</a>
+                <a href="#partager">Partager</a>
+                <a href="#garanties">Garanties</a>
+            </nav>
+            <a class="btn btn-primary lp-btn-header" href="app.html">Ouvrir l’éditeur</a>
+        </div>
+    </header>
+
+    <main>
+        <!-- ---------- Accroche et vidéo ---------- -->
+        <section class="lp-hero">
+            <div class="lp-wrap">
+                <p class="lp-eyebrow">Libre et gratuit · sans compte · dans votre navigateur</p>
+                <h1>Racontez vos histoires <span>sur une carte</span></h1>
+                <p class="lp-lead">StoryMap est un éditeur visuel de récits cartographiques. Vos lecteurs font défiler la page, la carte les emmène d’étape en étape. Un cours d’histoire, une étude de cas en géographie, l’itinéraire d’un personnage de roman, une sortie scolaire&nbsp;: tout ce qui se déroule quelque part peut se raconter ainsi.</p>
+                <div class="lp-cta">
+                    <a class="btn btn-primary lp-btn" href="app.html">Ouvrir l’éditeur</a>
+                    <a class="btn lp-btn" href="#video" id="lp-watch">
+                        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a.8.8 0 0 0 1.2.7l12.3-7.5a.8.8 0 0 0 0-1.4L8.2 3.8A.8.8 0 0 0 7 4.5z" /></svg>
+                        Voir la vidéo (1&nbsp;min)
+                    </a>
+                </div>
+                <p class="lp-note">Aucune inscription&nbsp;: l’éditeur s’ouvre directement.</p>
+
+                <div class="lp-video" id="video">
+                    <video id="lp-player" controls preload="metadata" playsinline poster="media/storymap-promo.jpg" width="1920" height="1080" aria-label="Présentation de StoryMap en vidéo (1 minute, avec musique, sans parole)">
+                        <source src="media/storymap-promo.mp4" type="video/mp4">
+                        <a href="media/storymap-promo.mp4">Télécharger la vidéo de présentation (MP4)</a>
+                    </video>
+                    <button class="lp-play" id="lp-play" type="button" aria-label="Lire la vidéo de présentation">
+                        <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a.8.8 0 0 0 1.2.7l12.3-7.5a.8.8 0 0 0 0-1.4L8.2 3.8A.8.8 0 0 0 7 4.5z" /></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ---------- Créer ---------- -->
+        <section class="lp-section" id="creer">
+            <div class="lp-wrap">
+                <p class="lp-kicker">Créer</p>
+                <h2>Trois gestes, pas une ligne de code</h2>
+                <p class="lp-sub">Vous éditez directement le rendu final&nbsp;: ce que vous voyez est ce que vos lecteurs verront.</p>
+
+                <ol class="lp-steps">
+                    <li class="lp-card">
+                        <span class="lp-ico"><svg class="icon" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.8 3.6a2.3 2.3 0 0 1 3.3 3.3L7.8 19.2 3 21l1.8-4.8z" /><path d="m15 5.5 3.5 3.5" /></svg></span>
+                        <h3><span class="lp-num">1</span>Écrivez sur la carte</h3>
+                        <p>Titres, textes, images, vidéos&nbsp;: vous écrivez dans le panneau, comme dans un traitement de texte.</p>
+                    </li>
+                    <li class="lp-card">
+                        <span class="lp-ico"><svg class="icon" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M12 2v5M12 17v5M2 12h5M17 12h5" /></svg></span>
+                        <h3><span class="lp-num">2</span>Cadrez chaque chapitre</h3>
+                        <p>Déplacez, zoomez, inclinez la carte&nbsp;: la vue est enregistrée automatiquement. Dix fonds de carte, dont une vue satellite, et le relief en 3D.</p>
+                    </li>
+                    <li class="lp-card">
+                        <span class="lp-ico"><svg class="icon" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9.5h18M3 14.8h18M9 9.5V20" /></svg></span>
+                        <h3><span class="lp-num">3</span>Ou partez de vos données</h3>
+                        <p>Un tableur intégré, une ligne par chapitre, ou un fichier CSV, GeoJSON, GPX ou KML&nbsp;: chaque lieu devient un chapitre.</p>
+                    </li>
+                </ol>
+
+                <ul class="lp-tags" aria-label="Également dans l’éditeur">
+                    <li>Trajet qui se dessine d’étape en étape</li>
+                    <li>Mini-carte de situation</li>
+                    <li>Aperçu ordinateur, tablette et mobile</li>
+                    <li>Enregistrement automatique</li>
+                    <li>Annuler et rétablir</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ---------- Partager ---------- -->
+        <section class="lp-section lp-alt" id="partager">
+            <div class="lp-wrap lp-split">
+                <div class="lp-split-text">
+                    <p class="lp-kicker">Partager</p>
+                    <h2>Une page web autonome, à publier ou à envoyer</h2>
+                    <p class="lp-sub">L’export produit un seul fichier, qui contient la storymap et ses images. Déposez-le sur un site ou envoyez-le&nbsp;: il s’ouvre dans un navigateur récent, sur ordinateur, tablette ou téléphone (une connexion Internet est nécessaire pour les fonds de carte).</p>
+                    <ul class="lp-list">
+                        <li>
+                            <svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                            Page web autonome (.html) ou site web (.zip)
+                        </li>
+                        <li>
+                            <svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                            QR code et code d’intégration, une fois la storymap publiée
+                        </li>
+                        <li>
+                            <svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                            Fichier .json pour la sauvegarder et la rouvrir dans l’éditeur
+                        </li>
+                        <li>
+                            <svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                            Barre de progression, sommaire et navigation au clavier pour les lecteurs
+                        </li>
+                    </ul>
+                </div>
+                <div class="lp-devices">
+                    <div class="lp-device lp-laptop"><img src="media/apercu-ordinateur.webp" width="1440" height="900" loading="lazy" alt="Une storymap publiée, vue sur ordinateur : le chapitre « Paris », sa photo et son texte, au-dessus de la carte."></div>
+                    <div class="lp-device lp-tablet"><img src="media/apercu-tablette.webp" width="660" height="880" loading="lazy" alt="La même storymap sur tablette."></div>
+                    <div class="lp-device lp-phone"><img src="media/apercu-telephone.webp" width="380" height="822" loading="lazy" alt="La même storymap sur téléphone."></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ---------- Garanties ---------- -->
+        <section class="lp-section" id="garanties">
+            <div class="lp-wrap">
+                <p class="lp-kicker">Garanties</p>
+                <h2>Simple, libre, sans compte</h2>
+
+                <ul class="lp-grid4">
+                    <li class="lp-card">
+                        <span class="lp-ico"><svg class="icon" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></svg></span>
+                        <h3>Sans installation</h3>
+                        <p>Tout se passe dans votre navigateur.</p>
+                    </li>
+                    <li class="lp-card">
+                        <span class="lp-ico"><svg class="icon" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="8" r="4" /><path d="M2.5 20.5c0-4 3.3-6.5 7.5-6.5 1.5 0 2.9.3 4.1.9M16.5 16.5l5 5M21.5 16.5l-5 5" /></svg></span>
+                        <h3>Sans compte</h3>
+                        <p>Ni inscription, ni mot de passe.</p>
+                    </li>
+                    <li class="lp-card">
+                        <span class="lp-ico"><svg class="icon" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.2" /><path d="M7.5 10.5V7.3a4.5 4.5 0 0 1 8.6-1.8M12 14.7v2.5" /></svg></span>
+                        <h3>Libre et gratuit</h3>
+                        <p>Un logiciel libre, sous licence MIT.</p>
+                    </li>
+                    <li class="lp-card">
+                        <span class="lp-ico"><svg class="icon" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.5s8-3.5 8-10V5l-8-2.5L4 5v6.5c0 6.5 8 10 8 10z" /><path d="m8.8 12 2.2 2.2 4.2-4.4" /></svg></span>
+                        <h3>Vos récits chez vous</h3>
+                        <p>Enregistrés dans votre navigateur&nbsp;; exportez-les pour les sauvegarder.</p>
+                    </li>
+                </ul>
+                <p class="lp-small">Les fonds de carte, les polices et la recherche de lieux sont chargés depuis des services en ligne (CARTO, OpenFreeMap, OpenStreetMap…). Vos storymaps, elles, ne quittent pas votre navigateur tant que vous ne les exportez pas.</p>
+            </div>
+        </section>
+
+        <!-- ---------- Appel final ---------- -->
+        <section class="lp-section lp-final">
+            <div class="lp-wrap">
+                <div class="lp-band">
+                    <h2>Quelle histoire raconterez-vous&#8239;?</h2>
+                    <p>Un exemple est fourni pour démarrer&nbsp;: «&nbsp;Le tour du monde en cinq capitales&nbsp;».</p>
+                    <a class="btn lp-btn lp-btn-light" href="app.html">Ouvrir l’éditeur</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="lp-footer">
+        <div class="lp-wrap">
+            <p>StoryMap — logiciel libre sous licence MIT.</p>
+            <p>Vidéo et captures&nbsp;: fonds de carte © CARTO, © contributeurs OpenStreetMap&nbsp;; photos du domaine public et de pmorgan (CC BY 2.0).</p>
+        </div>
+    </footer>
+
+    <script>
+        // Vidéo : le grand bouton lance la lecture, puis laisse la place aux commandes du navigateur
+        (function () {
+            var video = document.getElementById('lp-player');
+            var play = document.getElementById('lp-play');
+            var box = document.getElementById('video');
+            function start() {
+                var p = video.play();
+                if (p && p.catch) p.catch(function () { });
+            }
+            video.addEventListener('play', function () { box.classList.add('is-started'); });
+            play.addEventListener('click', start);
+            document.getElementById('lp-watch').addEventListener('click', function (e) {
+                e.preventDefault();
+                var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+                box.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'center' });
+                start();
+            });
+        })();
+    </script>
+</body>
+
+</html>
