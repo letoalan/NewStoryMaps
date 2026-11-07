@@ -6,6 +6,7 @@ import React, { createContext, useContext, useState, useRef, useEffect, useCallb
 import { StoryMap } from '../types/story';
 import { Step } from '../types/step';
 import { ProjectBrand, ProjectMode } from '../types/project';
+import { PageFormat } from '../types/grid';
 import { SaveStatus, StoryContextType } from '../types/context';
 import { db } from '../core/db';
 import { createDefaultStory } from '../core/defaults';
@@ -34,6 +35,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const setStory = (newStory: StoryMap, trackHistory = true) => {
     if (trackHistory && story) {
       historyRef.current.push(story);
+      if (historyRef.current.length > 50) historyRef.current.shift();
       futureRef.current = [];
     }
     revisionRef.current += 1;
@@ -84,7 +86,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const current = latestStoryRef.current;
     const currentRev = revisionRef.current;
     if (current && savedRevisionRef.current < currentRev) {
-      queueRef.current = queueRef.current.then(() => persistToDB(current, currentRev));
+      queueRef.current = queueRef.current.catch(() => {}).then(() => persistToDB(current, currentRev));
     }
     await queueRef.current;
   }, [persistToDB]);
@@ -96,7 +98,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const current = latestStoryRef.current;
       const currentRev = revisionRef.current;
       if (current && savedRevisionRef.current < currentRev) {
-        queueRef.current = queueRef.current.then(() => persistToDB(current, currentRev));
+        queueRef.current = queueRef.current.catch(() => {}).then(() => persistToDB(current, currentRev));
       }
     }, 1000);
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
@@ -116,7 +118,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setLastSaveError(null);
   };
 
-  const newStory = async (opts?: string | { title?: string; mode?: ProjectMode; brand?: ProjectBrand }) => {
+  const newStory = async (opts?: string | { title?: string; mode?: ProjectMode; format?: PageFormat; brand?: ProjectBrand }) => {
     await flushSave();
     const created = createDefaultStory();
     if (typeof opts === 'string') {
@@ -125,6 +127,12 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (opts.title) created.title = opts.title;
       if (opts.mode) created.mode = opts.mode;
       if (opts.brand) created.brand = opts.brand;
+      if (opts.format) {
+        created.format = opts.format;
+        if (created.pages && created.pages[0]?.layout) {
+          created.pages[0].layout.format = opts.format;
+        }
+      }
     }
     historyRef.current = [];
     futureRef.current = [];

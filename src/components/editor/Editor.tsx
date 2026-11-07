@@ -42,7 +42,7 @@ export const Editor: React.FC<EditorProps> = ({ onBack, onPlay }) => {
       {viewMode === 'canvas' ? (
         <>
           <Outline />
-          <Canvas />
+          {!isPreviewOpen ? <Canvas /> : <div className="canvas" />}
           <Inspector />
         </>
       ) : (

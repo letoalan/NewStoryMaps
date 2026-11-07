@@ -13,6 +13,7 @@ import {
   deleteFeatureFromLayer,
   bindBlockToFeature,
   unbindBlock,
+  findFeatureInMap,
   validateNarrativeBindings,
 } from '../src/core/mapScene.ts';
 
@@ -115,37 +116,73 @@ function testModeActionsAndIndex() {
   console.log('  -> Contrats Mode 2 & Mode 3 validés.');
 }
 
-// 5. H09 : Résilience face aux suppressions d'objets ou cartes
+// 5. H09 : Résilience face aux suppressions et isolation stricte inter-cartes
 function testOrphanBindingResilience() {
-  console.log('Test 5 : Résilience et détection des liaisons orphelines (H09)...');
-  const map = createDefaultProjectMap('map-valid');
-  const featureId = map.layers[0].features[0].id;
+  console.log('Test 5 : Résilience et isolation stricte inter-cartes (H09)...');
+  const mapA = createDefaultProjectMap('map-A');
+  const mapB = createDefaultProjectMap('map-B');
+  assert.notStrictEqual(mapA.layers[0].features[0].id, mapB.layers[0].features[0].id, 'Pas de collision d’ID d’entités entre cartes');
 
+  const featA = mapA.layers[0].features[0].id;
   const pages = [
     {
       id: 'p1',
       title: 'Page 1',
       layout: { format: 'a4-portrait', gridColumns: 6, gridRows: 8 },
       blocks: [
-        { id: 'b-ok', type: 'text', x: 0, y: 0, w: 2, h: 2, data: {}, binding: { mapId: 'map-valid', targetFeatureId: featureId, action: 'highlight' } },
-        { id: 'b-orphan-map', type: 'text', x: 2, y: 0, w: 2, h: 2, data: {}, binding: { mapId: 'map-deleted', targetFeatureId: 'any', action: 'zoom' } },
-        { id: 'b-orphan-feat', type: 'text', x: 4, y: 0, w: 2, h: 2, data: {}, binding: { mapId: 'map-valid', targetFeatureId: 'non-existent', action: 'highlight' } },
+        { id: 'b-ok', type: 'text', x: 0, y: 0, w: 2, h: 2, data: {}, binding: { mapId: 'map-A', targetFeatureId: featA, action: 'highlight' } },
+        { id: 'b-wrong-map', type: 'text', x: 2, y: 0, w: 2, h: 2, data: {}, binding: { mapId: 'map-B', targetFeatureId: featA, action: 'zoom' } },
+        { id: 'b-orphan-map', type: 'text', x: 4, y: 0, w: 2, h: 2, data: {}, binding: { mapId: 'map-deleted', targetFeatureId: 'any', action: 'zoom' } },
       ],
     },
   ];
 
-  const validation = validateNarrativeBindings(pages, [map]);
+  // Le bloc b-wrong-map lie featA à mapB : doit être détecté comme cassé !
+  const validation = validateNarrativeBindings(pages, [mapA, mapB]);
   assert.strictEqual(validation.valid, false);
   assert.strictEqual(validation.brokenCount, 2);
-  assert.deepStrictEqual(validation.orphanBlockIds, ['b-orphan-map', 'b-orphan-feat']);
+  assert.deepStrictEqual(validation.orphanBlockIds, ['b-wrong-map', 'b-orphan-map']);
 
   // Nettoyage automatique des pages sans crash
   const cleanBlocks = validation.cleanPages[0].blocks;
   assert.ok(cleanBlocks[0].binding, 'Le bloc valide doit conserver sa liaison');
-  assert.strictEqual(cleanBlocks[1].binding, undefined, 'La liaison orpheline doit être nettoyée');
-  assert.strictEqual(cleanBlocks[2].binding, undefined, 'La liaison orpheline doit être nettoyée');
+  assert.strictEqual(cleanBlocks[1].binding, undefined, 'La liaison vers mauvaise carte doit être nettoyée');
+  assert.strictEqual(cleanBlocks[2].binding, undefined, 'La liaison vers carte inexistante doit être nettoyée');
 
-  console.log('  -> Nettoyage gracieux des liaisons orphelines garanti.');
+  console.log('  -> Nettoyage gracieux et isolation stricte inter-cartes garantis.');
+}
+
+// 6. Tranche cartographique complète : création page -> carte -> point -> liaison -> focus
+function testFullCartographicSlice() {
+  console.log('Test 6 : Tranche cartographique complète (page -> carte -> entité -> liaison -> focus)...');
+  const map = createDefaultProjectMap('map-slice', 'Plan de visite');
+  const featPt = {
+    id: 'feat-visite-1', name: 'Musée d’Orsay', geometryType: 'Point',
+    coordinates: [2.3255, 48.8600], color: '#e11d48', numberIndex: 1,
+  };
+  const mapWithPt = addFeatureToLayer(map, map.layers[0].id, featPt);
+
+  let textBlock = { id: 'b-txt', type: 'text', x: 0, y: 0, w: 2, h: 2, data: { text: 'Départ Orsay' } };
+  const mapBlock = { id: 'b-map', type: 'map', x: 2, y: 0, w: 4, h: 4, data: { mapId: 'map-slice', title: 'Carte visite' } };
+
+  // 1. Association du bloc texte au point précis de la carte
+  textBlock = bindBlockToFeature(textBlock, 'map-slice', 'feat-visite-1', 'zoom', 1);
+  assert.strictEqual(textBlock.binding.targetFeatureId, 'feat-visite-1');
+  assert.strictEqual(textBlock.binding.action, 'zoom');
+
+  // 2. Déclenchement de la réaction cartographique
+  const targetFeat = findFeatureInMap(mapWithPt, textBlock.binding.targetFeatureId);
+  assert.ok(targetFeat, 'L’entité cible doit être résolue sur la carte');
+  assert.strictEqual(targetFeat.coordinates[0], 2.3255);
+  assert.strictEqual(targetFeat.coordinates[1], 48.8600);
+
+  // 3. Persistance et validation sans perte
+  const page = { id: 'p-slice', title: 'Visite', layout: { format: 'a4-portrait', gridColumns: 6, gridRows: 8 }, blocks: [textBlock, mapBlock] };
+  const val = validateNarrativeBindings([page], [mapWithPt]);
+  assert.strictEqual(val.valid, true, 'La liaison doit rester 100% valide après validation');
+  assert.strictEqual(val.cleanPages[0].blocks[0].binding.targetFeatureId, 'feat-visite-1');
+
+  console.log('  -> Tranche cartographique complète exécutée et vérifiée avec succès.');
 }
 
 async function runAll() {
@@ -154,6 +191,7 @@ async function runAll() {
   testNarrativeBindings();
   testModeActionsAndIndex();
   testOrphanBindingResilience();
+  testFullCartographicSlice();
   console.log('\n=== TOUTES LES VÉRIFICATIONS P3 (H01 -> H09) ONT RÉUSSI AVEC SUCCÈS ! ===');
 }
 

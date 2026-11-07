@@ -24,7 +24,7 @@ export function isRectValid(rect: BlockRect, cols: number, rows: number): boolea
   if (rect.x < 0 || rect.y < 0) return false;
   if (rect.x + rect.w > cols || rect.y + rect.h > rows) return false;
   const area = rect.w * rect.h;
-  // Une cellule individuelle (aire 1) ou une aire paire complète (2, 4, 6, 8, etc.) sans L
+  // Règle G04 : cellule unique (aire 1) ou aire paire complète (2, 4, 6, 8, etc.) sans L
   return area === 1 || area % 2 === 0;
 }
 
@@ -45,7 +45,7 @@ export function hasCollision(rect: BlockRect, blocks: Block[], ignoreBlockId?: s
 export function addBlock(blocks: Block[], newBlock: Block, cols: number, rows: number): GridOperationResult {
   const rect = { x: newBlock.x, y: newBlock.y, w: newBlock.w, h: newBlock.h };
   if (!isRectValid(rect, cols, rows)) {
-    return { success: false, blocks, error: 'Dimensions ou emplacement de bloc invalide (aire paire ou cellule unique requise).' };
+    return { success: false, blocks, error: 'Dimensions invalides (aire paire ou cellule unique requise).' };
   }
   if (hasCollision(rect, blocks)) {
     return { success: false, blocks, error: 'Collision avec un bloc existant.' };
@@ -54,12 +54,21 @@ export function addBlock(blocks: Block[], newBlock: Block, cols: number, rows: n
 }
 
 export function expandBlock(blocks: Block[], blockId: string, dir: 'right' | 'down', cols: number, rows: number): GridOperationResult {
-  const target = blocks.find(b => b.id === blockId);
+  const target = blocks.find((b) => b.id === blockId);
   if (!target) return { success: false, blocks, error: 'Bloc introuvable.' };
 
-  const newW = dir === 'right' ? target.w + 1 : target.w;
-  const newH = dir === 'down' ? target.h + 1 : target.h;
-  const newRect: BlockRect = { x: target.x, y: target.y, w: newW, h: newH };
+  // Pas de 1 ou saut automatique à 2 si l'aire intermédiaire est interdite (ex. 2x1 -> 4x1)
+  let step = 1;
+  let newW = dir === 'right' ? target.w + step : target.w;
+  let newH = dir === 'down' ? target.h + step : target.h;
+  let newRect: BlockRect = { x: target.x, y: target.y, w: newW, h: newH };
+
+  if (!isRectValid(newRect, cols, rows) && (newW * newH) % 2 !== 0) {
+    step = 2;
+    newW = dir === 'right' ? target.w + step : target.w;
+    newH = dir === 'down' ? target.h + step : target.h;
+    newRect = { x: target.x, y: target.y, w: newW, h: newH };
+  }
 
   if (!isRectValid(newRect, cols, rows)) {
     return { success: false, blocks, error: 'Agrandissement impossible : hors limites ou aire non autorisée.' };
@@ -68,27 +77,37 @@ export function expandBlock(blocks: Block[], blockId: string, dir: 'right' | 'do
     return { success: false, blocks, error: 'Agrandissement impossible : espace occupé.' };
   }
 
-  const updated = blocks.map(b => (b.id === blockId ? { ...b, w: newW, h: newH } : b));
-  return { success: true, blocks: updated };
+  return { success: true, blocks: blocks.map((b) => (b.id === blockId ? { ...b, w: newW, h: newH } : b)) };
 }
 
 export function shrinkBlock(blocks: Block[], blockId: string): GridOperationResult {
-  const target = blocks.find(b => b.id === blockId);
+  const target = blocks.find((b) => b.id === blockId);
   if (!target) return { success: false, blocks, error: 'Bloc introuvable.' };
   if (target.w <= 1 && target.h <= 1) {
     return { success: false, blocks, error: 'Taille minimale atteinte (1x1).' };
   }
 
-  let newW = target.w;
-  let newH = target.h;
-  if (newW > newH && newW > 1) {
-    newW -= 1;
-  } else if (newH > 1) {
-    newH -= 1;
+  let bestW = target.w;
+  let bestH = target.h;
+  let found = false;
+
+  const trySteps = target.w >= target.h
+    ? [{ dw: 1, dh: 0 }, { dw: 2, dh: 0 }, { dw: 0, dh: 1 }, { dw: 0, dh: 2 }]
+    : [{ dw: 0, dh: 1 }, { dw: 0, dh: 2 }, { dw: 1, dh: 0 }, { dw: 2, dh: 0 }];
+
+  for (const s of trySteps) {
+    const tw = target.w - s.dw;
+    const th = target.h - s.dh;
+    if (tw >= 1 && th >= 1 && (tw * th === 1 || (tw * th) % 2 === 0)) {
+      bestW = tw;
+      bestH = th;
+      found = true;
+      break;
+    }
   }
 
-  const updated = blocks.map(b => (b.id === blockId ? { ...b, w: newW, h: newH } : b));
-  return { success: true, blocks: updated };
+  if (!found) { bestW = 1; bestH = 1; }
+  return { success: true, blocks: blocks.map((b) => (b.id === blockId ? { ...b, w: bestW, h: bestH } : b)) };
 }
 
 export function findFirstFreeCell(blocks: Block[], cols: number, rows: number, w = 1, h = 1): BlockRect | null {
@@ -102,7 +121,7 @@ export function findFirstFreeCell(blocks: Block[], cols: number, rows: number, w
 }
 
 export function duplicateBlock(blocks: Block[], blockId: string, cols: number, rows: number): GridOperationResult {
-  const target = blocks.find(b => b.id === blockId);
+  const target = blocks.find((b) => b.id === blockId);
   if (!target) return { success: false, blocks, error: 'Bloc introuvable.' };
 
   const freeRect = findFirstFreeCell(blocks, cols, rows, target.w, target.h);
@@ -120,5 +139,14 @@ export function duplicateBlock(blocks: Block[], blockId: string, cols: number, r
 }
 
 export function deleteBlock(blocks: Block[], blockId: string): Block[] {
-  return blocks.filter(b => b.id !== blockId);
+  return blocks.filter((b) => b.id !== blockId);
+}
+
+export function refitBlocksToGrid(blocks: Block[], cols: number, rows: number): Block[] {
+  return blocks.map((b) => {
+    let w = Math.min(b.w, cols);
+    let h = Math.min(b.h, rows);
+    while (w * h > 1 && (w * h) % 2 !== 0 && w > 1) w--;
+    return { ...b, w, h, x: Math.min(b.x, cols - w), y: Math.min(b.y, rows - h) };
+  });
 }

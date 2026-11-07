@@ -2,7 +2,6 @@
  * StoryMap — Point d'entrée de l'application React
  */
 
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { setWorkerUrl } from 'maplibre-gl';
@@ -18,8 +17,6 @@ import '../public/css/sheet.css';
 import '../public/css/frame.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+  <App />
 );
 

@@ -6,16 +6,19 @@ import React, { useState } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { PageGrid } from './PageGrid';
 import { PageFormat } from '../../types/grid';
+import { getGridDimensions, refitBlocksToGrid } from '../../core/grid';
 import { Page, Block, NarrativeBinding, ProjectMap } from '../../types/project';
 import { createDefaultProjectMap, validateNarrativeBindings } from '../../core/mapScene';
 import { MapStudioModal } from '../dialogs/MapStudioModal';
 import { BindingPickerModal } from '../dialogs/BindingPickerModal';
-import { ArrowLeft, Save, Plus, Trash2, ChevronLeft, ChevronRight, FileText, Check, AlertCircle, Map } from 'lucide-react';
+import { ShareModal } from '../dialogs/ShareModal';
+import { ArrowLeft, Save, Plus, Trash2, ChevronLeft, ChevronRight, FileText, Check, AlertCircle, Map, Play, Share2 } from 'lucide-react';
 
-export const DocumentEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void }> = ({ onBack, onPlay }) => {
   const { story, updateStory, saveStatus, flushSave } = useStory();
   const [currentPageIndex, setCurrentPageIndex] = useState<number>(0);
   const [isMapStudioOpen, setIsMapStudioOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const [bindingBlock, setBindingBlock] = useState<Block | null>(null);
 
   if (!story) return null;
@@ -36,8 +39,18 @@ export const DocumentEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => 
   };
 
   const handleFormatChange = (fmt: PageFormat) => {
-    const updated = pages.map((p, idx) => (idx === safeIndex ? { ...p, layout: { ...p.layout, format: fmt } } : p));
+    const dims = getGridDimensions(fmt);
+    const updated = pages.map((p, idx) => {
+      if (idx !== safeIndex) return p;
+      const refitted = refitBlocksToGrid(p.blocks || [], dims.cols, dims.rows);
+      return { ...p, layout: { ...p.layout, format: fmt }, blocks: refitted };
+    });
     updateStory({ format: fmt, pages: updated });
+  };
+
+  const handleBack = async () => {
+    await flushSave();
+    onBack();
   };
 
   const handleAddPage = () => {
@@ -72,7 +85,7 @@ export const DocumentEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--surface-2)' }}>
       <header style={{ height: '56px', background: 'var(--surface)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button className="btn btn-ghost" onClick={onBack} title="Retour"><ArrowLeft size={16} /> <span>Retour</span></button>
+          <button className="btn btn-ghost" onClick={handleBack} title="Retour"><ArrowLeft size={16} /> <span>Retour</span></button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <FileText size={18} color="var(--accent)" />
             <input type="text" value={story.title} onChange={(e) => updateStory({ title: e.target.value })} style={{ fontWeight: 600, fontSize: '15px', border: 'none', background: 'transparent', outline: 'none' }} />
@@ -97,6 +110,14 @@ export const DocumentEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => 
           <button className="btn btn-ghost" onClick={() => setIsMapStudioOpen(true)} title="Gérer les scènes cartographiques">
             <Map size={14} color="var(--accent)" /> <span>Atelier Carte ({maps.length})</span>
           </button>
+          {onPlay && (
+            <button className="btn btn-ghost" onClick={onPlay} title="Lire / Présenter en plein écran">
+              <Play size={14} color="var(--accent)" /> <span>Lire</span>
+            </button>
+          )}
+          <button className="btn btn-ghost" onClick={() => setIsShareOpen(true)} title="Partager et exporter">
+            <Share2 size={14} /> <span>Partager</span>
+          </button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -114,6 +135,7 @@ export const DocumentEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => 
 
       <MapStudioModal isOpen={isMapStudioOpen} maps={maps} onClose={() => setIsMapStudioOpen(false)} onUpdateMaps={handleUpdateMaps} />
       <BindingPickerModal isOpen={!!bindingBlock} block={bindingBlock} maps={maps} onClose={() => setBindingBlock(null)} onSaveBinding={handleSaveBinding} />
+      <ShareModal isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
     </div>
   );
 };

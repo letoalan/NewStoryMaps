@@ -7,6 +7,7 @@ import { StoryProvider, useStory } from './context/StoryContext';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { Editor } from './components/editor/Editor';
 import { DocumentEditor } from './components/document/DocumentEditor';
+import { DocumentReader } from './components/document/DocumentReader';
 import { Player } from './components/player/Player';
 import { ProjectBrand, ProjectMode } from './types/project';
 import { PageFormat } from './types/grid';
@@ -27,18 +28,21 @@ const AppContent: React.FC = () => {
     setView('player');
   };
 
-  const handleNewStory = (opts?: string | { title?: string; mode?: ProjectMode; format?: PageFormat; brand?: ProjectBrand }) => {
-    newStory(opts);
+  const handleNewStory = async (opts?: string | { title?: string; mode?: ProjectMode; format?: PageFormat; brand?: ProjectBrand }) => {
+    await newStory(opts);
     setView('editor');
   };
 
   if (view === 'player') {
+    if (story?.mode === 'rich-document' || story?.mode === 'brochure') {
+      return <DocumentReader onExit={() => setView('editor')} />;
+    }
     return <Player onExit={() => setView('dashboard')} />;
   }
 
   if (view === 'editor') {
     if (story?.mode === 'rich-document' || story?.mode === 'brochure') {
-      return <DocumentEditor onBack={() => setView('dashboard')} />;
+      return <DocumentEditor onBack={() => setView('dashboard')} onPlay={() => setView('player')} />;
     }
     return (
       <Editor

@@ -4,6 +4,7 @@
 
 import type { StoryMap } from '../types/story';
 import { generateStandaloneHTML, extractStoryFromHTML } from './publish';
+import { generateDocumentHTML } from './publishDocument';
 import { convertLegacyToModern, convertModernToLegacyV2 } from './adapter';
 import { createZip, readZip, type ZipReadEntry } from './zip';
 
@@ -19,14 +20,18 @@ export function exportStoryToLegacyV2JSON(story: StoryMap): void {
 }
 
 export function exportStoryToStandaloneHTML(story: StoryMap): void {
-  const html = generateStandaloneHTML(story);
+  const html = (story.mode === 'rich-document' || story.mode === 'brochure')
+    ? generateDocumentHTML(story)
+    : generateStandaloneHTML(story);
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   downloadBlob(blob, getFilename(story, 'html'));
 }
 
 export async function exportStoryToSiteZip(story: StoryMap): Promise<void> {
   const slug = getSlug(story);
-  const html = generateStandaloneHTML(story);
+  const html = (story.mode === 'rich-document' || story.mode === 'brochure')
+    ? generateDocumentHTML(story)
+    : generateStandaloneHTML(story);
   const jsonModern = JSON.stringify(story, null, 2);
   const jsonLegacy = JSON.stringify(convertModernToLegacyV2(story), null, 2);
   const readme = [

@@ -104,12 +104,12 @@ Porte : composition stable et éditable après fermeture et échange.
 Porte : carte et narration restent cohérentes après toutes les mutations.
 
 ## P4 — Lecture, présentation et publication enrichie
-- [ ] I01 Ajouter profils vertical/horizontal/diapositive, plein écran et sommaire.
-- [ ] I02 Points actionnables, flèches, compteur et commandes accessibles.
-- [ ] I03 Arbitrer clavier entre texte, carte, dialogue, carrousel et document.
-- [ ] I04 Gérer Échap, réduction des mouvements et retour de focus.
-- [ ] I05 Produire HTML/ZIP enrichis autonomes vis-à-vis de l’éditeur et réimportables.
-- [ ] I06 Relancer recette P0 sur mode 1 après intégration du mode 2.
+- [x] I01 Ajouter profils vertical/horizontal/diapositive, plein écran et sommaire.
+- [x] I02 Points actionnables, flèches, compteur et commandes accessibles.
+- [x] I03 Arbitrer clavier entre texte, carte, dialogue, carrousel et document.
+- [x] I04 Gérer Échap, réduction des mouvements et retour de focus.
+- [x] I05 Produire HTML/ZIP enrichis autonomes vis-à-vis de l’éditeur et réimportables.
+- [x] I06 Relancer recette P0 sur mode 1 après intégration du mode 2.
 Porte : présentation utilisable et document publié fidèle.
 
 ## P5 — Brochure statique et PDF

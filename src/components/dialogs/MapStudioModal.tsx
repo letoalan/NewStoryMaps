@@ -2,10 +2,13 @@
  * StoryMap — Atelier Carte dédié & gestion des scènes cartographiques (P3 — H01 à H04)
  */
 
-import React, { useState } from 'react';
-import { ProjectMap, MapFeature, MapSceneLayer } from '../../types/project';
+import React, { useState, useEffect, useRef } from 'react';
+import { Map as MLMap, Marker } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import { ProjectMap, MapFeature } from '../../types/project';
 import { createDefaultProjectMap, addFeatureToLayer, deleteFeatureFromLayer } from '../../core/mapScene';
-import { X, Map, Plus, Trash2, Layers, Eye, EyeOff, Check } from 'lucide-react';
+import { resolveMapStyle } from '../../types/map';
+import { X, Map, Plus, Trash2, Layers, Eye, EyeOff, Check, Camera, Crosshair } from 'lucide-react';
 
 interface MapStudioModalProps {
   isOpen: boolean;
@@ -14,63 +17,93 @@ interface MapStudioModalProps {
   onUpdateMaps: (updatedMaps: ProjectMap[]) => void;
 }
 
-export const MapStudioModal: React.FC<MapStudioModalProps> = ({
-  isOpen,
-  maps,
-  onClose,
-  onUpdateMaps,
-}) => {
-  if (!isOpen) return null;
-
+const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ maps, onClose, onUpdateMaps }) => {
   const currentMaps = maps.length > 0 ? maps : [createDefaultProjectMap()];
   const [selectedMapIndex, setSelectedMapIndex] = useState(0);
   const activeMap = currentMaps[Math.min(selectedMapIndex, currentMaps.length - 1)];
 
   const [newFeatureName, setNewFeatureName] = useState('');
   const [newFeatureType, setNewFeatureType] = useState<'Point' | 'LineString' | 'Polygon'>('Point');
+  const [cursorPos, setCursorPos] = useState<[number, number]>(activeMap.view?.center || [2.3522, 48.8566]);
+
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<MLMap | null>(null);
+  const markersRef = useRef<Marker[]>([]);
 
   const updateActiveMap = (patch: Partial<ProjectMap>) => {
-    const updated = currentMaps.map((m, idx) => (idx === selectedMapIndex ? { ...m, ...patch } : m));
-    onUpdateMaps(updated);
+    onUpdateMaps(currentMaps.map((m, idx) => (idx === selectedMapIndex ? { ...m, ...patch } : m)));
   };
 
-  const handleAddMap = () => {
-    const newMap = createDefaultProjectMap(`map-${Date.now()}`, `Carte ${currentMaps.length + 1}`);
-    const updated = [...currentMaps, newMap];
-    onUpdateMaps(updated);
-    setSelectedMapIndex(updated.length - 1);
-  };
+  // Initialisation carte interactive de travail
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+    mapContainerRef.current.innerHTML = '';
 
-  const handleDeleteMap = (mapId: string) => {
-    if (currentMaps.length <= 1) return;
-    const updated = currentMaps.filter((m) => m.id !== mapId);
-    onUpdateMaps(updated);
-    setSelectedMapIndex(Math.max(0, selectedMapIndex - 1));
-  };
+    const center = activeMap.view?.center || [2.3522, 48.8566];
+    const map = new MLMap({
+      container: mapContainerRef.current,
+      style: resolveMapStyle(activeMap.mapStyle),
+      center,
+      zoom: activeMap.view?.zoom || 11,
+      pitch: activeMap.view?.pitch || 0,
+      bearing: activeMap.view?.bearing || 0,
+    });
 
-  const handleAddLayer = () => {
-    const newLayer: MapSceneLayer = {
-      id: `layer-${Date.now()}`,
-      name: `Couche ${((activeMap.layers || []).length + 1)}`,
-      visible: true,
-      color: '#0b7fb0',
-      features: [],
+    map.on('click', (e) => setCursorPos([e.lngLat.lng, e.lngLat.lat]));
+    mapRef.current = map;
+
+    return () => {
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+      map.remove();
+      mapRef.current = null;
     };
-    updateActiveMap({ layers: [...(activeMap.layers || []), newLayer] });
-  };
+  }, [selectedMapIndex, activeMap.mapStyle]);
 
-  const handleToggleLayer = (layerId: string) => {
-    const updated = (activeMap.layers || []).map((l) => (l.id === layerId ? { ...l, visible: !l.visible } : l));
-    updateActiveMap({ layers: updated });
+  // Rendu des repères de la carte active
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
+
+    (activeMap.layers || []).forEach((layer) => {
+      if (!layer.visible) return;
+      (layer.features || []).forEach((f) => {
+        const coords = Array.isArray(f.coordinates[0]) ? (f.coordinates as any)[0] : f.coordinates;
+        const pt = Array.isArray(coords[0]) ? coords[0] : coords;
+        if (typeof pt[0] === 'number' && typeof pt[1] === 'number') {
+          const m = new Marker({ color: f.color || layer.color || '#0b7fb0' }).setLngLat([pt[0], pt[1]]).addTo(map);
+          markersRef.current.push(m);
+        }
+      });
+    });
+  }, [activeMap.layers, selectedMapIndex]);
+
+  const handleCaptureView = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const center = map.getCenter();
+    updateActiveMap({
+      view: { center: [center.lng, center.lat], zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() },
+    });
   };
 
   const handleAddFeature = (layerId: string) => {
     if (!newFeatureName.trim()) return;
+    const [lng, lat] = cursorPos;
+    let coords: any = [lng, lat];
+    if (newFeatureType === 'LineString') {
+      coords = [[lng, lat], [lng + 0.01, lat + 0.005]];
+    } else if (newFeatureType === 'Polygon') {
+      coords = [[[lng, lat], [lng + 0.01, lat], [lng + 0.01, lat + 0.01], [lng, lat + 0.01], [lng, lat]]];
+    }
+
     const feat: MapFeature = {
-      id: `feat-${Date.now()}`,
+      id: `feat-${activeMap.id}-${Date.now()}`,
       name: newFeatureName.trim(),
       geometryType: newFeatureType,
-      coordinates: [activeMap.view.center[0] + (Math.random() - 0.5) * 0.05, activeMap.view.center[1] + (Math.random() - 0.5) * 0.05],
+      coordinates: coords,
       color: '#0b7fb0',
       numberIndex: ((activeMap.layers || []).flatMap((l) => l.features).length + 1),
     };
@@ -78,101 +111,93 @@ export const MapStudioModal: React.FC<MapStudioModalProps> = ({
     setNewFeatureName('');
   };
 
-  const handleDeleteFeature = (layerId: string, featId: string) => {
-    onUpdateMaps(currentMaps.map((m, idx) => (idx === selectedMapIndex ? deleteFeatureFromLayer(m, layerId, featId) : m)));
-  };
-
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1200, backgroundColor: 'rgba(0,0,0,0.5)', display: 'grid', placeItems: 'center', padding: '16px' }} onClick={onClose}>
-      <div className="dialog-box" style={{ background: 'var(--surface)', borderRadius: 'var(--r-lg)', width: '100%', maxWidth: '640px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="dialog-box" style={{ background: 'var(--surface)', borderRadius: 'var(--r-lg)', width: '100%', maxWidth: '880px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Map size={18} color="var(--accent)" />
-            <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Atelier Carte & Scènes</h2>
+            <h2 style={{ fontSize: '15px', fontWeight: 600, margin: 0 }}>Atelier Carte & Scènes Cartographiques</h2>
           </div>
           <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={16} /></button>
         </div>
 
-        <div style={{ padding: '18px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Sélection de la carte */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-            <select className="select" style={{ flex: 1 }} value={selectedMapIndex} onChange={(e) => setSelectedMapIndex(Number(e.target.value))}>
-              {currentMaps.map((m, idx) => (
-                <option key={m.id} value={idx}>{m.name} ({m.layers?.length || 0} couches)</option>
-              ))}
-            </select>
-            <button className="btn btn-ghost btn-sm" onClick={handleAddMap}><Plus size={14} /> Nouvelle carte</button>
-            {currentMaps.length > 1 && (
-              <button className="btn btn-ghost btn-danger btn-sm" onClick={() => handleDeleteMap(activeMap.id)}><Trash2 size={14} /></button>
-            )}
-          </div>
-
-          {/* Propriétés de la carte active */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <label style={{ fontSize: '11px', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Nom de la carte</label>
-              <input type="text" className="input" value={activeMap.name} onChange={(e) => updateActiveMap({ name: e.target.value })} />
+        <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', flex: 1, minHeight: '440px', overflow: 'hidden' }}>
+          {/* Panneau gauche : Gestion des données */}
+          <div style={{ padding: '14px', borderRight: '1px solid var(--border)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <select className="select" style={{ flex: 1, fontSize: '12px' }} value={selectedMapIndex} onChange={(e) => setSelectedMapIndex(Number(e.target.value))}>
+                {currentMaps.map((m, idx) => (<option key={m.id} value={idx}>{m.name}</option>))}
+              </select>
+              <button className="btn btn-ghost btn-sm" onClick={() => { onUpdateMaps([...currentMaps, createDefaultProjectMap(`map-${Date.now()}`, `Carte ${currentMaps.length + 1}`)]); setSelectedMapIndex(currentMaps.length); }}><Plus size={13} /></button>
             </div>
-            <div>
-              <label style={{ fontSize: '11px', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Fond cartographique</label>
-              <select className="select" style={{ width: '100%' }} value={activeMap.mapStyle} onChange={(e) => updateActiveMap({ mapStyle: e.target.value })}>
-                <option value="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json">Positron Clair</option>
-                <option value="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json">Dark Matter Sombre</option>
-                <option value="esri-satellite">Satellite Esri</option>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '11px', fontWeight: 600 }}>Nom & Fond</label>
+              <input type="text" className="input" style={{ height: '26px', fontSize: '12px' }} value={activeMap.name} onChange={(e) => updateActiveMap({ name: e.target.value })} />
+              <select className="select" style={{ height: '26px', fontSize: '11px' }} value={activeMap.mapStyle} onChange={(e) => updateActiveMap({ mapStyle: e.target.value })}>
+                <option value="positron">Positron Clair</option>
+                <option value="dark-matter">Dark Matter Sombre</option>
+                <option value="voyager">Voyager Coloré</option>
               </select>
             </div>
-          </div>
 
-          {/* Couches et entités */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Layers size={14} /> Couches & Objets ({activeMap.layers?.length || 0})
-              </span>
-              <button className="btn btn-ghost btn-xs" onClick={handleAddLayer}><Plus size={12} /> Ajouter couche</button>
-            </div>
+            {/* Couches & Objets */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600 }}><Layers size={13} /> Couches & Entités</span>
+                <button className="btn btn-ghost btn-xs" onClick={() => updateActiveMap({ layers: [...(activeMap.layers || []), { id: `layer-${Date.now()}`, name: `Couche ${(activeMap.layers || []).length + 1}`, visible: true, features: [] }] })}><Plus size={11} /> Couche</button>
+              </div>
 
-            {(activeMap.layers || []).map((l) => (
-              <div key={l.id} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '10px', marginBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <button className="btn btn-ghost btn-icon btn-xs" onClick={() => handleToggleLayer(l.id)}>
-                      {l.visible ? <Eye size={13} color="var(--accent)" /> : <EyeOff size={13} />}
+              {(activeMap.layers || []).map((l) => (
+                <div key={l.id} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '4px', padding: '8px', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '11.5px', fontWeight: 600 }}>{l.name}</span>
+                    <button className="btn btn-ghost btn-icon btn-xs" onClick={() => updateActiveMap({ layers: activeMap.layers?.map((ly) => (ly.id === l.id ? { ...ly, visible: !ly.visible } : ly)) })}>
+                      {l.visible ? <Eye size={12} color="var(--accent)" /> : <EyeOff size={12} />}
                     </button>
-                    <span style={{ fontSize: '12px', fontWeight: 600 }}>{l.name}</span>
                   </div>
-                  <span style={{ fontSize: '11px', color: 'var(--text-3)' }}>{l.features?.length || 0} objet(s)</span>
-                </div>
-
-                {/* Liste des features */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '24px' }}>
                   {(l.features || []).map((f) => (
-                    <div key={f.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11.5px', background: 'var(--surface)', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border)' }}>
-                      <span>{f.numberIndex ? `#${f.numberIndex} ` : ''}{f.name} ({f.geometryType})</span>
-                      <button className="btn btn-ghost btn-icon btn-xs" onClick={() => handleDeleteFeature(l.id, f.id)}><Trash2 size={12} color="var(--danger)" /></button>
+                    <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', background: 'var(--surface)', padding: '2px 6px', borderRadius: '3px', marginBottom: '2px' }}>
+                      <span>#{f.numberIndex || 1} {f.name} ({f.geometryType})</span>
+                      <button className="btn btn-ghost btn-icon btn-xs" onClick={() => onUpdateMaps(currentMaps.map((m, idx) => (idx === selectedMapIndex ? deleteFeatureFromLayer(m, l.id, f.id) : m)))}><Trash2 size={11} color="var(--danger)" /></button>
                     </div>
                   ))}
-
-                  {/* Ajout d'objet dans la couche */}
                   <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
-                    <input type="text" className="input" placeholder="Nom de l'objet…" style={{ height: '24px', fontSize: '11px', flex: 1 }} value={newFeatureName} onChange={(e) => setNewFeatureName(e.target.value)} />
-                    <select className="select" style={{ height: '24px', fontSize: '11px' }} value={newFeatureType} onChange={(e) => setNewFeatureType(e.target.value as any)}>
+                    <input type="text" className="input" placeholder="Nouvel objet…" style={{ height: '22px', fontSize: '11px', flex: 1 }} value={newFeatureName} onChange={(e) => setNewFeatureName(e.target.value)} />
+                    <select className="select" style={{ height: '22px', fontSize: '10.5px' }} value={newFeatureType} onChange={(e) => setNewFeatureType(e.target.value as any)}>
                       <option value="Point">Point</option>
                       <option value="LineString">Ligne</option>
                       <option value="Polygon">Polygone</option>
                     </select>
-                    <button className="btn btn-primary btn-xs" onClick={() => handleAddFeature(l.id)}><Plus size={12} /></button>
+                    <button className="btn btn-primary btn-xs" onClick={() => handleAddFeature(l.id)} title="Ajouter à l'emplacement cliqué"><Plus size={11} /></button>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+
+          {/* Panneau droit : Vraie carte interactive MapLibre */}
+          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+            <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(15,23,42,0.85)', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '10.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Crosshair size={12} color="var(--accent)" /> <span>Clic carte : [{cursorPos[0].toFixed(3)}, {cursorPos[1].toFixed(3)}]</span>
+            </div>
+            <button className="btn btn-primary btn-xs" style={{ position: 'absolute', bottom: '12px', right: '12px', zIndex: 10 }} onClick={handleCaptureView}>
+              <Camera size={13} style={{ marginRight: '4px' }} /> Capturer cette vue
+            </button>
           </div>
         </div>
 
-        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', justifyContent: 'flex-end' }}>
-          <button className="btn btn-primary" onClick={onClose}><Check size={14} /> Fermer l'Atelier</button>
+        <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', justifyContent: 'flex-end' }}>
+          <button className="btn btn-primary btn-sm" onClick={onClose}><Check size={14} style={{ marginRight: '4px' }} /> Enregistrer & Fermer</button>
         </div>
       </div>
     </div>
   );
+};
+
+export const MapStudioModal: React.FC<MapStudioModalProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <MapStudioModalContent {...props} />;
 };

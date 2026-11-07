@@ -16,6 +16,7 @@ import {
   duplicateBlock,
   deleteBlock,
   findFirstFreeCell,
+  refitBlocksToGrid,
 } from '../src/core/grid.ts';
 
 console.log('=== LANCEMENT DE LA RECETTE P2 (G01 -> G10) ===\n');
@@ -101,19 +102,28 @@ function testBlockOperations() {
   assert.strictEqual(addRes2.success, false);
   assert.match(addRes2.error || '', /collision/i);
 
-  // Agrandissement vers le bas (2x1 -> 2x2, aire 4 paire)
-  const expRes = expandBlock(blocks, 'b1', 'down', cols, rows);
+  // Agrandissement vers la droite avec saut automatique vers aire paire (2x1 -> 4x1, saut de 3x1 interdit)
+  const expRes = expandBlock(blocks, 'b1', 'right', cols, rows);
   assert.strictEqual(expRes.success, true);
-  assert.strictEqual(expRes.blocks[0].h, 2);
+  assert.strictEqual(expRes.blocks[0].w, 4); // Saut automatique de 2x1 à 4x1
+  assert.strictEqual(expRes.blocks[0].w * expRes.blocks[0].h, 4);
   blocks = expRes.blocks;
 
-  // Réduction (2x2 -> 2x1)
+  // Réduction avec garantie d'aire paire (4x1 -> 2x1, refus d'aire 3x1)
   const shrinkRes = shrinkBlock(blocks, 'b1');
   assert.strictEqual(shrinkRes.success, true);
-  assert.strictEqual(shrinkRes.blocks[0].h, 1);
+  assert.strictEqual(shrinkRes.blocks[0].w, 2);
+  assert.strictEqual(shrinkRes.blocks[0].w * shrinkRes.blocks[0].h, 2);
   blocks = shrinkRes.blocks;
 
-  console.log('  -> Ajout, expansion et réduction validés avec succès.');
+  // Réajustement lors d'un rétrécissement de grille (ex. passage 6x8 vers 4x4)
+  const overflowingBlocks = [{ id: 'b_out', type: 'text', x: 5, y: 7, w: 2, h: 2, data: {} }];
+  const refitted = refitBlocksToGrid(overflowingBlocks, 4, 4);
+  assert.ok(refitted[0].x + refitted[0].w <= 4, 'Le bloc doit être recadré dans les colonnes');
+  assert.ok(refitted[0].y + refitted[0].h <= 4, 'Le bloc doit être recadré dans les lignes');
+  assert.ok(refitted[0].w * refitted[0].h === 1 || (refitted[0].w * refitted[0].h) % 2 === 0);
+
+  console.log('  -> Ajout, expansion avec saut d’aire, réduction stricte et réajustement validés.');
 }
 
 // 5. G06 : Duplication, recherche de cellule libre et suppression

@@ -5,6 +5,7 @@
 import type { Block, MapFeature, MapView, NarrativeBinding, Page, ProjectMap } from '../types/project';
 
 export function createDefaultProjectMap(id = `map-${Date.now()}`, name = 'Carte principale'): ProjectMap {
+  const featId = `feat-${id}-1`;
   return {
     id,
     name,
@@ -25,7 +26,7 @@ export function createDefaultProjectMap(id = `map-${Date.now()}`, name = 'Carte 
         color: '#0b7fb0',
         features: [
           {
-            id: `feat-1`,
+            id: featId,
             name: 'Repère initial',
             geometryType: 'Point',
             coordinates: [2.3522, 48.8566],
@@ -112,13 +113,14 @@ export interface BindingValidationResult {
 }
 
 export function validateNarrativeBindings(pages: Page[], maps: ProjectMap[]): BindingValidationResult {
-  const mapIds = new Set(maps.map((m) => m.id));
-  const featureIds = new Set<string>();
-
+  // Indexation stricte des entités par identifiant de carte pour éviter toute confusion inter-cartes
+  const mapFeatures = new Map<string, Set<string>>();
   maps.forEach((m) => {
+    const featureSet = new Set<string>();
     (m.layers || []).forEach((l) => {
-      (l.features || []).forEach((f) => featureIds.add(f.id));
+      (l.features || []).forEach((f) => featureSet.add(f.id));
     });
+    mapFeatures.set(m.id, featureSet);
   });
 
   let brokenCount = 0;
@@ -129,13 +131,13 @@ export function validateNarrativeBindings(pages: Page[], maps: ProjectMap[]): Bi
     blocks: page.blocks.map((block) => {
       if (!block.binding) return block;
       const { mapId, targetFeatureId } = block.binding;
-      const mapExists = mapIds.has(mapId);
-      const featureExists = !targetFeatureId || featureIds.has(targetFeatureId);
+      const targetMapFeatures = mapFeatures.get(mapId);
+      const mapExists = !!targetMapFeatures;
+      const featureExists = !targetFeatureId || (mapExists && targetMapFeatures.has(targetFeatureId));
 
       if (!mapExists || !featureExists) {
         brokenCount++;
         orphanBlockIds.push(block.id);
-        // Nettoyage défensif
         const { binding: _, ...unbound } = block;
         return unbound as Block;
       }
@@ -150,4 +152,3 @@ export function validateNarrativeBindings(pages: Page[], maps: ProjectMap[]): Bi
     cleanPages,
   };
 }
-
