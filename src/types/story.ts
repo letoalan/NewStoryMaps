@@ -3,6 +3,7 @@
  */
 
 import { Step } from './step';
+import { ProjectBrand, ProjectMode } from './project';
 
 export type UITheme = 'light' | 'dark' | 'auto';
 export type StoryFont = 'Inter' | 'Lora' | 'Merriweather' | 'Roboto' | 'Cinzel';
@@ -37,6 +38,8 @@ export interface StoryMap {
   coverImage?: string;
   created: number;
   modified: number;
+  mode?: ProjectMode;
+  brand?: ProjectBrand;
   appearance: StoryAppearance;
   mapStyle: string;
   layers: MapLayer[];
@@ -47,8 +50,8 @@ export interface StoryListItem {
   id: string;
   title: string;
   subtitle?: string;
+  mode?: ProjectMode;
   modified: number;
   stepCount: number;
   coverImage?: string;
 }
-
