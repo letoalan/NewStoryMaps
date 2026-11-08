@@ -65,13 +65,18 @@ export function generateStandaloneHTML(story: StoryMap): string {
 
         function getStyle() {
             const s = story.mapStyle || 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
-            if (s === 'esri-satellite' || s === 'satellite') {
-                return { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }] };
-            }
-            if (s === 'esri-hybrid' || s === 'hybrid') {
-                return { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 }, labels: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }, { id: 'labels', type: 'raster', source: 'labels' }] };
-            }
-            return s;
+            if (s === 'esri-satellite' || s === 'satellite') return { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }] };
+            if (s === 'esri-hybrid' || s === 'hybrid') return { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 }, labels: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }, { id: 'labels', type: 'raster', source: 'labels' }] };
+            if (s === 'positron') return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+            if (s === 'voyager') return 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+            if (s === 'dark-matter' || s === 'dark') return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+            if (s === 'liberty') return 'https://tiles.openfreemap.org/styles/liberty';
+            if (s === 'bright') return 'https://tiles.openfreemap.org/styles/bright';
+            if (s === 'fiord') return 'https://tiles.openfreemap.org/styles/fiord';
+            if (s === 'ofm-positron') return 'https://tiles.openfreemap.org/styles/positron';
+            if (s === 'ofm-dark') return 'https://tiles.openfreemap.org/styles/dark';
+            if (/^(https?:|data:|\/)/.test(s)) return s;
+            return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
         }
 
         function initMap() {

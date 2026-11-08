@@ -21,12 +21,8 @@ export function generateBrochurePrintHTML(story: StoryMap): string {
   const safeTitle = escapeAttr(cleanStory.title || 'Brochure StoryMap');
   const safeAuthor = escapeAttr(cleanStory.author || '');
 
-  // Conserve l'identifiant et les scènes cartographiques d'origine pour la réimportation éditable (J11)
   const reimportableStory: StoryMap = {
-    ...cleanStory,
-    mode: 'brochure',
-    format: targetFormat,
-    pages: brochure.pages,
+    ...cleanStory, mode: 'brochure', format: targetFormat, pages: brochure.pages,
   };
   const storyJson = JSON.stringify(reimportableStory).replace(/</g, '\\u003c');
   const pages = brochure.pages || [];
@@ -95,19 +91,28 @@ export function generateBrochurePrintHTML(story: StoryMap): string {
     <script id="storymap-data" type="application/json">${storyJson}</script>
     <script>
         const storyData = JSON.parse(document.getElementById('storymap-data').textContent);
+        const RAST_SAT = { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }] };
+        const RAST_HYB = { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 }, labels: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }, { id: 'labels', type: 'raster', source: 'labels' }] };
         function resolveStyle(s) {
             if (!s || s === 'positron') return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
-            if (s === 'dark-matter') return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
             if (s === 'voyager') return 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
-            return s;
+            if (s === 'dark-matter' || s === 'dark') return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+            if (s === 'liberty') return 'https://tiles.openfreemap.org/styles/liberty';
+            if (s === 'bright') return 'https://tiles.openfreemap.org/styles/bright';
+            if (s === 'fiord') return 'https://tiles.openfreemap.org/styles/fiord';
+            if (s === 'ofm-positron') return 'https://tiles.openfreemap.org/styles/positron';
+            if (s === 'ofm-dark') return 'https://tiles.openfreemap.org/styles/dark';
+            if (s === 'satellite' || s === 'esri-satellite') return RAST_SAT;
+            if (s === 'hybrid' || s === 'esri-hybrid') return RAST_HYB;
+            if (/^(https?:|data:|\/)/.test(s)) return s;
+            return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
         }
         function featCenter(f) {
             const c = f && f.coordinates;
             if (!Array.isArray(c) || !c.length) return null;
             if (f.geometryType === 'Point') return [c[0], c[1]];
             if (f.geometryType === 'LineString') return c[Math.floor(c.length / 2)];
-            if (f.geometryType === 'Polygon' && Array.isArray(c[0]) && c[0].length) return c[0][0];
-            return null;
+            return (f.geometryType === 'Polygon' && Array.isArray(c[0]) && c[0].length) ? c[0][0] : null;
         }
         function initBrochureMaps() {
             const maps = storyData.maps || [];
@@ -158,4 +163,3 @@ export function generateBrochurePrintHTML(story: StoryMap): string {
 </body>
 </html>`;
 }
-

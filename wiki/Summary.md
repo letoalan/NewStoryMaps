@@ -14,7 +14,7 @@ Ce document répertorie chaque fichier du projet StoryMap (conservé et nouvelle
 | [`src/types/context.ts`](file:///src/types/context.ts) | 33 | Types du contexte global | [Documentation](file:///wiki/context/story-context.md) |
 | [`src/types/step.ts`](file:///src/types/step.ts) | 51 | Modèle d'étape et caméra | [Documentation](file:///wiki/types/step-types.md) |
 | [`src/types/sheet.ts`](file:///src/types/sheet.ts) | 22 | Types du mode tableur | [Documentation](file:///wiki/editor/sheet-view.md) |
-| [`src/types/map.ts`](file:///src/types/map.ts) | 36 | Styles cartographiques | [Documentation](file:///wiki/types/map-types.md) |
+| [`src/types/map.ts`](file:///src/types/map.ts) | 160 | 10 styles cartographiques, resolveMapStyle & getMapStyleId | [Documentation](file:///wiki/types/map-types.md) |
 | [`src/core/grid.ts`](file:///src/core/grid.ts) | 160 | Moteur géométrique de grille & refit sans collision (V06/V07) | [Documentation](file:///wiki/core/grid.md) |
 | [`src/core/mapScene.ts`](file:///src/core/mapScene.ts) | 140 | Moteur de scènes & liaisons narratives (P3) | [Documentation](file:///wiki/core/map-scene.md) |
 | [`src/core/mapSceneRender.ts`](file:///src/core/mapSceneRender.ts) | 164 | Rendu GeoJSON Point/LineString/Polygon sur MapLibre (V02/V03) | [Documentation](file:///wiki/core/map-scene.md) |

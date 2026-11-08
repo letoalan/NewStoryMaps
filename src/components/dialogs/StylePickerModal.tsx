@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { MAP_STYLES, MapStyleOption } from '../../types/map';
+import { MAP_STYLES, MapStyleOption, getMapStyleId } from '../../types/map';
 import { useStory } from '../../context/StoryContext';
 import { X, Check } from 'lucide-react';
 
@@ -67,7 +67,7 @@ export const StylePickerModal: React.FC<StylePickerModalProps> = ({ isOpen, onCl
 
         <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           {MAP_STYLES.map((style) => {
-            const isSelected = story.mapStyle === style.url;
+            const isSelected = getMapStyleId(story.mapStyle) === style.id;
             return (
               <div
                 key={style.id}

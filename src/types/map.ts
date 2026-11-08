@@ -2,7 +2,7 @@
  * StoryMap — Types et styles pour la cartographie MapLibre GL
  */
 
-import { StyleSpecification } from 'maplibre-gl';
+import type { StyleSpecification } from 'maplibre-gl';
 
 export interface MapStyleOption {
   id: string;
@@ -93,6 +93,20 @@ export const MAP_STYLES: MapStyleOption[] = [
     description: 'Vif et contrasté',
   },
   {
+    id: 'ofm-positron',
+    name: 'Positron (OFM)',
+    url: 'https://tiles.openfreemap.org/styles/positron',
+    provider: 'OpenFreeMap',
+    description: 'Clair et minimaliste',
+  },
+  {
+    id: 'ofm-dark',
+    name: 'Dark (OFM)',
+    url: 'https://tiles.openfreemap.org/styles/dark',
+    provider: 'OpenFreeMap',
+    description: 'Très sombre',
+  },
+  {
     id: 'fiord',
     name: 'Fiord (Bleu Nuit)',
     url: 'https://tiles.openfreemap.org/styles/fiord',
@@ -115,12 +129,40 @@ export const MAP_STYLES: MapStyleOption[] = [
   },
 ];
 
-export function resolveMapStyle(styleUrlOrId: string): string | StyleSpecification {
-  if (styleUrlOrId === 'esri-satellite' || styleUrlOrId === 'satellite') {
-    return SATELLITE_STYLE;
+export function resolveMapStyle(styleUrlOrId: string | StyleSpecification | undefined | null): string | StyleSpecification {
+  if (!styleUrlOrId) {
+    return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
   }
-  if (styleUrlOrId === 'esri-hybrid' || styleUrlOrId === 'hybrid') {
-    return HYBRID_STYLE;
+  if (typeof styleUrlOrId === 'object') {
+    return styleUrlOrId;
   }
-  return styleUrlOrId;
+  const s = String(styleUrlOrId).trim();
+  if (s === 'esri-satellite' || s === 'satellite') return SATELLITE_STYLE;
+  if (s === 'esri-hybrid' || s === 'hybrid') return HYBRID_STYLE;
+  if (s === 'positron') return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+  if (s === 'voyager') return 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+  if (s === 'dark-matter' || s === 'dark') return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+  if (s === 'liberty') return 'https://tiles.openfreemap.org/styles/liberty';
+  if (s === 'bright') return 'https://tiles.openfreemap.org/styles/bright';
+  if (s === 'fiord') return 'https://tiles.openfreemap.org/styles/fiord';
+  if (s === 'ofm-positron') return 'https://tiles.openfreemap.org/styles/positron';
+  if (s === 'ofm-dark') return 'https://tiles.openfreemap.org/styles/dark';
+  if (/^(https?:|data:|\/)/.test(s)) return s;
+  return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+}
+
+export function getMapStyleId(styleUrlOrId: string | undefined | null): string {
+  if (!styleUrlOrId) return 'positron';
+  const s = String(styleUrlOrId).trim();
+  const found = MAP_STYLES.find((opt) => opt.id === s || opt.url === s);
+  if (found) return found.id;
+  if (s.includes('dark-matter')) return 'dark-matter';
+  if (s.includes('voyager')) return 'voyager';
+  if (s.includes('positron')) return 'positron';
+  if (s.includes('liberty')) return 'liberty';
+  if (s.includes('bright')) return 'bright';
+  if (s.includes('fiord')) return 'fiord';
+  if (s.includes('satellite')) return 'satellite';
+  if (s.includes('hybrid')) return 'hybrid';
+  return 'positron';
 }

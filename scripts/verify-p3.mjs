@@ -16,6 +16,7 @@ import {
   validateNarrativeBindings,
 } from '../src/core/mapScene.ts';
 import { getFeatureCenter, buildSceneGeoJSON } from '../src/core/mapSceneRender.ts';
+import { MAP_STYLES, resolveMapStyle, getMapStyleId } from '../src/types/map.ts';
 
 console.log('=== LANCEMENT DE LA RECETTE P3 (H01 -> H09 & V02/V03) ===\n');
 
@@ -156,6 +157,23 @@ function testFullCartographicSlice() {
   console.log('  -> Tranche cartographique complète exécutée et vérifiée.');
 }
 
+// 7. Résolution robuste de tous les styles (CARTO, OFM, Esri) et zéro 404
+function testMapStyleResolution() {
+  console.log('Test 7 : Résolution de tous les styles de fond sans 404 (Mode 1 & Mode 2/3)...');
+  assert.strictEqual(MAP_STYLES.length, 10, '10 styles disponibles dans tous les modes');
+  for (const style of MAP_STYLES) {
+    const resId = resolveMapStyle(style.id);
+    assert.notStrictEqual(resId, style.id, `Le style id "${style.id}" ne doit pas être renvoyé bare (risque 404)`);
+    assert.ok(typeof resId === 'string' ? resId.startsWith('http') : typeof resId === 'object');
+    assert.strictEqual(getMapStyleId(style.id), style.id);
+    assert.strictEqual(getMapStyleId(style.url), style.id);
+  }
+  assert.ok(resolveMapStyle('dark-matter').includes('dark-matter-gl-style'));
+  assert.ok(resolveMapStyle('positron').includes('positron-gl-style'));
+  assert.ok(resolveMapStyle('voyager').includes('voyager-gl-style'));
+  console.log('  -> Résolution de tous les styles cartographiques validée.');
+}
+
 async function runAll() {
   testIndependentMapScene();
   testLayersAndFeatures();
@@ -163,6 +181,7 @@ async function runAll() {
   testModeActionsAndIndex();
   testOrphanBindingResilience();
   testFullCartographicSlice();
+  testMapStyleResolution();
   console.log('\n=== TOUTES LES VÉRIFICATIONS P3 (H01 -> H09 & V02/V03) ONT RÉUSSI AVEC SUCCÈS ! ===');
 }
 

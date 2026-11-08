@@ -23,6 +23,7 @@ export const MapBlockPreview: React.FC<MapBlockPreviewProps> = ({ block, onChang
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const markersRef = useRef<Marker[]>([]);
+  const currentStyleRef = useRef<string>(story?.mapStyle || '');
 
   const mapTitle = (block.data.title as string) || 'Carte interactive';
   const caption = (block.data.caption as string) || '';
@@ -46,7 +47,7 @@ export const MapBlockPreview: React.FC<MapBlockPreviewProps> = ({ block, onChang
       interactive: true,
       attributionControl: false,
     });
-
+    currentStyleRef.current = targetMap.mapStyle;
     mapRef.current = map;
 
     return () => {
@@ -55,7 +56,22 @@ export const MapBlockPreview: React.FC<MapBlockPreviewProps> = ({ block, onChang
       map.remove();
       mapRef.current = null;
     };
-  }, [targetMap.id, targetMap.mapStyle]);
+  }, [targetMap.id]);
+
+  // Synchronisation dynamique du style sans perte de contexte WebGL
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !targetMap.mapStyle || (map as any)._removed) return;
+    if (currentStyleRef.current === targetMap.mapStyle) return;
+    currentStyleRef.current = targetMap.mapStyle;
+    map.setStyle(resolveMapStyle(targetMap.mapStyle));
+    const handleStyleLoad = () => {
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = renderSceneLayersOnMap(map, targetMap, binding?.targetFeatureId);
+    };
+    if (map.isStyleLoaded()) handleStyleLoad();
+    else map.once('style.load', handleStyleLoad);
+  }, [targetMap.mapStyle]);
 
   // V03 : Synchronisation complète de la vue enregistrée (centre, zoom, pitch, bearing)
   useEffect(() => {
