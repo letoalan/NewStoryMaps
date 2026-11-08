@@ -13,6 +13,7 @@ export interface PreflightIssue {
     | 'DYNAMIC_GALLERY'
     | 'TEXT_OVERFLOW'
     | 'MISSING_MEDIA_URL'
+    | 'MISSING_MAP_SCENE'
     | 'MISSING_MAP_ATTRIBUTION'
     | 'UNNUMBERED_BINDING';
   message: string;
@@ -63,7 +64,11 @@ export function runBrochurePreflight(story: StoryMap): BrochurePreflightReport {
       }
       if (b.type === 'map') {
         mapCount++;
-        const mapScene = maps.find((m) => m.id === (b.binding?.mapId || b.data?.mapId)) || maps[0];
+        const targetMapId = (b.binding?.mapId || b.data?.mapId) as string | undefined;
+        const mapScene = targetMapId ? maps.find((m) => m.id === targetMapId) : maps[0];
+        if (targetMapId && !mapScene) {
+          issues.push({ severity: 'error', pageIndex: pIdx, blockId: b.id, code: 'MISSING_MAP_SCENE', message: `Page ${pIdx + 1} : scène cartographique "${targetMapId}" introuvable.` });
+        }
         const provider = detectMapProvider(mapScene?.mapStyle);
         const mapCaption = String(b.data.caption || b.data.attribution || '').toLowerCase();
         const hasProviderCredit = mapCaption.includes(provider.requiredCredit.toLowerCase()) || pageSourceText.includes(provider.requiredCredit.toLowerCase()) || mapCaption.includes('openstreetmap') || pageSourceText.includes('openstreetmap');

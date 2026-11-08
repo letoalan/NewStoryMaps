@@ -69,6 +69,8 @@ function testFiveStepTourInThreeModes() {
   const htmlMode2 = generateDocumentHTML(docStory);
   assert.ok(htmlMode2.includes('data-action="narrative-binding"'));
   assert.ok(htmlMode2.includes("['==', ['get', 'id'], featId]"), 'Action narrative filtrée par ID exact de figuré');
+  assert.ok(htmlMode2.includes('doc-map-marker'), 'Marqueurs de points identifiés pour actions narratives');
+  assert.ok(htmlMode2.includes('scale(1.4)'), 'Surbrillance visuelle animée sur les marqueurs de points');
   const reopened2 = extractStoryFromHTML(htmlMode2);
   assert.strictEqual(reopened2.maps[0].layers[0].features.length, 5);
 
@@ -157,6 +159,8 @@ async function testZipRelativeImagesMode2() {
       blocks: [
         { id: 'b-img', type: 'image', x: 0, y: 0, w: 2, h: 2, data: { url: './assets/photo.png' } },
         { id: 'b-sheet', type: 'image', x: 2, y: 0, w: 2, h: 2, data: { isContactSheet: true, contactSheetItems: [{ url: 'assets/photo.png' }] } },
+        { id: 'b-gal', type: 'gallery', x: 0, y: 2, w: 2, h: 2, data: { items: ['assets/photo.png'] } },
+        { id: 'b-txt', type: 'text', x: 2, y: 2, w: 2, h: 2, data: { text: '<p><img src="assets/photo.png"></p>' } },
       ],
     }],
   };
@@ -169,8 +173,12 @@ async function testZipRelativeImagesMode2() {
   const importedDoc = importedList[0];
   const bImg = importedDoc.pages[0].blocks[0];
   const bSheet = importedDoc.pages[0].blocks[1];
-  assert.ok(bImg.data.url.startsWith('data:image/png;base64,'), 'L’image relative du bloc doit être convertie en data URL');
-  assert.ok(bSheet.data.contactSheetItems[0].url.startsWith('data:image/png;base64,'), 'L’image de la planche contact doit être convertie');
+  const bGal = importedDoc.pages[0].blocks[2];
+  const bTxt = importedDoc.pages[0].blocks[3];
+  assert.ok(bImg.data.url.startsWith('data:image/png;base64,'), 'Image simple convertie');
+  assert.ok(bSheet.data.contactSheetItems[0].url.startsWith('data:image/png;base64,'), 'Planche contact convertie');
+  assert.ok(bGal.data.items[0].startsWith('data:image/png;base64,'), 'Galerie items convertie');
+  assert.ok(bTxt.data.text.includes('src="data:image/png;base64,'), 'Image HTML interne de bloc convertie');
   console.log('  -> Résolution des images relatives Mode 2/3 dans ZIP validée.');
 }
 

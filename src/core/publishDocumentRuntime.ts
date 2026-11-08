@@ -35,10 +35,16 @@ function initDocMaps() {
     document.querySelectorAll('.doc-map-canvas').forEach((el) => {
         if (mapInstances[el.id]) { mapInstances[el.id].resize(); return; }
         const mapId = el.getAttribute('data-map-id'), targetFeatId = el.getAttribute('data-target-feature');
-        const scene = maps.find(m => m.id === mapId) || maps[0];
+        const scene = mapId ? maps.find(m => m.id === mapId) : maps[0];
         if (typeof maplibregl === 'undefined' || !scene) {
             const fb = document.getElementById(el.id.replace('doc-map-', 'doc-map-fb-'));
-            if (fb) fb.style.display = 'flex';
+            if (fb) {
+                fb.style.display = 'flex';
+                if (!scene && mapId) {
+                    const p = fb.querySelector('p');
+                    if (p) p.textContent = 'Scène cartographique "' + mapId + '" introuvable';
+                }
+            }
             return;
         }
         const v = scene.view || { center: [2.3522, 48.8566], zoom: 11, pitch: 0, bearing: 0 };
@@ -54,7 +60,9 @@ function initDocMaps() {
                     const pt = featCenter(f);
                     if (pt) {
                         const mEl = document.createElement('div');
-                        mEl.style.cssText = 'width:22px;height:22px;border-radius:50%;background:' + col + ';color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;';
+                        mEl.className = 'doc-map-marker';
+                        mEl.setAttribute('data-feat-id', f.id);
+                        mEl.style.cssText = 'width:22px;height:22px;border-radius:50%;background:' + col + ';color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:all 0.3s;';
                         mEl.textContent = String(f.numberIndex || 1);
                         new maplibregl.Marker({ element: mEl }).setLngLat(pt).addTo(map);
                     }
@@ -80,6 +88,14 @@ function triggerNarrativeBinding(mapId, featId, action) {
             m.flyTo({ center: pt, zoom: 14, duration: reducedMotion ? 0 : 800 });
         } else if (action === 'highlight') {
             if (pt) m.panTo(pt, { duration: reducedMotion ? 0 : 500 });
+            el.querySelectorAll('.doc-map-marker').forEach(mk => {
+                if (mk.getAttribute('data-feat-id') === featId) {
+                    mk.style.transform = 'scale(1.4)';
+                    mk.style.boxShadow = '0 0 0 4px #e11d48';
+                    mk.style.zIndex = '100';
+                    setTimeout(() => { mk.style.transform = 'scale(1)'; mk.style.boxShadow = 'none'; mk.style.zIndex = '1'; }, 2500);
+                }
+            });
             try {
                 if (m.getLayer('feat-hl')) m.removeLayer('feat-hl');
                 if (targetFeat && targetFeat.geometryType !== 'Point') {
@@ -92,6 +108,9 @@ function triggerNarrativeBinding(mapId, featId, action) {
                 if (targetFeat) {
                     m.setFilter('scene-lines-layer', ['==', ['get', 'id'], featId]);
                     m.setFilter('scene-polygons-fill', ['==', ['get', 'id'], featId]);
+                    el.querySelectorAll('.doc-map-marker').forEach(mk => {
+                        mk.style.display = (mk.getAttribute('data-feat-id') === featId) ? 'flex' : 'none';
+                    });
                 }
             } catch (_) {}
         }

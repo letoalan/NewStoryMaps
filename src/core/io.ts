@@ -107,38 +107,52 @@ async function resolveRelativeImages(story: StoryMap, entries: ZipReadEntry[]): 
   const imageEntries = entries.filter(e => /\.(jpe?g|png|webp|svg|gif)$/i.test(e.name));
   if (imageEntries.length === 0) return story;
 
-  for (const step of story.steps) {
-    if (step.media?.url && !step.media.url.startsWith('http') && !step.media.url.startsWith('data:')) {
-      const target = step.media.url.replace(/^\.?\//, '').toLowerCase();
-      const match = imageEntries.find(e => e.name.toLowerCase().endsWith(target) || target.endsWith(e.name.toLowerCase().split('/').pop() || ''));
-      if (match) step.media.url = uint8ArrayToDataUrl(await match.bytes(), match.name);
+  const resolveUrl = async (url?: string): Promise<string> => {
+    if (!url || url.startsWith('http') || url.startsWith('data:')) return url || '';
+    const target = url.replace(/^\.?\//, '').toLowerCase();
+    const m = imageEntries.find(e => e.name.toLowerCase().endsWith(target) || target.endsWith(e.name.toLowerCase().split('/').pop() || ''));
+    return m ? uint8ArrayToDataUrl(await m.bytes(), m.name) : url;
+  };
+
+  const resolveHtml = async (html?: string): Promise<string> => {
+    if (!html || !/<img\b/i.test(html)) return html || '';
+    let res = html;
+    for (const ie of imageEntries) {
+      const bname = ie.name.split('/').pop() || ie.name;
+      const re = new RegExp(`src=["'][^"']*${bname}["']`, 'gi');
+      if (re.test(res)) res = res.replace(re, `src="${uint8ArrayToDataUrl(await ie.bytes(), ie.name)}"`);
     }
-    if (step.description && /<img\b/i.test(step.description)) {
-      for (const ie of imageEntries) {
-        const bname = ie.name.split('/').pop() || ie.name;
-        const re = new RegExp(`src=["'][^"']*${bname}["']`, 'gi');
-        if (re.test(step.description)) {
-          const durl = uint8ArrayToDataUrl(await ie.bytes(), ie.name);
-          step.description = step.description.replace(re, `src="${durl}"`);
-        }
-      }
-    }
+    return res;
+  };
+
+  for (const step of story.steps || []) {
+    if (step.media?.url) step.media.url = await resolveUrl(step.media.url);
+    if (step.description) step.description = await resolveHtml(step.description);
   }
+
   for (const page of story.pages || []) {
     for (const b of page.blocks || []) {
       if (!b.data) continue;
-      if (typeof b.data.url === 'string' && !b.data.url.startsWith('http') && !b.data.url.startsWith('data:')) {
-        const target = b.data.url.replace(/^\.?\//, '').toLowerCase();
-        const match = imageEntries.find(e => e.name.toLowerCase().endsWith(target) || target.endsWith(e.name.toLowerCase().split('/').pop() || ''));
-        if (match) b.data.url = uint8ArrayToDataUrl(await match.bytes(), match.name);
+      if (typeof b.data.url === 'string') b.data.url = await resolveUrl(b.data.url);
+      if (typeof b.data.text === 'string') b.data.text = await resolveHtml(b.data.text);
+      if (typeof b.data.html === 'string') b.data.html = await resolveHtml(b.data.html);
+      if (Array.isArray(b.data.items)) {
+        for (let i = 0; i < b.data.items.length; i++) {
+          const it = b.data.items[i];
+          if (typeof it === 'string') b.data.items[i] = await resolveUrl(it);
+          else if (it?.url) it.url = await resolveUrl(it.url);
+        }
+      }
+      if (Array.isArray(b.data.images)) {
+        for (let i = 0; i < b.data.images.length; i++) {
+          const it = b.data.images[i];
+          if (typeof it === 'string') b.data.images[i] = await resolveUrl(it);
+          else if (it?.url) it.url = await resolveUrl(it.url);
+        }
       }
       if (Array.isArray(b.data.contactSheetItems)) {
         for (const it of b.data.contactSheetItems) {
-          if (it?.url && !it.url.startsWith('http') && !it.url.startsWith('data:')) {
-            const target = it.url.replace(/^\.?\//, '').toLowerCase();
-            const match = imageEntries.find(e => e.name.toLowerCase().endsWith(target) || target.endsWith(e.name.toLowerCase().split('/').pop() || ''));
-            if (match) it.url = uint8ArrayToDataUrl(await match.bytes(), match.name);
-          }
+          if (it?.url) it.url = await resolveUrl(it.url);
         }
       }
     }

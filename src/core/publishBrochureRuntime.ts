@@ -85,8 +85,11 @@ function initBrochureMaps() {
     }, 10000);
     els.forEach((el) => {
         const mapId = el.getAttribute('data-map-id'), targetFeatId = el.getAttribute('data-target-feature');
-        const scene = maps.find(m => m.id === mapId) || maps[0];
-        if (!scene) { settle(el.id, 'error', 'Scène cartographique introuvable'); return; }
+        const scene = mapId ? maps.find(m => m.id === mapId) : maps[0];
+        if (!scene) {
+            settle(el.id, 'error', mapId ? 'Scène cartographique "' + mapId + '" introuvable' : 'Aucune scène cartographique disponible');
+            return;
+        }
         const v = scene.view || { center: [2.3522, 48.8566], zoom: 11, pitch: 0, bearing: 0 };
         try {
             const map = new maplibregl.Map({ container: el, style: resolveStyle(scene.mapStyle), center: v.center, zoom: v.zoom, pitch: v.pitch || 0, bearing: v.bearing || 0, interactive: false, attributionControl: false, preserveDrawingBuffer: true });

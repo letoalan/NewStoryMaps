@@ -99,6 +99,13 @@ function testHonestPreflight() {
   assert.ok(rep.issues.some((i) => i.code === 'MISSING_MAP_ATTRIBUTION' && i.message.includes('Esri')));
   assert.strictEqual(rep.selectableTextGuaranteed, false, 'C07 : pas de fausse garantie vectorielle avant impression réelle');
 
+  // Test référence de carte inexistante
+  incompleteStory.pages[0].blocks[0].data.mapId = 'map-fantome';
+  const repGhost = runBrochurePreflight(incompleteStory);
+  assert.strictEqual(repGhost.ready, false);
+  assert.ok(repGhost.issues.some((i) => i.code === 'MISSING_MAP_SCENE'), 'Doit bloquer si la carte référencée n’existe pas');
+  incompleteStory.pages[0].blocks[0].data.mapId = 'map-esri';
+
   // Résolution conforme
   incompleteStory.format = 'a4-portrait';
   incompleteStory.pages[0].layout.format = 'a4-portrait';
@@ -142,6 +149,7 @@ function testBrochurePrintGenerationAndReopen() {
   assert.ok(html.includes('beforeprint'), 'C04 : interception de l’événement d’impression avant readiness');
   assert.ok(html.includes('preserveDrawingBuffer: true'), 'C05 : WebGL pour capture d’impression');
   assert.ok(html.includes('MapLibre GL non disponible'), 'Bloque si CDN absent');
+  assert.ok(html.includes('introuvable'), 'Ne remplace pas silencieusement une carte invalide');
 
   const reopened = extractStoryFromHTML(html);
   assert.strictEqual(reopened.id, 'brochure-a4-1');

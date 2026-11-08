@@ -30,10 +30,12 @@ export const MapBlockPreview: React.FC<MapBlockPreviewProps> = ({ block, onChang
   const binding = block.binding;
 
   const maps: ProjectMap[] = story?.maps && story.maps.length > 0 ? story.maps : [createDefaultProjectMap()];
-  const targetMap = maps.find((m) => m.id === binding?.mapId) || maps.find((m) => m.id === (block.data.mapId as string)) || maps[0];
+  const requestedMapId = (binding?.mapId || block.data.mapId) as string | undefined;
+  const isMapMissing = !!requestedMapId && !maps.some((m) => m.id === requestedMapId);
+  const targetMap: ProjectMap = (!isMapMissing && requestedMapId ? maps.find((m) => m.id === requestedMapId) : maps[0]) || maps[0];
 
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    if (!mapContainerRef.current || isMapMissing) return;
     mapContainerRef.current.innerHTML = '';
 
     const v = targetMap.view || { center: [2.3522, 48.8566], zoom: 11, pitch: 0, bearing: 0 };
@@ -56,7 +58,7 @@ export const MapBlockPreview: React.FC<MapBlockPreviewProps> = ({ block, onChang
       map.remove();
       mapRef.current = null;
     };
-  }, [targetMap.id]);
+  }, [targetMap.id, isMapMissing]);
 
   // Synchronisation dynamique du style sans perte de contexte WebGL
   useEffect(() => {
@@ -106,7 +108,13 @@ export const MapBlockPreview: React.FC<MapBlockPreviewProps> = ({ block, onChang
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', borderRadius: 'var(--r)' }}>
       <div style={{ flex: 1, position: 'relative', minHeight: '120px' }}>
-        <div ref={mapContainerRef} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} />
+        {isMapMissing ? (
+          <div style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e293b', color: '#f87171', fontSize: '12px', padding: '12px', textAlign: 'center' }}>
+            Scène cartographique &quot;{requestedMapId}&quot; introuvable
+          </div>
+        ) : (
+          <div ref={mapContainerRef} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} />
+        )}
         {binding && (
           <div style={{ position: 'absolute', top: '8px', left: '8px', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(11, 127, 176, 0.92)', color: '#fff', padding: '3px 8px', borderRadius: '999px', fontSize: '10px', fontWeight: 600, zIndex: 10 }}>
             <Link2 size={11} /> <span>{binding.numberIndex ? `#${binding.numberIndex} ` : ''}{binding.action || 'focus'}</span>
