@@ -99,12 +99,16 @@ function testHonestPreflight() {
   assert.ok(rep.issues.some((i) => i.code === 'MISSING_MAP_ATTRIBUTION' && i.message.includes('Esri')));
   assert.strictEqual(rep.selectableTextGuaranteed, false, 'C07 : pas de fausse garantie vectorielle avant impression réelle');
 
-  // Test référence de carte inexistante
+  // Test référence de carte inexistante ou document sans aucune carte
   incompleteStory.pages[0].blocks[0].data.mapId = 'map-fantome';
   const repGhost = runBrochurePreflight(incompleteStory);
   assert.strictEqual(repGhost.ready, false);
   assert.ok(repGhost.issues.some((i) => i.code === 'MISSING_MAP_SCENE'), 'Doit bloquer si la carte référencée n’existe pas');
   incompleteStory.pages[0].blocks[0].data.mapId = 'map-esri';
+
+  const repNoMaps = runBrochurePreflight({ ...incompleteStory, maps: [] });
+  assert.strictEqual(repNoMaps.ready, false);
+  assert.ok(repNoMaps.issues.some((i) => i.code === 'MISSING_MAP_SCENE'), 'Doit bloquer si aucune carte n’existe dans le document');
 
   // Résolution conforme
   incompleteStory.format = 'a4-portrait';

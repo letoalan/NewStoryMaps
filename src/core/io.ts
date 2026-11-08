@@ -110,7 +110,11 @@ async function resolveRelativeImages(story: StoryMap, entries: ZipReadEntry[]): 
   const resolveUrl = async (url?: string): Promise<string> => {
     if (!url || url.startsWith('http') || url.startsWith('data:')) return url || '';
     const target = url.replace(/^\.?\//, '').toLowerCase();
-    const m = imageEntries.find(e => e.name.toLowerCase().endsWith(target) || target.endsWith(e.name.toLowerCase().split('/').pop() || ''));
+    let m = imageEntries.find(e => e.name.toLowerCase() === target || e.name.toLowerCase().endsWith('/' + target));
+    if (!m) {
+      const bname = target.split('/').pop() || target;
+      m = imageEntries.find(e => (e.name.split('/').pop() || '').toLowerCase() === bname);
+    }
     return m ? uint8ArrayToDataUrl(await m.bytes(), m.name) : url;
   };
 

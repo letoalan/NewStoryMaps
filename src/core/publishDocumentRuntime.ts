@@ -59,12 +59,16 @@ function initDocMaps() {
                     feats.push({ type: 'Feature', id: f.id, geometry: { type: f.geometryType, coordinates: f.coordinates }, properties: { id: f.id, color: col } });
                     const pt = featCenter(f);
                     if (pt) {
-                        const mEl = document.createElement('div');
-                        mEl.className = 'doc-map-marker';
-                        mEl.setAttribute('data-feat-id', f.id);
-                        mEl.style.cssText = 'width:22px;height:22px;border-radius:50%;background:' + col + ';color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:all 0.3s;';
-                        mEl.textContent = String(f.numberIndex || 1);
-                        new maplibregl.Marker({ element: mEl }).setLngLat(pt).addTo(map);
+                        const wrap = document.createElement('div');
+                        wrap.className = 'doc-map-marker-wrap';
+                        wrap.setAttribute('data-feat-id', f.id);
+                        wrap.style.cssText = 'width:24px;height:24px;display:flex;align-items:center;justify-content:center;pointer-events:auto;';
+                        const pin = document.createElement('div');
+                        pin.className = 'doc-map-marker-pin';
+                        pin.style.cssText = 'width:22px;height:22px;border-radius:50%;background:' + col + ';color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:transform 0.3s ease,box-shadow 0.3s ease;';
+                        pin.textContent = String(f.numberIndex || 1);
+                        wrap.appendChild(pin);
+                        new maplibregl.Marker({ element: wrap }).setLngLat(pt).addTo(map);
                     }
                 });
             });
@@ -88,12 +92,14 @@ function triggerNarrativeBinding(mapId, featId, action) {
             m.flyTo({ center: pt, zoom: 14, duration: reducedMotion ? 0 : 800 });
         } else if (action === 'highlight') {
             if (pt) m.panTo(pt, { duration: reducedMotion ? 0 : 500 });
-            el.querySelectorAll('.doc-map-marker').forEach(mk => {
-                if (mk.getAttribute('data-feat-id') === featId) {
-                    mk.style.transform = 'scale(1.4)';
-                    mk.style.boxShadow = '0 0 0 4px #e11d48';
-                    mk.style.zIndex = '100';
-                    setTimeout(() => { mk.style.transform = 'scale(1)'; mk.style.boxShadow = 'none'; mk.style.zIndex = '1'; }, 2500);
+            el.querySelectorAll('.doc-map-marker-wrap').forEach(w => {
+                const pin = w.querySelector('.doc-map-marker-pin');
+                if (!pin) return;
+                if (w.getAttribute('data-feat-id') === featId) {
+                    w.style.zIndex = '100';
+                    pin.style.transform = 'scale(1.4)';
+                    pin.style.boxShadow = '0 0 0 4px #e11d48';
+                    setTimeout(() => { w.style.zIndex = '1'; pin.style.transform = 'scale(1)'; pin.style.boxShadow = 'none'; }, 2500);
                 }
             });
             try {
@@ -105,11 +111,18 @@ function triggerNarrativeBinding(mapId, featId, action) {
             } catch (_) {}
         } else if (action === 'filter') {
             try {
-                if (targetFeat) {
+                const isReset = (el.getAttribute('data-active-filter') === featId);
+                if (isReset || !targetFeat) {
+                    el.removeAttribute('data-active-filter');
+                    m.setFilter('scene-lines-layer', ['!=', ['geometry-type'], 'Point']);
+                    m.setFilter('scene-polygons-fill', ['==', ['geometry-type'], 'Polygon']);
+                    el.querySelectorAll('.doc-map-marker-wrap').forEach(w => { w.style.display = 'flex'; });
+                } else {
+                    el.setAttribute('data-active-filter', featId);
                     m.setFilter('scene-lines-layer', ['==', ['get', 'id'], featId]);
                     m.setFilter('scene-polygons-fill', ['==', ['get', 'id'], featId]);
-                    el.querySelectorAll('.doc-map-marker').forEach(mk => {
-                        mk.style.display = (mk.getAttribute('data-feat-id') === featId) ? 'flex' : 'none';
+                    el.querySelectorAll('.doc-map-marker-wrap').forEach(w => {
+                        w.style.display = (w.getAttribute('data-feat-id') === featId) ? 'flex' : 'none';
                     });
                 }
             } catch (_) {}

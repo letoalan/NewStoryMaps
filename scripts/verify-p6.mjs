@@ -69,8 +69,9 @@ function testFiveStepTourInThreeModes() {
   const htmlMode2 = generateDocumentHTML(docStory);
   assert.ok(htmlMode2.includes('data-action="narrative-binding"'));
   assert.ok(htmlMode2.includes("['==', ['get', 'id'], featId]"), 'Action narrative filtrée par ID exact de figuré');
-  assert.ok(htmlMode2.includes('doc-map-marker'), 'Marqueurs de points identifiés pour actions narratives');
-  assert.ok(htmlMode2.includes('scale(1.4)'), 'Surbrillance visuelle animée sur les marqueurs de points');
+  assert.ok(htmlMode2.includes('doc-map-marker-wrap') && htmlMode2.includes('doc-map-marker-pin'), 'Structure à deux niveaux : wrapper MapLibre + pin interne');
+  assert.ok(htmlMode2.includes('data-active-filter'), 'Prise en charge de la réinitialisation/bascule du filtre');
+  assert.ok(htmlMode2.includes('scale(1.4)'), 'Surbrillance visuelle animée sur le pin du marqueur');
   const reopened2 = extractStoryFromHTML(htmlMode2);
   assert.strictEqual(reopened2.maps[0].layers[0].features.length, 5);
 
@@ -151,22 +152,24 @@ function testGridSaturationAndStress() {
 // 5. Réimportation d'images relatives en Mode 2 / 3 depuis une archive ZIP
 async function testZipRelativeImagesMode2() {
   console.log('Test 5 : Réimportation d’images relatives dans pages & blocs Mode 2 / 3 (io.ts)...');
-  const testImgBytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]); // mini entête png
+  const testImgA = new Uint8Array([137, 80, 78, 71, 1, 1, 1, 1]);
+  const testImgB = new Uint8Array([137, 80, 78, 71, 2, 2, 2, 2]);
   const docWithRelativeImages = {
     id: 'doc-zip-rel', version: '2.0.0', title: 'Doc Archive', created: 1, modified: 1, mode: 'rich-document', format: 'a4-portrait',
     pages: [{
       id: 'p1', title: 'P1', layout: { format: 'a4-portrait', gridColumns: 6, gridRows: 8 },
       blocks: [
-        { id: 'b-img', type: 'image', x: 0, y: 0, w: 2, h: 2, data: { url: './assets/photo.png' } },
-        { id: 'b-sheet', type: 'image', x: 2, y: 0, w: 2, h: 2, data: { isContactSheet: true, contactSheetItems: [{ url: 'assets/photo.png' }] } },
-        { id: 'b-gal', type: 'gallery', x: 0, y: 2, w: 2, h: 2, data: { items: ['assets/photo.png'] } },
-        { id: 'b-txt', type: 'text', x: 2, y: 2, w: 2, h: 2, data: { text: '<p><img src="assets/photo.png"></p>' } },
+        { id: 'b-img', type: 'image', x: 0, y: 0, w: 2, h: 2, data: { url: './folderB/photo.png' } },
+        { id: 'b-sheet', type: 'image', x: 2, y: 0, w: 2, h: 2, data: { isContactSheet: true, contactSheetItems: [{ url: 'folderA/photo.png' }] } },
+        { id: 'b-gal', type: 'gallery', x: 0, y: 2, w: 2, h: 2, data: { items: ['folderB/photo.png'] } },
+        { id: 'b-txt', type: 'text', x: 2, y: 2, w: 2, h: 2, data: { text: '<p><img src="folderA/photo.png"></p>' } },
       ],
     }],
   };
   const zipBlob = await createZip([
     { name: 'doc-zip-rel/storymap.json', data: JSON.stringify(docWithRelativeImages) },
-    { name: 'doc-zip-rel/assets/photo.png', data: testImgBytes },
+    { name: 'doc-zip-rel/folderA/photo.png', data: testImgA },
+    { name: 'doc-zip-rel/folderB/photo.png', data: testImgB },
   ]);
   const importedList = await parseStoryFile(zipBlob);
   assert.strictEqual(importedList.length, 1);
@@ -179,7 +182,8 @@ async function testZipRelativeImagesMode2() {
   assert.ok(bSheet.data.contactSheetItems[0].url.startsWith('data:image/png;base64,'), 'Planche contact convertie');
   assert.ok(bGal.data.items[0].startsWith('data:image/png;base64,'), 'Galerie items convertie');
   assert.ok(bTxt.data.text.includes('src="data:image/png;base64,'), 'Image HTML interne de bloc convertie');
-  console.log('  -> Résolution des images relatives Mode 2/3 dans ZIP validée.');
+  assert.notStrictEqual(bImg.data.url, bSheet.data.contactSheetItems[0].url, 'folderA et folderB désambiguïsés');
+  console.log('  -> Résolution sans ambiguïté des images relatives Mode 2/3 dans ZIP validée.');
 }
 
 async function runAll() {

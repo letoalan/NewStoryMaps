@@ -66,8 +66,16 @@ export function runBrochurePreflight(story: StoryMap): BrochurePreflightReport {
         mapCount++;
         const targetMapId = (b.binding?.mapId || b.data?.mapId) as string | undefined;
         const mapScene = targetMapId ? maps.find((m) => m.id === targetMapId) : maps[0];
-        if (targetMapId && !mapScene) {
-          issues.push({ severity: 'error', pageIndex: pIdx, blockId: b.id, code: 'MISSING_MAP_SCENE', message: `Page ${pIdx + 1} : scène cartographique "${targetMapId}" introuvable.` });
+        if (!mapScene) {
+          issues.push({
+            severity: 'error',
+            pageIndex: pIdx,
+            blockId: b.id,
+            code: 'MISSING_MAP_SCENE',
+            message: targetMapId
+              ? `Page ${pIdx + 1} : scène cartographique "${targetMapId}" introuvable.`
+              : `Page ${pIdx + 1} : aucune scène cartographique disponible dans le document.`,
+          });
         }
         const provider = detectMapProvider(mapScene?.mapStyle);
         const mapCaption = String(b.data.caption || b.data.attribution || '').toLowerCase();
