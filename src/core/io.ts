@@ -10,8 +10,7 @@ import { convertLegacyToModern, convertModernToLegacyV2 } from './adapter';
 import { createZip, readZip, type ZipReadEntry } from './zip';
 
 export function exportStoryToBrochureHTML(story: StoryMap): void {
-  const html = generateBrochurePrintHTML(story);
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const blob = new Blob([generateBrochurePrintHTML(story)], { type: 'text/html;charset=utf-8' });
   downloadBlob(blob, getFilename(story, 'brochure.html'));
 }
 
@@ -21,32 +20,26 @@ export function exportStoryToJSON(story: StoryMap): void {
 }
 
 export function exportStoryToLegacyV2JSON(story: StoryMap): void {
-  const legacy = convertModernToLegacyV2(story);
-  const blob = new Blob([JSON.stringify(legacy, null, 2)], { type: 'application/json;charset=utf-8' });
+  const blob = new Blob([JSON.stringify(convertModernToLegacyV2(story), null, 2)], { type: 'application/json;charset=utf-8' });
   downloadBlob(blob, getFilename(story, 'v2.storymap.json'));
 }
 
 export function exportStoryToStandaloneHTML(story: StoryMap): void {
-  const html = (story.mode === 'rich-document' || story.mode === 'brochure')
-    ? generateDocumentHTML(story)
-    : generateStandaloneHTML(story);
+  const html = (story.mode === 'rich-document' || story.mode === 'brochure') ? generateDocumentHTML(story) : generateStandaloneHTML(story);
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   downloadBlob(blob, getFilename(story, 'html'));
 }
 
 export async function exportStoryToSiteZip(story: StoryMap): Promise<void> {
   const slug = getSlug(story);
-  const html = (story.mode === 'rich-document' || story.mode === 'brochure')
-    ? generateDocumentHTML(story)
-    : generateStandaloneHTML(story);
+  const html = (story.mode === 'rich-document' || story.mode === 'brochure') ? generateDocumentHTML(story) : generateStandaloneHTML(story);
   const jsonModern = JSON.stringify(story, null, 2);
   const jsonLegacy = JSON.stringify(convertModernToLegacyV2(story), null, 2);
   const readme = [
     `Storymap : ${story.title || 'Sans titre'}`,
     `Exportée avec StoryMap le ${new Date().toLocaleString('fr-FR')}.`,
-    '',
-    'Contenu de l’archive :',
-    '  index.html         — lecteur autonome de la storymap (ouvrable dans tout navigateur moderne)',
+    '', 'Contenu de l’archive :',
+    '  index.html         — lecteur autonome de la storymap',
     '  storymap.json      — document moderne canonique',
     '  v2.storymap.json   — données au format d’échange historique v2',
   ].join('\r\n');
@@ -57,7 +50,6 @@ export async function exportStoryToSiteZip(story: StoryMap): Promise<void> {
     { name: `${slug}/v2.storymap.json`, data: jsonLegacy },
     { name: `${slug}/LISEZMOI.txt`, data: readme },
   ]);
-
   downloadBlob(zipBlob, `${slug}.zip`);
 }
 
@@ -65,20 +57,15 @@ export async function exportAllStoriesBackupZip(stories: StoryMap[]): Promise<vo
   const usedSlugs = new Set<string>();
   const entries = stories.map((s) => {
     const baseSlug = getSlug(s) || 'story';
-    let slug = baseSlug;
-    let counter = 2;
+    let slug = baseSlug, counter = 2;
     while (usedSlugs.has(slug)) slug = `${baseSlug}-${counter++}`;
     usedSlugs.add(slug);
     return { name: `storymaps/${slug}.json`, data: JSON.stringify(s, null, 2) };
   });
-
   const manifest = {
-    generator: 'StoryMap 2.0.0',
-    exportedAt: new Date().toISOString(),
-    count: stories.length,
+    generator: 'StoryMap 2.0.0', exportedAt: new Date().toISOString(), count: stories.length,
     stories: stories.map(s => ({ id: s.id, title: s.title, modified: s.modified })),
   };
-
   entries.push({ name: 'sauvegarde-manifest.json', data: JSON.stringify(manifest, null, 2) });
   const zipBlob = await createZip(entries);
   downloadBlob(zipBlob, `storymap-sauvegarde-${new Date().toISOString().slice(0, 10)}.zip`);
@@ -95,17 +82,25 @@ export async function parseStoryFile(file: File | Blob): Promise<StoryMap[]> {
 }
 
 export function parseStoryJSON(jsonString: string): StoryMap {
-  let parsed: unknown;
   try {
-    parsed = JSON.parse(jsonString);
+    return convertLegacyToModern(JSON.parse(jsonString));
   } catch {
     throw new Error('Le fichier n’est pas un document JSON valide.');
   }
-  return convertLegacyToModern(parsed);
 }
 
 export function parseStoryHTML(htmlString: string): StoryMap {
   return extractStoryFromHTML(htmlString);
+}
+
+function uint8ArrayToDataUrl(bytes: Uint8Array, filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : ext === 'svg' ? 'image/svg+xml' : 'image/jpeg';
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 8192) {
+    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 8192)));
+  }
+  return `data:${mime};base64,${btoa(binary)}`;
 }
 
 async function resolveRelativeImages(story: StoryMap, entries: ZipReadEntry[]): Promise<StoryMap> {
@@ -132,41 +127,24 @@ async function resolveRelativeImages(story: StoryMap, entries: ZipReadEntry[]): 
   return story;
 }
 
-function uint8ArrayToDataUrl(bytes: Uint8Array, filename: string): string {
-  const ext = filename.split('.').pop()?.toLowerCase();
-  const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : ext === 'svg' ? 'image/svg+xml' : 'image/jpeg';
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += 8192) {
-    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 8192)));
-  }
-  return `data:${mime};base64,${btoa(binary)}`;
-}
-
 async function parseZipArchive(file: Blob): Promise<StoryMap[]> {
   const entries = await readZip(file);
   const stories: StoryMap[] = [];
-
   let jsonEntries = entries.filter(x => x.name.endsWith('.json') && !x.name.includes('manifest'));
   if (jsonEntries.some(x => x.name.endsWith('storymap.json') && !x.name.endsWith('v2.storymap.json'))) {
     jsonEntries = jsonEntries.filter(x => !x.name.endsWith('v2.storymap.json'));
   }
-
   for (const e of jsonEntries) {
     try {
-      const story = parseStoryJSON(await e.text());
-      stories.push(await resolveRelativeImages(story, entries));
+      stories.push(await resolveRelativeImages(parseStoryJSON(await e.text()), entries));
     } catch { /* ignorer */ }
   }
-
   if (stories.length > 0) return stories;
-
   for (const e of entries.filter(x => x.name.endsWith('.html') || x.name.endsWith('.htm'))) {
     try {
-      const story = parseStoryHTML(await e.text());
-      stories.push(await resolveRelativeImages(story, entries));
+      stories.push(await resolveRelativeImages(parseStoryHTML(await e.text()), entries));
     } catch { /* ignorer */ }
   }
-
   if (stories.length === 0) throw new Error('Aucune storymap valide n’a été trouvée dans cette archive ZIP.');
   return stories;
 }
@@ -182,10 +160,7 @@ function getFilename(story: StoryMap, ext: string): string {
 function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

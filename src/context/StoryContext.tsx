@@ -72,8 +72,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setSaveStatus(revisionRef.current === revToSave ? 'saved' : 'dirty');
     } catch (err) {
       setSaveStatus('error');
-      const msg = (err as Error).message || 'Erreur lors de l’enregistrement';
-      setLastSaveError(msg);
+      setLastSaveError((err as Error).message || 'Erreur lors de l’enregistrement');
       throw err;
     }
   }, []);
@@ -83,8 +82,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
     }
-    const current = latestStoryRef.current;
-    const currentRev = revisionRef.current;
+    const current = latestStoryRef.current, currentRev = revisionRef.current;
     if (current && savedRevisionRef.current < currentRev) {
       queueRef.current = queueRef.current.catch(() => {}).then(() => persistToDB(current, currentRev));
     }
@@ -95,8 +93,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!story || savedRevisionRef.current >= revisionRef.current) return;
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = window.setTimeout(() => {
-      const current = latestStoryRef.current;
-      const currentRev = revisionRef.current;
+      const current = latestStoryRef.current, currentRev = revisionRef.current;
       if (current && savedRevisionRef.current < currentRev) {
         queueRef.current = queueRef.current.catch(() => {}).then(() => persistToDB(current, currentRev));
       }
@@ -108,14 +105,10 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     await flushSave();
     const loaded = await db.getStory(id);
     if (!loaded) throw new Error('Récit introuvable');
-    historyRef.current = [];
-    futureRef.current = [];
-    revisionRef.current = 0;
-    savedRevisionRef.current = 0;
-    setStoryState(loaded);
-    setActiveStepIndex(0);
-    setSaveStatus('saved');
-    setLastSaveError(null);
+    historyRef.current = []; futureRef.current = [];
+    revisionRef.current = 0; savedRevisionRef.current = 0;
+    setStoryState(loaded); setActiveStepIndex(0);
+    setSaveStatus('saved'); setLastSaveError(null);
   };
 
   const newStory = async (opts?: string | { title?: string; mode?: ProjectMode; format?: PageFormat; brand?: ProjectBrand }) => {
@@ -129,58 +122,39 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (opts.brand) created.brand = opts.brand;
       if (opts.format) {
         created.format = opts.format;
-        if (created.pages && created.pages[0]?.layout) {
-          created.pages[0].layout.format = opts.format;
-        }
+        if (created.pages?.[0]?.layout) created.pages[0].layout.format = opts.format;
       }
     }
-    historyRef.current = [];
-    futureRef.current = [];
-    revisionRef.current = 0;
-    savedRevisionRef.current = 0;
-    setStoryState(created);
-    setActiveStepIndex(0);
+    historyRef.current = []; futureRef.current = [];
+    revisionRef.current = 0; savedRevisionRef.current = 0;
+    setStoryState(created); setActiveStepIndex(0);
     setSaveStatus('saving');
     await db.saveStory(created);
     setSaveStatus('saved');
   };
 
-  const updateStory = (fields: Partial<StoryMap>) => {
-    if (!story) return;
-    setStory({ ...story, ...fields, modified: Date.now() });
-  };
-
-  const updateStep = (index: number, stepPatch: Partial<Step>) => {
-    if (!story) return;
-    setStory(performUpdateStep(story, index, stepPatch));
-  };
-
+  const updateStory = (fields: Partial<StoryMap>) => { if (story) setStory({ ...story, ...fields, modified: Date.now() }); };
+  const updateStep = (index: number, stepPatch: Partial<Step>) => { if (story) setStory(performUpdateStep(story, index, stepPatch)); };
   const addStep = () => {
     if (!story) return;
     const { updatedStory, newIndex } = performAddStep(story);
-    setStory(updatedStory);
-    setActiveStepIndex(newIndex);
+    setStory(updatedStory); setActiveStepIndex(newIndex);
   };
-
   const deleteStep = (index: number) => {
     if (!story) return;
     const { updatedStory, newIndex } = performDeleteStep(story, index, activeStepIndex);
-    setStory(updatedStory);
-    setActiveStepIndex(newIndex);
+    setStory(updatedStory); setActiveStepIndex(newIndex);
   };
-
-  const reorderSteps = (startIndex: number, endIndex: number) => {
+  const reorderSteps = (start: number, end: number) => {
     if (!story) return;
-    setStory(performReorderSteps(story, startIndex, endIndex));
-    setActiveStepIndex(endIndex);
+    setStory(performReorderSteps(story, start, end)); setActiveStepIndex(end);
   };
 
   return (
     <StoryContext.Provider
       value={{
         story, activeStepIndex, saveStatus, lastSaveError,
-        canUndo: historyRef.current.length > 0,
-        canRedo: futureRef.current.length > 0,
+        canUndo: historyRef.current.length > 0, canRedo: futureRef.current.length > 0,
         undo, redo, setStory, setActiveStepIndex, updateStory,
         updateStoryTitle: (title: string) => updateStory({ title }),
         updateStep, addStep, deleteStep, reorderSteps, flushSave, loadStory, newStory,

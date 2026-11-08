@@ -25,10 +25,7 @@ export const PageGrid: React.FC<PageGridProps> = ({ format, blocks, onChangeBloc
 
   const { cols, rows, cellWidthPx, cellHeightPx, gapPx, marginMm, aspectRatio } = getGridDimensions(format);
 
-  const occupiedMatrix: Array<Array<Block | null>> = Array.from({ length: rows }, () =>
-    Array.from({ length: cols }, () => null)
-  );
-
+  const occupiedMatrix: Array<Array<Block | null>> = Array.from({ length: rows }, () => Array.from({ length: cols }, () => null));
   blocks.forEach((b) => {
     for (let dy = 0; dy < b.h && b.y + dy < rows; dy++) {
       for (let dx = 0; dx < b.w && b.x + dx < cols; dx++) {
@@ -48,12 +45,10 @@ export const PageGrid: React.FC<PageGridProps> = ({ format, blocks, onChangeBloc
     const res = expandBlock(blocks, blockId, dir, cols, rows);
     if (res.success) onChangeBlocks(res.blocks); else if (res.error) alert(res.error);
   };
-
   const handleShrink = (blockId: string) => {
     const res = shrinkBlock(blocks, blockId);
     if (res.success) onChangeBlocks(res.blocks); else if (res.error) alert(res.error);
   };
-
   const handleDuplicate = (blockId: string) => {
     const res = duplicateBlock(blocks, blockId, cols, rows);
     if (res.success) {
@@ -62,7 +57,6 @@ export const PageGrid: React.FC<PageGridProps> = ({ format, blocks, onChangeBloc
       if (cloned) setSelectedBlockId(cloned.id);
     } else if (res.error) alert(res.error);
   };
-
   const handleDelete = (blockId: string) => {
     onChangeBlocks(deleteBlock(blocks, blockId));
     if (selectedBlockId === blockId) setSelectedBlockId(null);
@@ -70,83 +64,34 @@ export const PageGrid: React.FC<PageGridProps> = ({ format, blocks, onChangeBloc
 
   const handleAddBlockToCell = (x: number, y: number, type: BlockType) => {
     const newBlock: Block = {
-      id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      type,
-      x,
-      y,
-      w: 1,
-      h: 1,
+      id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, type, x, y, w: 1, h: 1,
       data: type === 'table' ? { rows: [['En-tête 1', 'En-tête 2'], ['Donnée 1', 'Donnée 2']] } : { text: '' },
     };
     const res = addBlock(blocks, newBlock, cols, rows);
     if (res.success) {
-      onChangeBlocks(res.blocks);
-      setSelectedBlockId(newBlock.id);
-      setActiveEmptyCell(null);
+      onChangeBlocks(res.blocks); setSelectedBlockId(newBlock.id); setActiveEmptyCell(null);
     } else if (res.error) alert(res.error);
   };
 
   return (
     <div
       className="page-grid-container"
-      style={{
-        display: 'inline-block',
-        padding: `${marginMm}mm`,
-        background: '#fff',
-        boxShadow: 'var(--shadow-lg)',
-        borderRadius: 'var(--r)',
-        position: 'relative',
-        userSelect: 'none',
-        aspectRatio,
-      }}
+      style={{ display: 'inline-block', padding: `${marginMm}mm`, background: '#fff', boxShadow: 'var(--shadow-lg)', borderRadius: 'var(--r)', position: 'relative', userSelect: 'none', aspectRatio }}
       onClick={() => { setSelectedBlockId(null); setActiveEmptyCell(null); }}
     >
-      <div
-        className="page-grid"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${cols}, ${cellWidthPx}px)`,
-          gridTemplateRows: `repeat(${rows}, ${cellHeightPx}px)`,
-          gap: `${gapPx}px`,
-          position: 'relative',
-        }}
-      >
+      <div className="page-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${cellWidthPx}px)`, gridTemplateRows: `repeat(${rows}, ${cellHeightPx}px)`, gap: `${gapPx}px`, position: 'relative' }}>
         {Array.from({ length: rows }).map((_, y) =>
           Array.from({ length: cols }).map((__, x) => {
             const isOccupied = !!occupiedMatrix[y][x];
             const isCurrentActive = activeEmptyCell?.x === x && activeEmptyCell?.y === y;
             return (
-              <div
-                key={`cell-${x}-${y}`}
-                style={{
-                  gridColumn: x + 1,
-                  gridRow: y + 1,
-                  border: isOccupied ? 'none' : '1px dashed var(--border)',
-                  borderRadius: 'var(--r)',
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
+              <div key={`cell-${x}-${y}`} style={{ gridColumn: x + 1, gridRow: y + 1, border: isOccupied ? 'none' : '1px dashed var(--border)', borderRadius: 'var(--r)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {!isOccupied && isEditable && (
                   <>
-                    <button
-                      className="btn btn-ghost btn-icon"
-                      style={{ opacity: 0.35, borderRadius: '50%', width: '28px', height: '28px' }}
-                      title={`Ajouter un bloc en (${x + 1}, ${y + 1})`}
-                      onClick={(e) => { e.stopPropagation(); setActiveEmptyCell({ x, y }); }}
-                    >
+                    <button className="btn btn-ghost btn-icon" style={{ opacity: 0.35, borderRadius: '50%', width: '28px', height: '28px' }} title={`Ajouter un bloc en (${x + 1}, ${y + 1})`} onClick={(e) => { e.stopPropagation(); setActiveEmptyCell({ x, y }); }}>
                       <Plus size={16} />
                     </button>
-                    {isCurrentActive && (
-                      <EmptyCellMenu
-                        x={x}
-                        y={y}
-                        onSelectType={(t) => handleAddBlockToCell(x, y, t)}
-                        onClose={() => setActiveEmptyCell(null)}
-                      />
-                    )}
+                    {isCurrentActive && <EmptyCellMenu x={x} y={y} onSelectType={(t) => handleAddBlockToCell(x, y, t)} onClose={() => setActiveEmptyCell(null)} />}
                   </>
                 )}
               </div>
@@ -160,26 +105,16 @@ export const PageGrid: React.FC<PageGridProps> = ({ format, blocks, onChangeBloc
             <div
               key={b.id}
               style={{
-                gridColumn: `${b.x + 1} / span ${b.w}`,
-                gridRow: `${b.y + 1} / span ${b.h}`,
-                position: 'relative',
-                zIndex: isSelected ? 30 : 10,
-                outline: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
-                outlineOffset: '2px',
-                borderRadius: 'var(--r)',
-                background: 'var(--surface)',
-                overflow: 'visible',
+                gridColumn: `${b.x + 1} / span ${b.w}`, gridRow: `${b.y + 1} / span ${b.h}`, position: 'relative',
+                zIndex: isSelected ? 30 : 10, outline: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
+                outlineOffset: '2px', borderRadius: 'var(--r)', background: 'var(--surface)', overflow: 'visible',
               }}
               onClick={(e) => { e.stopPropagation(); setSelectedBlockId(b.id); }}
             >
               {isSelected && isEditable && (
                 <BlockContextMenu
-                  block={b}
-                  onChangeType={(t) => handleTypeChange(b.id, t)}
-                  onExpand={(d) => handleExpand(b.id, d)}
-                  onShrink={() => handleShrink(b.id)}
-                  onDuplicate={() => handleDuplicate(b.id)}
-                  onDelete={() => handleDelete(b.id)}
+                  block={b} onChangeType={(t) => handleTypeChange(b.id, t)} onExpand={(d) => handleExpand(b.id, d)}
+                  onShrink={() => handleShrink(b.id)} onDuplicate={() => handleDuplicate(b.id)} onDelete={() => handleDelete(b.id)}
                   onOpenBinding={onOpenBinding ? () => onOpenBinding(b) : undefined}
                 />
               )}

@@ -1,5 +1,5 @@
 /**
- * StoryMap — Assainissement HTML sécurisé, échappement d'attributs et validation d'URL (V08)
+ * StoryMap — Assainissement HTML sécurisé, échappement d'attributs et validation d'URL (V08 / C01)
  */
 
 const DANGEROUS_TAGS = new Set([
@@ -30,7 +30,7 @@ export function escapeAttr(val: unknown): string {
     .replace(/'/g, '&#039;');
 }
 
-/** Valide et assainit une URL de média ou lien (autorise http/https, data:image/*, blob: ou chemin relatif) */
+/** Valide et assainit une URL (renvoie la chaîne brute canonique sûre sans double échappement) */
 export function sanitizeSafeUrl(rawUrl: unknown): string {
   if (typeof rawUrl !== 'string') return '';
   const trimmed = rawUrl.trim();
@@ -38,10 +38,10 @@ export function sanitizeSafeUrl(rawUrl: unknown): string {
   const normalized = trimmed.replace(/[\u0000-\u0020\u007F-\u009F]/g, '').toLowerCase();
   if (/^(javascript|vbscript|livescript|file):/.test(normalized)) return '';
   if (normalized.startsWith('data:')) {
-    return /^data:image\/(png|jpe?g|gif|webp|bmp)/i.test(normalized) ? escapeAttr(trimmed) : '';
+    return /^data:image\/(png|jpe?g|gif|webp|bmp)/i.test(normalized) ? trimmed : '';
   }
   if (/^(https?:\/\/|blob:|\/|\.\.?\/|[a-z0-9_-]+\/|[a-z0-9_.-]+\.(png|jpe?g|gif|webp|svg))/i.test(normalized)) {
-    return escapeAttr(trimmed);
+    return trimmed;
   }
   return '';
 }

@@ -42,7 +42,7 @@ export function renderPublishedBlockHTML(b: Block, safeAccent: string): string {
     : '';
 
   const bindingBadge = b.binding && b.type !== 'map'
-    ? `<button type="button" class="binding-pill" onclick="triggerNarrativeBinding('${escapeAttr(b.binding.mapId)}','${escapeAttr(b.binding.targetFeatureId || '')}','${escapeAttr(b.binding.action || 'highlight')}')">#${clampInt(b.binding.numberIndex, 1, 999, 1)} · ${escapeAttr(b.binding.action || 'focus')}</button>`
+    ? `<button type="button" class="binding-pill" data-action="narrative-binding" data-map-id="${escapeAttr(b.binding.mapId)}" data-feature-id="${escapeAttr(b.binding.targetFeatureId || '')}" data-binding-action="${escapeAttr(b.binding.action || 'highlight')}">#${clampInt(b.binding.numberIndex, 1, 999, 1)} · ${escapeAttr(b.binding.action || 'focus')}</button>`
     : '';
 
   let content = '';
@@ -95,7 +95,7 @@ export function renderPublishedBlockHTML(b: Block, safeAccent: string): string {
           return `<img class="gallery-slide" data-gallery="${safeId}" data-idx="${idx}" src="${u}" alt="${cap}" style="display:${idx === 0 ? 'block' : 'none'};width:100%;height:100%;object-fit:cover;border-radius:4px;"/>`;
         })
         .join('');
-      content = `<div class="gallery-box" id="gal-${safeId}" data-count="${galleryItems.length}" data-cur="0" style="position:relative;width:100%;height:100%;">${slides}<div style="position:absolute;bottom:6px;right:6px;background:rgba(15,23,42,0.75);color:#fff;border-radius:999px;padding:2px 8px;display:flex;gap:6px;align-items:center;"><button type="button" data-carousel-control="true" aria-label="Image précédente" onclick="stepGallery('${safeId}',-1)" style="background:none;border:0;color:#fff;cursor:pointer;">◀</button><span id="gal-lbl-${safeId}" style="font-size:11px;">1/${galleryItems.length}</span><button type="button" data-carousel-control="true" aria-label="Image suivante" onclick="stepGallery('${safeId}',1)" style="background:none;border:0;color:#fff;cursor:pointer;">▶</button></div></div>`;
+      content = `<div class="gallery-box" id="gal-${safeId}" data-count="${galleryItems.length}" data-cur="0" style="position:relative;width:100%;height:100%;">${slides}<div style="position:absolute;bottom:6px;right:6px;background:rgba(15,23,42,0.75);color:#fff;border-radius:999px;padding:2px 8px;display:flex;gap:6px;align-items:center;"><button type="button" data-carousel-control="true" data-action="gallery-prev" data-gallery-id="${safeId}" aria-label="Image précédente" style="background:none;border:0;color:#fff;cursor:pointer;">◀</button><span id="gal-lbl-${safeId}" style="font-size:11px;">1/${galleryItems.length}</span><button type="button" data-carousel-control="true" data-action="gallery-next" data-gallery-id="${safeId}" aria-label="Image suivante" style="background:none;border:0;color:#fff;cursor:pointer;">▶</button></div></div>`;
     } else {
       const safeUrl = sanitizeSafeUrl(b.data.url || galleryItems[0]?.url);
       content = `<figure style="margin:0;height:100%;display:flex;flex-direction:column;">${safeUrl ? `<img src="${safeUrl}" alt="${caption}" style="width:100%;flex:1;min-height:0;object-fit:cover;border-radius:4px;"/>` : `<div style="flex:1;display:grid;place-items:center;background:#f1f5f9;color:#64748b;font-size:11px;">Image non définie</div>`}${caption ? `<figcaption style="font-size:11px;color:#475569;padding-top:4px;">${caption}</figcaption>` : ''}</figure>`;

@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { PageGrid } from './PageGrid';
 import { PageFormat } from '../../types/grid';
-import { getGridDimensions, refitBlocksToGrid } from '../../core/grid';
+import { getGridDimensions, refitBlocksDetailed } from '../../core/grid';
 import { Page, Block, NarrativeBinding, ProjectMap } from '../../types/project';
 import { createDefaultProjectMap, validateNarrativeBindings } from '../../core/mapScene';
 import { MapStudioModal } from '../dialogs/MapStudioModal';
@@ -42,12 +42,24 @@ export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void 
 
   const handleFormatChange = (fmt: PageFormat) => {
     const dims = getGridDimensions(fmt);
+    let overflowBlocks: Block[] = [];
     const updated = pages.map((p, idx) => {
       if (idx !== safeIndex) return p;
-      const refitted = refitBlocksToGrid(p.blocks || [], dims.cols, dims.rows);
-      return { ...p, layout: { ...p.layout, format: fmt }, blocks: refitted };
+      const res = refitBlocksDetailed(p.blocks || [], dims.cols, dims.rows);
+      if (res.unplaced.length > 0) overflowBlocks = res.unplaced;
+      return { ...p, layout: { ...p.layout, format: fmt }, blocks: res.placed };
     });
-    updateStory({ format: fmt, pages: updated });
+    if (overflowBlocks.length > 0) {
+      const overflowPage: Page = {
+        id: `page-${Date.now()}-spill`,
+        title: `Page ${pages.length + 1} (Débordement)`,
+        layout: { format: fmt, gridColumns: dims.cols, gridRows: dims.rows, marginMm: dims.marginMm },
+        blocks: refitBlocksDetailed(overflowBlocks, dims.cols, dims.rows).placed,
+      };
+      updateStory({ format: fmt, pages: [...updated, overflowPage] });
+    } else {
+      updateStory({ format: fmt, pages: updated });
+    }
   };
 
   const handleBack = async () => {

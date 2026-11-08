@@ -5,6 +5,12 @@
 import type { Block } from '../types/project';
 import type { BlockRect, GridDimensions, GridOperationResult, PageFormat } from '../types/grid';
 
+export interface RefitResult {
+  placed: Block[];
+  unplaced: Block[];
+  overflowCount: number;
+}
+
 export function getGridDimensions(format: PageFormat): GridDimensions {
   switch (format) {
     case 'a4-landscape':
@@ -32,8 +38,7 @@ export function getGridDimensions(format: PageFormat): GridDimensions {
 }
 
 export function isRectValid(rect: BlockRect, cols: number, rows: number): boolean {
-  if (rect.w <= 0 || rect.h <= 0) return false;
-  if (rect.x < 0 || rect.y < 0) return false;
+  if (rect.w <= 0 || rect.h <= 0 || rect.x < 0 || rect.y < 0) return false;
   if (rect.x + rect.w > cols || rect.y + rect.h > rows) return false;
   const area = rect.w * rect.h;
   return area === 1 || area % 2 === 0;
@@ -43,10 +48,8 @@ export function hasCollision(rect: BlockRect, blocks: Block[], ignoreBlockId?: s
   for (const b of blocks) {
     if (ignoreBlockId && b.id === ignoreBlockId) continue;
     const overlap = !(
-      rect.x + rect.w <= b.x ||
-      b.x + b.w <= rect.x ||
-      rect.y + rect.h <= b.y ||
-      b.y + b.h <= rect.y
+      rect.x + rect.w <= b.x || b.x + b.w <= rect.x ||
+      rect.y + rect.h <= b.y || b.y + b.h <= rect.y
     );
     if (overlap) return true;
   }
@@ -97,22 +100,15 @@ export function shrinkBlock(blocks: Block[], blockId: string): GridOperationResu
     return { success: false, blocks, error: 'Taille minimale atteinte (1x1).' };
   }
 
-  let bestW = target.w;
-  let bestH = target.h;
-  let found = false;
-
+  let bestW = target.w, bestH = target.h, found = false;
   const trySteps = target.w >= target.h
     ? [{ dw: 1, dh: 0 }, { dw: 2, dh: 0 }, { dw: 0, dh: 1 }, { dw: 0, dh: 2 }]
     : [{ dw: 0, dh: 1 }, { dw: 0, dh: 2 }, { dw: 1, dh: 0 }, { dw: 2, dh: 0 }];
 
   for (const s of trySteps) {
-    const tw = target.w - s.dw;
-    const th = target.h - s.dh;
+    const tw = target.w - s.dw, th = target.h - s.dh;
     if (tw >= 1 && th >= 1 && (tw * th === 1 || (tw * th) % 2 === 0)) {
-      bestW = tw;
-      bestH = th;
-      found = true;
-      break;
+      bestW = tw; bestH = th; found = true; break;
     }
   }
 
@@ -152,9 +148,10 @@ export function deleteBlock(blocks: Block[], blockId: string): Block[] {
   return blocks.filter((b) => b.id !== blockId);
 }
 
-/** V06 : Replace les blocs dans une nouvelle grille sans collision ni chevauchement */
-export function refitBlocksToGrid(blocks: Block[], cols: number, rows: number): Block[] {
+/** C02 / V06 : Replace les blocs sans collision et isole les non-placés sur grille saturée */
+export function refitBlocksDetailed(blocks: Block[], cols: number, rows: number): RefitResult {
   const placed: Block[] = [];
+  const unplaced: Block[] = [];
   for (const b of blocks) {
     let w = Math.max(1, Math.min(b.w, cols));
     let h = Math.max(1, Math.min(b.h, rows));
@@ -173,11 +170,17 @@ export function refitBlocksToGrid(blocks: Block[], cols: number, rows: number): 
         free = findFirstFreeCell(placed, cols, rows, w, h);
       }
       if (free) {
-        x = free.x;
-        y = free.y;
+        placed.push({ ...b, x: free.x, y: free.y, w, h });
+      } else {
+        unplaced.push(b);
       }
+    } else {
+      placed.push({ ...b, x, y, w, h });
     }
-    placed.push({ ...b, x, y, w, h });
   }
-  return placed;
+  return { placed, unplaced, overflowCount: unplaced.length };
+}
+
+export function refitBlocksToGrid(blocks: Block[], cols: number, rows: number): Block[] {
+  return refitBlocksDetailed(blocks, cols, rows).placed;
 }

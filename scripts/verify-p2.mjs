@@ -16,6 +16,7 @@ import {
   deleteBlock,
   findFirstFreeCell,
   refitBlocksToGrid,
+  refitBlocksDetailed,
 } from '../src/core/grid.ts';
 
 console.log('=== LANCEMENT DE LA RECETTE P2 (G01 -> G10 & V06/V07) ===\n');
@@ -122,7 +123,17 @@ function testBlockOperations() {
     assert.strictEqual(hasCollision(rb, refitted, rb.id), false, `Collision détectée après refit pour ${rb.id}`);
   }
 
-  console.log('  -> Ajout, expansion, réduction et réajustement sans collision (V06) validés.');
+  // C02 : Saturation de grille 1x1 avec 2 blocs — aucun chevauchement caché ni collision silencieuse
+  const saturatedInput = [
+    { id: 'b_sat1', type: 'text', x: 0, y: 0, w: 2, h: 2, data: {} },
+    { id: 'b_sat2', type: 'text', x: 2, y: 0, w: 2, h: 2, data: {} },
+  ];
+  const detailed = refitBlocksDetailed(saturatedInput, 1, 1);
+  assert.strictEqual(detailed.placed.length, 1, 'Exactement 1 bloc placé dans 1x1');
+  assert.strictEqual(detailed.unplaced.length, 1, 'Exactement 1 bloc non-placé (débordement)');
+  assert.strictEqual(detailed.overflowCount, 1);
+  assert.strictEqual(hasCollision(detailed.placed[0], [], detailed.placed[0].id), false);
+  console.log('  -> Gestion de la saturation du refit (C02) sans collision validée.');
 }
 
 // 5. G06 : Duplication, recherche de cellule libre et suppression

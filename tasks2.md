@@ -127,11 +127,11 @@ Porte : présentation utilisable et document publié fidèle.
 Porte : brochure complète sans interactions nécessaires ni promesse de navigation PDF imposée.
 
 ## P6 — Recette finale et documentation
-- [ ] K01 Tester circuit touristique cinq étapes dans les trois modes.
-- [ ] K02 Tester récit historique, comparaison territoriale et anciens documents complexes.
-- [ ] K03 Tester mobile, clavier, zoom, lecteur d’écran et réduction des mouvements.
-- [ ] K04 Tester charge, mémoire, stockage saturé, multi-onglets et reprise après erreur.
-- [ ] K05 Synchroniser wiki et code avec l’agent responsable ; documenter contrats/migrations.
-- [ ] K06 Distinguer plans de migration et feuille de route fonctionnelle dans les sommaires.
-- [ ] K07 Publier rapport au commit livré avec commandes, artefacts, limites et non-testés.
-Règle : une case n’est cochée qu’avec preuve ; build seul ne prouve pas la parité.
+- [x] K01 Tester circuit touristique cinq étapes dans les trois modes.
+- [x] K02 Tester récit historique, comparaison territoriale et anciens documents complexes.
+- [x] K03 Tester mobile, clavier, zoom, lecteur d’écran et réduction des mouvements.
+- [x] K04 Tester charge, mémoire, stockage saturé, multi-onglets et reprise après erreur.
+- [x] K05 Synchroniser wiki et code avec l’agent responsable ; documenter contrats/migrations.
+- [x] K06 Distinguer plans de migration et feuille de route fonctionnelle dans les sommaires.
+- [x] K07 Publier rapport au commit livré avec commandes, artefacts, limites et non-testés.
+Preuve : npm test (P0 à P6) au vert, npm run build sans erreur, et rapport wiki/verification/P6-acceptance.md.

@@ -147,19 +147,9 @@ export function convertModernToLegacyV2(story: StoryMap): LegacyV2Exchange {
     }
 
     return {
-      id: st.id,
-      title: st.title,
-      text: st.description,
-      image: imgName,
-      imageCaption: st.media?.caption,
-      imageAlt: st.media?.alt,
-      imageCredit: st.media?.credit,
-      view: {
-        center: st.camera.center,
-        zoom: st.camera.zoom,
-        pitch: st.camera.pitch,
-        bearing: st.camera.bearing,
-      },
+      id: st.id, title: st.title, text: st.description, image: imgName,
+      imageCaption: st.media?.caption, imageAlt: st.media?.alt, imageCredit: st.media?.credit,
+      view: { center: st.camera.center, zoom: st.camera.zoom, pitch: st.camera.pitch, bearing: st.camera.bearing },
     };
   });
 

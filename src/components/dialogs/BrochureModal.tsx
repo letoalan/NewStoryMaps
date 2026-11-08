@@ -1,5 +1,5 @@
 /**
- * StoryMap — Dialogue de Prévol Brochure A4, conversion Mode 2 -> 3 et export PDF (P5 — J02, J03, J10, J11)
+ * StoryMap — Dialogue de Prévol Brochure A4, conversion Mode 2 -> 3 et export PDF (P5 — J02, J03, J10, J11 / C08)
  */
 
 import React, { useState } from 'react';
@@ -88,26 +88,26 @@ export const BrochureModal: React.FC<BrochureModalProps> = ({ isOpen, onClose })
               <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>Carte(s)</div>
             </div>
             <div style={{ padding: '10px', background: 'var(--surface-2)', borderRadius: 'var(--r)', textAlign: 'center' }}>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: preflight.selectableTextGuaranteed ? 'var(--success)' : 'var(--warning)' }}>
-                {preflight.selectableTextGuaranteed ? 'Vectoriel' : 'À vérifier'}
+              <div style={{ fontSize: '13px', fontWeight: 700, color: preflight.selectableTextPresent ? 'var(--success)' : 'var(--text-3)' }}>
+                {preflight.selectableTextPresent ? 'Texte HTML' : 'Aucun'}
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>Texte PDF</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-3)' }}>Flux textuel</div>
             </div>
             <div style={{ padding: '10px', background: 'var(--surface-2)', borderRadius: 'var(--r)', textAlign: 'center' }}>
               <div style={{ fontSize: '13px', fontWeight: 700, color: preflight.attributionsPresent ? 'var(--success)' : 'var(--warning)' }}>
                 {preflight.attributionsPresent ? 'Conformes' : 'Incomplètes'}
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>Attributions</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-3)' }}>Attributions</div>
             </div>
           </div>
 
           <div style={{ padding: '12px', background: 'var(--surface-2)', borderRadius: 'var(--r)', border: '1px solid var(--border)' }}>
             <div style={{ fontSize: '12px', fontWeight: 700, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               {preflight.ready ? <CheckCircle2 size={15} color="var(--success)" /> : <AlertTriangle size={15} color="var(--danger)" />}
-              <span>Contrôle prévol (Preflight J10) : {preflight.ready ? 'Prêt pour impression A4' : 'Corrections requises'}</span>
+              <span>Contrôle prévol (Preflight C07 / J10) : {preflight.ready ? 'Prêt pour impression A4' : 'Corrections requises'}</span>
             </div>
             {preflight.issues.length === 0 ? (
-              <div style={{ fontSize: '12px', color: 'var(--text-2)' }}>Aucune anomalie détectée. Les marges A4, textes vectoriels et attributions sont prêts.</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-2)' }}>Aucune anomalie bloquante. Marges A4, flux de texte et attributions sont configurés.</div>
             ) : (
               <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {preflight.issues.map((iss, idx) => (
@@ -123,7 +123,7 @@ export const BrochureModal: React.FC<BrochureModalProps> = ({ isOpen, onClose })
             <div style={{ padding: '12px', background: 'rgba(11, 127, 176, 0.08)', border: '1px solid var(--accent)', borderRadius: 'var(--r)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
               <div style={{ fontSize: '12px' }}>
                 <strong>Conversion Mode 2 → Mode 3 (J02 / J03)</strong>
-                <div style={{ color: 'var(--text-2)', marginTop: '2px' }}>Crée une copie Brochure A4 dédiée en développant les galeries en planches contact et en numérotant les liaisons.</div>
+                <div style={{ color: 'var(--text-2)', marginTop: '2px' }}>Crée une copie Brochure A4 dédiée en développant les galeries en planches et synchronisant les liaisons.</div>
               </div>
               <button type="button" className="btn btn-primary" disabled={isConverting} onClick={handleConvertMode2To3}>
                 <Copy size={14} /> <span>Créer copie Brochure</span>
@@ -142,11 +142,11 @@ export const BrochureModal: React.FC<BrochureModalProps> = ({ isOpen, onClose })
         </div>
 
         <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '10px', background: 'var(--surface-2)' }}>
-          <button type="button" className="btn btn-ghost" onClick={() => exportStoryToBrochureHTML(story)}>
-            <Download size={14} /> <span>Télécharger Brochure HTML/PDF</span>
+          <button type="button" className="btn btn-ghost" onClick={() => exportStoryToBrochureHTML(story)} title="Télécharge le fichier autonome avec données rééditables">
+            <Download size={14} /> <span>HTML Rééditable (.brochure.html)</span>
           </button>
-          <button type="button" className="btn btn-primary" disabled={!preflight.ready} onClick={handleOpenPrintWindow}>
-            <Printer size={14} /> <span>Imprimer / PDF A4</span>
+          <button type="button" className="btn btn-primary" disabled={!preflight.ready} onClick={handleOpenPrintWindow} title="Génère la mise en page A4 pour impression papier ou diffusion PDF">
+            <Printer size={14} /> <span>Imprimer / PDF A4 (Diffusion)</span>
           </button>
         </div>
       </div>

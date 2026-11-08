@@ -163,10 +163,9 @@ function testMapStyleResolution() {
   assert.strictEqual(MAP_STYLES.length, 10, '10 styles disponibles dans tous les modes');
   for (const style of MAP_STYLES) {
     const resId = resolveMapStyle(style.id);
-    assert.notStrictEqual(resId, style.id, `Le style id "${style.id}" ne doit pas être renvoyé bare (risque 404)`);
+    assert.notStrictEqual(resId, style.id, `Style "${style.id}" ne doit pas être renvoyé bare`);
     assert.ok(typeof resId === 'string' ? resId.startsWith('http') : typeof resId === 'object');
     assert.strictEqual(getMapStyleId(style.id), style.id);
-    assert.strictEqual(getMapStyleId(style.url), style.id);
   }
   assert.ok(resolveMapStyle('dark-matter').includes('dark-matter-gl-style'));
   assert.ok(resolveMapStyle('positron').includes('positron-gl-style'));

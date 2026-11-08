@@ -6,10 +6,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Map as MLMap, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { ProjectMap, MapFeature } from '../../types/project';
-import { createDefaultProjectMap, addFeatureToLayer, deleteFeatureFromLayer } from '../../core/mapScene';
+import { createDefaultProjectMap, addFeatureToLayer } from '../../core/mapScene';
 import { renderSceneLayersOnMap } from '../../core/mapSceneRender';
 import { MAP_STYLES, resolveMapStyle, getMapStyleId } from '../../types/map';
-import { X, Map, Plus, Trash2, Layers, Eye, EyeOff, Check, Camera, Crosshair, RotateCcw } from 'lucide-react';
+import { X, Map, Plus, Check, Camera, Crosshair, RotateCcw } from 'lucide-react';
+import { MapStudioLayers } from './MapStudioLayers';
 
 interface MapStudioModalProps {
   isOpen: boolean;
@@ -142,47 +143,20 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
                 {MAP_STYLES.map((st) => (<option key={st.id} value={st.id}>{st.name} ({st.provider})</option>))}
               </select>
             </div>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600 }}><Layers size={13} /> Couches & Entités</span>
-                <button className="btn btn-ghost btn-xs" onClick={() => updateActiveMap({ layers: [...(activeMap.layers || []), { id: `layer-${Date.now()}`, name: `Couche ${(activeMap.layers || []).length + 1}`, visible: true, features: [] }] })}><Plus size={11} /> Couche</button>
-              </div>
-              {(activeMap.layers || []).map((l) => (
-                <div key={l.id} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '4px', padding: '8px', marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '11.5px', fontWeight: 600 }}>{l.name}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                      <button type="button" className="btn btn-ghost btn-icon btn-xs" title={l.visible ? 'Masquer la couche' : 'Afficher'} onClick={() => updateActiveMap({ layers: activeMap.layers?.map((ly) => (ly.id === l.id ? { ...ly, visible: !ly.visible } : ly)) })}>
-                        {l.visible ? <Eye size={12} color="var(--accent)" /> : <EyeOff size={12} />}
-                      </button>
-                      <button type="button" className="btn btn-ghost btn-icon btn-xs" title="Supprimer la couche" onClick={() => updateActiveMap({ layers: activeMap.layers?.filter((ly) => ly.id !== l.id) })}>
-                        <Trash2 size={12} color="var(--danger)" />
-                      </button>
-                    </div>
-                  </div>
-                  {(l.features || []).map((f) => (
-                    <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', background: 'var(--surface)', padding: '2px 6px', borderRadius: '3px', marginBottom: '2px' }}>
-                      <span>#{f.numberIndex || 1} {f.name} ({f.geometryType})</span>
-                      <button className="btn btn-ghost btn-icon btn-xs" onClick={() => onUpdateMaps(currentMaps.map((m, idx) => (idx === selectedMapIndex ? deleteFeatureFromLayer(m, l.id, f.id) : m)))}><Trash2 size={11} color="var(--danger)" /></button>
-                    </div>
-                  ))}
-                  <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
-                    <input type="text" className="input" placeholder="Nom ou laisser vide…" style={{ height: '22px', fontSize: '11px', flex: 1 }} value={newFeatureName} onChange={(e) => setNewFeatureName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleAddFeature(l.id); }} />
-                    <select className="select" style={{ height: '22px', fontSize: '10.5px' }} value={newFeatureType} onChange={(e) => { setNewFeatureType(e.target.value as any); setDraftVertices([]); }}>
-                      <option value="Point">Point</option><option value="LineString">Ligne</option><option value="Polygon">Polygone</option>
-                    </select>
-                    <button className="btn btn-primary btn-xs" onClick={() => handleAddFeature(l.id)} title="Créer ce figuré (ou Entrée)"><Plus size={11} /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <MapStudioLayers
+              activeMap={activeMap} selectedMapIndex={selectedMapIndex} currentMaps={currentMaps}
+              newFeatureName={newFeatureName} newFeatureType={newFeatureType}
+              setNewFeatureName={setNewFeatureName} setNewFeatureType={setNewFeatureType}
+              setDraftVertices={setDraftVertices} updateActiveMap={updateActiveMap}
+              onUpdateMaps={onUpdateMaps} onAddFeature={handleAddFeature}
+            />
           </div>
           <div style={{ position: 'relative', width: '100%', height: '100%' }}>
             <div ref={mapContainerRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
             <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(15,23,42,0.88)', color: '#fff', padding: '5px 10px', borderRadius: '4px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 10 }}>
               <Crosshair size={12} color="var(--accent)" />
-              <span>{newFeatureType === 'Point' ? `Point [${cursorPos[0].toFixed(3)}, ${cursorPos[1].toFixed(3)}] (cliquez pour déplacer)` : `Sommets : ${draftVertices.length} (cliquez pour tracer)`}</span>
-              {draftVertices.length > 0 && (<button className="btn btn-ghost btn-xs" style={{ color: '#f87171', padding: '0 4px', height: '18px' }} onClick={() => setDraftVertices([])} title="Effacer les sommets"><RotateCcw size={11} /></button>)}
+              <span>{newFeatureType === 'Point' ? `Point [${cursorPos[0].toFixed(3)}, ${cursorPos[1].toFixed(3)}]` : `Sommets : ${draftVertices.length}`}</span>
+              {draftVertices.length > 0 && (<button className="btn btn-ghost btn-xs" style={{ color: '#f87171', padding: '0 4px', height: '18px' }} onClick={() => setDraftVertices([])} title="Effacer"><RotateCcw size={11} /></button>)}
             </div>
             <button className="btn btn-primary btn-xs" style={{ position: 'absolute', bottom: '12px', right: '12px', zIndex: 10 }} onClick={handleCaptureView}>
               <Camera size={13} style={{ marginRight: '4px' }} /> Capturer cette vue
@@ -197,7 +171,4 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
   );
 };
 
-export const MapStudioModal: React.FC<MapStudioModalProps> = (props) => {
-  if (!props.isOpen) return null;
-  return <MapStudioModalContent {...props} />;
-};
+export const MapStudioModal: React.FC<MapStudioModalProps> = (props) => (props.isOpen ? <MapStudioModalContent {...props} /> : null);

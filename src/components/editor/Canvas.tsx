@@ -1,17 +1,15 @@
 /**
- * StoryMap — Canevas de carte interactif MapLibre GL avec tracé multi-styles, marqueurs & diagnostics
+ * StoryMap — Canevas de carte interactif MapLibre GL avec tracé multi-styles, marqueurs & diagnostics (C10/C11)
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Map as MLMap, Marker, GeoJSONSource } from 'maplibre-gl';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Map as MLMap, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useStory } from '../../context/StoryContext';
 import { Compass, Camera, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 import { resolveMapStyle } from '../../types/map';
-import { createRouteGeoJSON, getRouteLayerConfig } from '../../core/route';
-import { getRouteIconSVG, registerRouteIcon } from '../../core/mapIcons';
 import { attachMapDiagnostics } from '../../core/mapDiagnostics';
-import { createMarkerElement } from '../common/markerElement';
+import { syncRouteLayer, syncCanvasMarkers } from '../../core/canvasLayers';
 import { GeocoderSearch } from './GeocoderSearch';
 import { GeoSearchResult } from '../../core/geocoder';
 
@@ -26,7 +24,21 @@ export const Canvas: React.FC = () => {
 
   const currentStep = story?.steps[activeStepIndex];
 
-  // Initialisation et cycle de vie de la carte MapLibre avec diagnostics
+  // Reconstitution complète de la carte, du style, des couches et des marqueurs
+  const rebuildAllContents = useCallback((map: MLMap) => {
+    if (!story || (map as any)._removed) return;
+    syncRouteLayer(map, story.steps, story.appearance).catch(() => {});
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = syncCanvasMarkers(
+      map, story.steps, activeStepIndex, story.appearance,
+      (idx) => setActiveStepIndex(idx),
+      (coords) => {
+        if (currentStep) updateStep(activeStepIndex, { camera: { ...currentStep.camera, center: coords } });
+      }
+    );
+  }, [story, activeStepIndex, currentStep?.camera, setActiveStepIndex, updateStep]);
+
+  // Cycle de vie de l'instance MapLibre
   useEffect(() => {
     const container = mapContainerRef.current;
     if (!container || !story) return;
@@ -49,17 +61,18 @@ export const Canvas: React.FC = () => {
     const handleContextLost = (e: Event) => {
       if (isUnmounting) return;
       e.preventDefault();
-      console.warn('[StoryMap:Canvas] Événement webglcontextlost détecté en cours d’exécution');
       setWebglLost(true);
     };
     const handleContextRestored = () => {
-      console.info('[StoryMap:Canvas] Événement webglcontextrestored reçu');
       setWebglLost(false);
+      setReloadKey((k) => k + 1);
     };
     canvas?.addEventListener('webglcontextlost', handleContextLost);
     canvas?.addEventListener('webglcontextrestored', handleContextRestored);
 
+    map.on('load', () => rebuildAllContents(map));
     mapRef.current = map;
+
     return () => {
       isUnmounting = true;
       detachDiagnostics();
@@ -79,92 +92,19 @@ export const Canvas: React.FC = () => {
     if (currentStyleRef.current === story.mapStyle) return;
     currentStyleRef.current = story.mapStyle;
     map.setStyle(resolveMapStyle(story.mapStyle));
-  }, [story?.mapStyle]);
+    map.once('style.load', () => rebuildAllContents(map));
+  }, [story?.mapStyle, rebuildAllContents]);
 
   // Synchronisation caméra et marqueurs stylisés
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !story || !currentStep) return;
-
+    if (!map || !story || !currentStep || (map as any)._removed) return;
     map.flyTo({
       center: currentStep.camera.center, zoom: currentStep.camera.zoom,
-      pitch: currentStep.camera.pitch, bearing: currentStep.camera.bearing, essential: true, duration: 1400,
+      pitch: currentStep.camera.pitch, bearing: currentStep.camera.bearing, essential: true, duration: 1200,
     });
-
-    markersRef.current.forEach((m) => m.remove());
-    markersRef.current = [];
-
-    const col = story.appearance.accentColor || '#0b7fb0';
-    const shape = story.appearance.markerShape || 'pin';
-    const showAll = story.appearance.showAllMarkers ?? true;
-
-    story.steps.forEach((step, idx) => {
-      const isActive = idx === activeStepIndex;
-      if (!showAll && !isActive) return;
-
-      const el = createMarkerElement({ shape, color: col, index: idx, isActive });
-      const marker = new Marker({ element: el, draggable: isActive }).setLngLat(step.camera.center).addTo(map);
-
-      if (isActive) {
-        marker.on('dragend', () => {
-          const lngLat = marker.getLngLat();
-          updateStep(activeStepIndex, { camera: { ...currentStep.camera, center: [lngLat.lng, lngLat.lat] } });
-        });
-      } else {
-        el.addEventListener('click', (e) => { e.stopPropagation(); setActiveStepIndex(idx); });
-      }
-      markersRef.current.push(marker);
-    });
-  }, [activeStepIndex, currentStep?.camera, story?.appearance.accentColor, story?.appearance.markerShape, story?.appearance.showAllMarkers, story?.steps]);
-
-  // Tracé GeoJSON multi-styles
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !story) return;
-
-    const rStyle = story.appearance.routeStyle || 'dashed';
-    const rColor = story.appearance.routeColor || story.appearance.accentColor || '#0b7fb0';
-    const routeData = createRouteGeoJSON(story.steps, { style: rStyle, color: rColor });
-    const cfg = getRouteLayerConfig(rStyle, rColor);
-
-    let isCancelled = false;
-    const updateRoute = async () => {
-      if (isCancelled || (map as any)._removed || !map.getCanvas()) return;
-      const src = map.getSource('story-route') as GeoJSONSource;
-      const layoutObj = cfg.layout || {};
-      if (src) {
-        src.setData(routeData);
-      } else if (rStyle !== 'none') {
-        map.addSource('story-route', { type: 'geojson', data: routeData });
-      }
-
-      if (map.getLayer('story-route-line')) map.removeLayer('story-route-line');
-      if (rStyle !== 'none' && !isCancelled && !(map as any)._removed) {
-        map.addLayer({ id: 'story-route-line', type: 'line', source: 'story-route', paint: cfg.paint as any, layout: layoutObj as any });
-      }
-
-      if (map.getLayer('story-route-symbols')) map.removeLayer('story-route-symbols');
-      const iconSvg = getRouteIconSVG(rStyle, rColor);
-      if (iconSvg && rStyle !== 'none' && !isCancelled) {
-        const iconId = `icon-${rStyle}-${rColor.replace('#', '')}`;
-        await registerRouteIcon(map, iconId, iconSvg);
-        if (!isCancelled && !(map as any)._removed && !map.getLayer('story-route-symbols') && map.getSource('story-route')) {
-          map.addLayer({
-            id: 'story-route-symbols', type: 'symbol', source: 'story-route',
-            layout: {
-              'symbol-placement': 'line', 'symbol-spacing': rStyle === 'airplane' || rStyle === 'ship' ? 120 : 65,
-              'icon-image': iconId, 'icon-size': rStyle === 'airplane' || rStyle === 'ship' ? 0.8 : 0.6,
-              'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-rotation-alignment': 'map', 'icon-keep-upright': false,
-            },
-          });
-        }
-      }
-    };
-
-    const safeUpdate = () => { if (!isCancelled && !(map as any)._removed) updateRoute(); };
-    if (map.isStyleLoaded()) safeUpdate(); else map.once('style.load', safeUpdate);
-    return () => { isCancelled = true; };
-  }, [story?.steps, story?.mapStyle, story?.appearance.routeStyle, story?.appearance.accentColor, story?.appearance.routeColor]);
+    rebuildAllContents(map);
+  }, [activeStepIndex, currentStep?.camera, story?.appearance, rebuildAllContents, reloadKey]);
 
   const handleCaptureView = () => {
     const map = mapRef.current;

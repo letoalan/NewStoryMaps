@@ -12,11 +12,7 @@ import { ChevronLeft, ChevronRight, Maximize, Minimize, X, List, Columns, Rows, 
 
 export type { ReaderProfile };
 
-interface DocumentReaderProps {
-  onExit: () => void;
-}
-
-export const DocumentReader: React.FC<DocumentReaderProps> = ({ onExit }) => {
+export const DocumentReader: React.FC<{ onExit: () => void }> = ({ onExit }) => {
   const { story } = useStory();
   const [profile, setProfile] = useState<ReaderProfile>('slide');
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
@@ -26,13 +22,9 @@ export const DocumentReader: React.FC<DocumentReaderProps> = ({ onExit }) => {
   const sommaireBtnRef = useRef<HTMLButtonElement>(null);
 
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
   const pages: Page[] = story?.pages && story.pages.length > 0 ? story.pages : [{
-    id: 'p1', title: 'Page 1',
-    layout: { format: story?.format || 'a4-portrait', gridColumns: 6, gridRows: 8, marginMm: 15 },
-    blocks: [],
+    id: 'p1', title: 'Page 1', layout: { format: story?.format || 'a4-portrait', gridColumns: 6, gridRows: 8, marginMm: 15 }, blocks: [],
   }];
-
   const totalPages = pages.length;
   const currentFormat: PageFormat = pages[currentPageIndex]?.layout.format || story?.format || 'a4-portrait';
 
@@ -48,35 +40,22 @@ export const DocumentReader: React.FC<DocumentReaderProps> = ({ onExit }) => {
   const next = () => goToPage(computeNextPageIndex(currentPageIndex, totalPages, 1));
   const prev = () => goToPage(computeNextPageIndex(currentPageIndex, totalPages, -1));
 
-  // V05 : Synchronisation réelle de l'état plein écran
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener('fullscreenchange', onFsChange);
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
 
-  // V05 : Arbitrage clavier entre champs, cartes actives, carrousels et document
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (isSommaireOpen) {
-          setIsSommaireOpen(false);
-          sommaireBtnRef.current?.focus();
-        } else {
-          onExit();
-        }
+        if (isSommaireOpen) { setIsSommaireOpen(false); sommaireBtnRef.current?.focus(); }
+        else onExit();
         return;
       }
-
       if (shouldIgnoreReaderKeyEvent(e.target as HTMLElement)) return;
-
-      if (e.key === 'ArrowRight' || e.key === 'PageDown') {
-        e.preventDefault();
-        next();
-      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-        e.preventDefault();
-        prev();
-      }
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); next(); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -84,11 +63,8 @@ export const DocumentReader: React.FC<DocumentReaderProps> = ({ onExit }) => {
 
   const toggleFullscreen = async () => {
     try {
-      if (!document.fullscreenElement) {
-        await containerRef.current?.requestFullscreen?.();
-      } else {
-        await document.exitFullscreen?.();
-      }
+      if (!document.fullscreenElement) await containerRef.current?.requestFullscreen?.();
+      else await document.exitFullscreen?.();
     } catch {
       setIsFullscreen(Boolean(document.fullscreenElement));
     }
@@ -101,22 +77,18 @@ export const DocumentReader: React.FC<DocumentReaderProps> = ({ onExit }) => {
           <button ref={sommaireBtnRef} type="button" className="btn btn-ghost btn-sm" aria-expanded={isSommaireOpen} onClick={() => setIsSommaireOpen(!isSommaireOpen)} title="Sommaire des pages">
             <List size={16} /> <span>Sommaire</span>
           </button>
-          <span style={{ fontWeight: 600, fontSize: '14px', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {story?.title}
-          </span>
+          <span style={{ fontWeight: 600, fontSize: '14px', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{story?.title}</span>
         </div>
-
         <div role="group" aria-label="Profil de présentation" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: 'var(--r)', padding: '2px' }}>
           <button type="button" className={`btn btn-xs ${profile === 'slide' ? 'btn-primary' : 'btn-ghost'}`} aria-pressed={profile === 'slide'} onClick={() => setProfile('slide')} title="Mode Diapositive"><Monitor size={14} /></button>
           <button type="button" className={`btn btn-xs ${profile === 'vertical' ? 'btn-primary' : 'btn-ghost'}`} aria-pressed={profile === 'vertical'} onClick={() => setProfile('vertical')} title="Défilement Vertical"><Rows size={14} /></button>
           <button type="button" className={`btn btn-xs ${profile === 'horizontal' ? 'btn-primary' : 'btn-ghost'}`} aria-pressed={profile === 'horizontal'} onClick={() => setProfile('horizontal')} title="Défilement Horizontal"><Columns size={14} /></button>
         </div>
-
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button type="button" className="btn btn-ghost btn-icon btn-sm" onClick={toggleFullscreen} aria-label={isFullscreen ? 'Quitter plein écran' : 'Plein écran'} title={isFullscreen ? 'Quitter plein écran' : 'Plein écran'}>
+          <button type="button" className="btn btn-ghost btn-icon btn-sm" onClick={toggleFullscreen} aria-label={isFullscreen ? 'Quitter plein écran' : 'Plein écran'}>
             {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
           </button>
-          <button type="button" className="btn btn-ghost btn-icon btn-sm" onClick={onExit} aria-label="Fermer la présentation" title="Fermer la présentation"><X size={16} /></button>
+          <button type="button" className="btn btn-ghost btn-icon btn-sm" onClick={onExit} aria-label="Fermer la présentation"><X size={16} /></button>
         </div>
       </header>
 
@@ -126,20 +98,8 @@ export const DocumentReader: React.FC<DocumentReaderProps> = ({ onExit }) => {
             <PageGrid format={currentFormat} blocks={pages[currentPageIndex]?.blocks || []} onChangeBlocks={() => {}} isEditable={false} />
           </div>
         )}
-
-        {profile === 'vertical' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', alignItems: 'center' }}>
-            {pages.map((p, idx) => (
-              <div key={p.id} id={`reader-page-${idx}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '11px', color: '#94a3b8' }}>Page {idx + 1} — {p.title}</span>
-                <PageGrid format={p.layout.format || currentFormat} blocks={p.blocks || []} onChangeBlocks={() => {}} isEditable={false} />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {profile === 'horizontal' && (
-          <div style={{ display: 'flex', flexDirection: 'row', gap: '32px', alignItems: 'flex-start' }}>
+        {(profile === 'vertical' || profile === 'horizontal') && (
+          <div style={{ display: 'flex', flexDirection: profile === 'vertical' ? 'column' : 'row', gap: '32px', alignItems: profile === 'vertical' ? 'center' : 'flex-start' }}>
             {pages.map((p, idx) => (
               <div key={p.id} id={`reader-page-${idx}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '11px', color: '#94a3b8' }}>Page {idx + 1} — {p.title}</span>
@@ -152,22 +112,17 @@ export const DocumentReader: React.FC<DocumentReaderProps> = ({ onExit }) => {
 
       {profile === 'slide' && (
         <footer style={{ height: '48px', background: 'rgba(15, 23, 42, 0.95)', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
-          <button type="button" className="btn btn-ghost btn-icon btn-sm" disabled={currentPageIndex <= 0} onClick={prev} aria-label="Page précédente" title="Page précédente"><ChevronLeft size={18} /></button>
+          <button type="button" className="btn btn-ghost btn-icon btn-sm" disabled={currentPageIndex <= 0} onClick={prev} aria-label="Page précédente"><ChevronLeft size={18} /></button>
           <div role="navigation" aria-label="Pagination des diapositives" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             {pages.map((p, i) => (
               <button
-                key={p.id || i}
-                type="button"
-                aria-label={`Aller à la page ${i + 1}`}
-                aria-current={i === currentPageIndex ? 'page' : undefined}
-                onClick={() => goToPage(i)}
+                key={p.id || i} type="button" aria-label={`Aller à la page ${i + 1}`} aria-current={i === currentPageIndex ? 'page' : undefined} onClick={() => goToPage(i)}
                 style={{ width: i === currentPageIndex ? '20px' : '10px', height: '10px', padding: 0, border: 'none', borderRadius: '5px', backgroundColor: i === currentPageIndex ? 'var(--accent)' : 'rgba(255,255,255,0.35)', cursor: 'pointer', transition: reducedMotion ? 'none' : 'all 0.2s' }}
-                title={`Aller à la page ${i + 1}`}
               />
             ))}
           </div>
           <span aria-live="polite" style={{ fontSize: '12px', color: '#94a3b8' }}>{currentPageIndex + 1} / {totalPages}</span>
-          <button type="button" className="btn btn-ghost btn-icon btn-sm" disabled={currentPageIndex >= totalPages - 1} onClick={next} aria-label="Page suivante" title="Page suivante"><ChevronRight size={18} /></button>
+          <button type="button" className="btn btn-ghost btn-icon btn-sm" disabled={currentPageIndex >= totalPages - 1} onClick={next} aria-label="Page suivante"><ChevronRight size={18} /></button>
         </footer>
       )}
 
@@ -177,10 +132,7 @@ export const DocumentReader: React.FC<DocumentReaderProps> = ({ onExit }) => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {pages.map((p, idx) => (
               <button
-                key={p.id}
-                type="button"
-                aria-current={idx === currentPageIndex ? 'page' : undefined}
-                onClick={() => { goToPage(idx); setIsSommaireOpen(false); }}
+                key={p.id} type="button" aria-current={idx === currentPageIndex ? 'page' : undefined} onClick={() => { goToPage(idx); setIsSommaireOpen(false); }}
                 style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 'var(--r)', background: idx === currentPageIndex ? 'var(--accent)' : 'transparent', color: idx === currentPageIndex ? '#fff' : '#cbd5e1', border: 'none', cursor: 'pointer', fontSize: '13px' }}
               >
                 <strong>{idx + 1}.</strong> {p.title || `Page ${idx + 1}`}

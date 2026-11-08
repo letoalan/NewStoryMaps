@@ -12,7 +12,9 @@
     "test:p2": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-p2.mjs",
     "test:p3": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-p3.mjs",
     "test:p4": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-p4.mjs",
-    "test:p5": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-p5.mjs"
+    "test:p5": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-p5.mjs",
+    "test:p6": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-p6.mjs",
+    "test": "npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:p3 && npm run test:p4 && npm run test:p5 && npm run test:p6"
   },
   "dependencies": {
     "lucide-react": "^1.16.0",

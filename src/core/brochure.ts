@@ -1,10 +1,11 @@
 /**
- * StoryMap — Moteur Mode 3 Brochure statique : restrictions, conversion 2->3 et prévol (P5 — J01 à J10 / V09)
+ * StoryMap — Moteur Mode 3 Brochure statique : restrictions et conversion 2->3 (P5 — J01 à J09 / C06)
  */
 
 import type { StoryMap } from '../types/story';
 import type { Block, BlockType, Page } from '../types/project';
 import { refitBlocksToGrid, getGridDimensions } from './grid';
+export * from './brochurePreflight';
 
 export interface BrochureConversionReport {
   sourceId: string;
@@ -17,34 +18,10 @@ export interface BrochureConversionReport {
   notes: string[];
 }
 
-export interface PreflightIssue {
-  severity: 'error' | 'warning' | 'info';
-  pageIndex: number;
-  blockId?: string;
-  code:
-    | 'NON_A4_FORMAT'
-    | 'DYNAMIC_GALLERY'
-    | 'TEXT_OVERFLOW'
-    | 'MISSING_MEDIA_URL'
-    | 'MISSING_MAP_ATTRIBUTION'
-    | 'UNNUMBERED_BINDING';
-  message: string;
-}
-
-export interface BrochurePreflightReport {
-  ready: boolean;
-  pageCount: number;
-  mapCount: number;
-  selectableTextGuaranteed: boolean;
-  attributionsPresent: boolean;
-  issues: PreflightIssue[];
-}
-
 const STATIC_BROCHURE_TYPES: ReadonlySet<BlockType> = new Set([
   'title', 'text', 'callout', 'image', 'table', 'map', 'legend', 'source',
 ]);
 
-/** J01 : Vérifie si un type de bloc est statique et directement autorisé en Mode 3 Brochure */
 export function isBlockAllowedInBrochure(type: BlockType): boolean {
   return STATIC_BROCHURE_TYPES.has(type);
 }
@@ -64,7 +41,7 @@ function extractGalleryItems(data: Record<string, unknown>): Array<{ url: string
   return singleUrl ? [{ url: singleUrl, caption: String(data.caption || '') }] : [];
 }
 
-/** J02 & J03 : Convertit un projet Mode 2 en copie Mode 3 (Brochure A4) sans perte (V09) */
+/** C06 & J02/J03 : Convertit un projet Mode 2 en copie Mode 3 (Brochure A4) avec numérotation synchronisée */
 export function convertRichDocumentToBrochure(source: StoryMap): {
   brochure: StoryMap;
   report: BrochureConversionReport;
@@ -77,8 +54,35 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
 
   let adaptedGalleriesCount = 0;
   let numberedBindingsCount = 0;
-  let runningNumber = 1;
   const notes: string[] = [];
+
+  // Table de correspondance stable (mapId, featureId) -> numberIndex
+  const featureNumberMap = new Map<string, number>();
+  let nextSeq = 1;
+
+  (source.maps || []).forEach((m) => {
+    (m.layers || []).forEach((l) => {
+      (l.features || []).forEach((f) => {
+        const key = `${m.id}::${f.id}`;
+        if (typeof f.numberIndex === 'number' && f.numberIndex > 0) {
+          featureNumberMap.set(key, f.numberIndex);
+          nextSeq = Math.max(nextSeq, f.numberIndex + 1);
+        }
+      });
+    });
+  });
+
+  (source.maps || []).forEach((m) => {
+    (m.layers || []).forEach((l) => {
+      (l.features || []).forEach((f) => {
+        const key = `${m.id}::${f.id}`;
+        if (!featureNumberMap.has(key)) {
+          featureNumberMap.set(key, nextSeq++);
+          f.numberIndex = featureNumberMap.get(key);
+        }
+      });
+    });
+  });
 
   const sourcePages: Page[] =
     source.pages && source.pages.length > 0
@@ -106,13 +110,14 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
         notes.push(`Page ${pIdx + 1} : Galerie "${b.id}" développée en planche contact de ${items.length} image(s).`);
       }
 
-      if (cloned.binding) {
-        if (!cloned.binding.numberIndex) {
-          cloned.binding.numberIndex = runningNumber++;
-          numberedBindingsCount++;
-        } else {
-          runningNumber = Math.max(runningNumber, cloned.binding.numberIndex + 1);
+      if (cloned.binding && cloned.type !== 'map') {
+        const key = `${cloned.binding.mapId}::${cloned.binding.targetFeatureId || ''}`;
+        if (featureNumberMap.has(key)) {
+          cloned.binding.numberIndex = featureNumberMap.get(key);
+        } else if (!cloned.binding.numberIndex) {
+          cloned.binding.numberIndex = nextSeq++;
         }
+        numberedBindingsCount++;
       }
       return cloned;
     });
@@ -126,7 +131,7 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
   });
 
   if (formatChanged) notes.push(`Format adapté de "${source.format || 'responsive'}" vers "${targetFormat}".`);
-  if (numberedBindingsCount > 0) notes.push(`${numberedBindingsCount} liaison(s) convertie(s) en renvois numérotés.`);
+  if (numberedBindingsCount > 0) notes.push(`${numberedBindingsCount} liaison(s) synchronisée(s) avec les numéros de marqueurs cartographiques.`);
 
   const brochure: StoryMap = {
     ...source, id: targetId, title: `${source.title} (Brochure A4)`,
@@ -136,62 +141,5 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
   return {
     brochure,
     report: { sourceId: source.id, targetId, convertedAt: Date.now(), adaptedGalleriesCount, numberedBindingsCount, formatChanged, targetFormat, notes },
-  };
-}
-
-/** J10 / V09 : Contrôle prévol honnête (Preflight) avant génération de la brochure A4 / PDF */
-export function runBrochurePreflight(story: StoryMap): BrochurePreflightReport {
-  const issues: PreflightIssue[] = [];
-  const pages = story.pages || [];
-  let mapCount = 0;
-  let missingAttributionCount = 0;
-  let textBlockCount = 0;
-
-  pages.forEach((page, pIdx) => {
-    const fmt = page.layout?.format || story.format || 'a4-portrait';
-    if (fmt !== 'a4-portrait' && fmt !== 'a4-landscape') {
-      issues.push({ severity: 'warning', pageIndex: pIdx, code: 'NON_A4_FORMAT', message: `Page ${pIdx + 1} : format "${fmt}" normalisé en A4.` });
-    }
-    const pageHasSourceBlock = (page.blocks || []).some(
-      (blk) => blk.type === 'source' && String(blk.data.text || '').trim().length > 0
-    );
-
-    (page.blocks || []).forEach((b) => {
-      if (b.type === 'gallery') {
-        issues.push({ severity: 'warning', pageIndex: pIdx, blockId: b.id, code: 'DYNAMIC_GALLERY', message: `Page ${pIdx + 1} : carrousel aplati en planche.` });
-      }
-      if (b.type === 'map') {
-        mapCount++;
-        const hasMapCaption = String(b.data.caption || b.data.attribution || '').trim().length > 0;
-        if (!hasMapCaption && !pageHasSourceBlock) {
-          missingAttributionCount++;
-          issues.push({ severity: 'warning', pageIndex: pIdx, blockId: b.id, code: 'MISSING_MAP_ATTRIBUTION', message: `Page ${pIdx + 1} : carte "${b.id}" sans attribution explicite ni bloc source sur la page.` });
-        }
-      }
-      if (b.type === 'title' || b.type === 'text' || b.type === 'callout' || b.type === 'source' || b.type === 'legend') {
-        textBlockCount++;
-      }
-      if (b.type === 'text' || b.type === 'callout') {
-        const text = ((b.data.text as string) || '').replace(/<[^>]*>/g, '');
-        if (text.length > b.w * b.h * 220) {
-          issues.push({ severity: 'warning', pageIndex: pIdx, blockId: b.id, code: 'TEXT_OVERFLOW', message: `Page ${pIdx + 1} : risque de débordement texte (${text.length} car.).` });
-        }
-      }
-      if (b.type === 'image' && !(b.data.url as string)?.trim() && !Array.isArray(b.data.contactSheetItems)) {
-        issues.push({ severity: 'error', pageIndex: pIdx, blockId: b.id, code: 'MISSING_MEDIA_URL', message: `Page ${pIdx + 1} : bloc image sans URL.` });
-      }
-      if (b.binding && b.type !== 'map' && !b.binding.numberIndex) {
-        issues.push({ severity: 'info', pageIndex: pIdx, blockId: b.id, code: 'UNNUMBERED_BINDING', message: `Page ${pIdx + 1} : liaison numérotée automatiquement.` });
-      }
-    });
-  });
-
-  return {
-    ready: !issues.some((i) => i.severity === 'error'),
-    pageCount: Math.max(1, pages.length),
-    mapCount,
-    selectableTextGuaranteed: pages.length > 0 && (textBlockCount > 0 || Boolean(story.title)),
-    attributionsPresent: mapCount === 0 || missingAttributionCount === 0,
-    issues,
   };
 }
