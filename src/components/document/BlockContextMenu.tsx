@@ -1,44 +1,46 @@
 /**
- * StoryMap — Barre contextuelle d'actions sur un bloc sélectionné (G03 / G06 / H05)
+ * StoryMap — Barre contextuelle d'actions sur un bloc sélectionné (G03 / G06 / H05 / N1)
+ *
+ * Barre courte : Modifier contenu, Remplacer type (palette), Style, Lier,
+ * Agrandir/Réduire, Dupliquer, Supprimer.
  */
 
-import React from 'react';
-import { Block, BlockType } from '../../types/project';
-import { ArrowRight, ArrowDown, Minimize2, Copy, Trash2, Link2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Block, BlockType, ProjectMode } from '../../types/project';
+import { getAvailableCatalogItems } from '../../core/blockCatalog';
+import { EmptyCellMenu } from './EmptyCellMenu';
+import { ArrowRight, ArrowDown, Minimize2, Copy, Trash2, Link2, Sliders, Edit3, RefreshCw } from 'lucide-react';
 
 interface BlockContextMenuProps {
   block: Block;
+  mode?: ProjectMode;
   onChangeType: (type: BlockType) => void;
   onExpand: (dir: 'right' | 'down') => void;
   onShrink: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
   onOpenBinding?: () => void;
+  onOpenInspector?: (tab: 'content' | 'replace' | 'style') => void;
 }
-
-const BLOCK_TYPES: Array<{ type: BlockType; label: string }> = [
-  { type: 'text', label: 'Texte' },
-  { type: 'title', label: 'Titre' },
-  { type: 'callout', label: 'Encadré' },
-  { type: 'image', label: 'Image' },
-  { type: 'gallery', label: 'Galerie' },
-  { type: 'table', label: 'Tableau' },
-  { type: 'map', label: 'Carte' },
-  { type: 'legend', label: 'Légende' },
-  { type: 'source', label: 'Source' },
-];
 
 export const BlockContextMenu: React.FC<BlockContextMenuProps> = ({
   block,
+  mode = 'rich-document',
   onChangeType,
   onExpand,
   onShrink,
   onDuplicate,
   onDelete,
   onOpenBinding,
+  onOpenInspector,
 }) => {
+  const [isReplacePaletteOpen, setIsReplacePaletteOpen] = useState(false);
+  const replaceBtnRef = useRef<HTMLButtonElement | null>(null);
+  const availableItems = getAvailableCatalogItems(mode);
+
   return (
     <div
+      className="block-context-menu"
       style={{
         position: 'absolute',
         top: '-42px',
@@ -52,21 +54,70 @@ export const BlockContextMenu: React.FC<BlockContextMenuProps> = ({
         borderRadius: 'var(--r)',
         boxShadow: 'var(--shadow-md)',
         padding: '3px 6px',
+        whiteSpace: 'nowrap',
       }}
       onClick={(e) => e.stopPropagation()}
     >
       <select
         className="input"
+        aria-label="Changer le type de bloc"
         value={block.type}
         onChange={(e) => onChangeType(e.target.value as BlockType)}
         style={{ height: '24px', fontSize: '11px', fontWeight: 600, padding: '0 6px' }}
       >
-        {BLOCK_TYPES.map((bt) => (
+        {availableItems.map((bt) => (
           <option key={bt.type} value={bt.type}>
             {bt.label}
           </option>
         ))}
       </select>
+
+      <button
+        ref={replaceBtnRef}
+        type="button"
+        className="btn btn-ghost btn-xs btn-icon"
+        onClick={() => setIsReplacePaletteOpen((v) => !v)}
+        title="Remplacer via la palette de blocs"
+      >
+        <RefreshCw size={12} />
+      </button>
+
+      {isReplacePaletteOpen && (
+        <EmptyCellMenu
+          x={block.x}
+          y={block.y}
+          anchorEl={replaceBtnRef.current}
+          mode={mode}
+          title="Remplacer le type de bloc"
+          onSelectType={(t) => {
+            onChangeType(t);
+            setIsReplacePaletteOpen(false);
+          }}
+          onClose={() => setIsReplacePaletteOpen(false)}
+        />
+      )}
+
+      {onOpenInspector && (
+        <>
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs btn-icon"
+            onClick={() => onOpenInspector('content')}
+            title="Modifier le contenu dans l’inspecteur"
+          >
+            <Edit3 size={13} />
+          </button>
+          <button
+            type="button"
+            className={`btn btn-xs ${block.styleOverride && block.styleOverride.styleMode !== 'inherit' ? 'btn-primary' : 'btn-ghost btn-icon'}`}
+            onClick={() => onOpenInspector('style')}
+            title="Style, bordure et transparence du bloc"
+            style={{ height: '24px', padding: '0 5px', fontSize: '11px' }}
+          >
+            <Sliders size={12} />
+          </button>
+        </>
+      )}
 
       <span style={{ color: 'var(--border)', margin: '0 2px' }}>|</span>
 
@@ -83,52 +134,24 @@ export const BlockContextMenu: React.FC<BlockContextMenuProps> = ({
         </button>
       )}
 
-      <button
-        type="button"
-        className="btn btn-ghost btn-xs btn-icon"
-        onClick={() => onExpand('right')}
-        title="Agrandir vers la droite"
-      >
+      <button type="button" className="btn btn-ghost btn-xs btn-icon" onClick={() => onExpand('right')} title="Agrandir vers la droite">
         <ArrowRight size={13} />
       </button>
-
-      <button
-        type="button"
-        className="btn btn-ghost btn-xs btn-icon"
-        onClick={() => onExpand('down')}
-        title="Agrandir vers le bas"
-      >
+      <button type="button" className="btn btn-ghost btn-xs btn-icon" onClick={() => onExpand('down')} title="Agrandir vers le bas">
         <ArrowDown size={13} />
       </button>
-
       {(block.w > 1 || block.h > 1) && (
-        <button
-          type="button"
-          className="btn btn-ghost btn-xs btn-icon"
-          onClick={onShrink}
-          title="Réduire d’une cellule"
-        >
+        <button type="button" className="btn btn-ghost btn-xs btn-icon" onClick={onShrink} title="Réduire d’une cellule">
           <Minimize2 size={13} />
         </button>
       )}
 
       <span style={{ color: 'var(--border)', margin: '0 2px' }}>|</span>
 
-      <button
-        type="button"
-        className="btn btn-ghost btn-xs btn-icon"
-        onClick={onDuplicate}
-        title="Dupliquer le bloc"
-      >
+      <button type="button" className="btn btn-ghost btn-xs btn-icon" onClick={onDuplicate} title="Dupliquer le bloc">
         <Copy size={13} />
       </button>
-
-      <button
-        type="button"
-        className="btn btn-ghost btn-xs btn-icon"
-        onClick={onDelete}
-        title="Supprimer le bloc"
-      >
+      <button type="button" className="btn btn-ghost btn-xs btn-icon" onClick={onDelete} title="Supprimer le bloc">
         <Trash2 size={13} color="var(--danger)" />
       </button>
 

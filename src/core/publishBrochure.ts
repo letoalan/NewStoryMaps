@@ -1,5 +1,5 @@
 /**
- * StoryMap — Générateur de Brochure statique A4 & impression PDF (P5 — J04 à J09, J11)
+ * StoryMap — Générateur de Brochure statique A4 & impression PDF (P5 / N2 / N3 / N4)
  */
 
 import type { StoryMap } from '../types/story';
@@ -9,10 +9,13 @@ import { renderPublishedBlockHTML, sanitizePublishedStory } from './publishDocum
 import { convertRichDocumentToBrochure } from './brochure';
 import { getBrochurePrintStyles } from './publishStyles';
 import { getBrochureRuntimeScript } from './publishBrochureRuntime';
+import { extractProjectThemeTokens, resolveVisualStyle } from './themeResolver';
+import { renderPublishedHeroHTML } from './heroRenderer';
 
 export function generateBrochurePrintHTML(story: StoryMap): string {
-  const safeAccent = /^#[0-9a-f]{6}$/i.test(story.appearance?.accentColor || '')
-    ? story.appearance.accentColor
+  const tokens = extractProjectThemeTokens(story);
+  const safeAccent = /^#[0-9a-f]{3,8}$/i.test(tokens.accentColor || '')
+    ? tokens.accentColor
     : '#0b7fb0';
   const cleanStory = sanitizePublishedStory(story, safeAccent);
   const { brochure } = convertRichDocumentToBrochure(cleanStory);
@@ -31,16 +34,22 @@ export function generateBrochurePrintHTML(story: StoryMap): string {
 
   const sheetsHtml = pages
     .map((page, pIdx) => {
-      const blocksHtml = (page.blocks || []).map((b) => renderPublishedBlockHTML(b, safeAccent)).join('\n');
+      const pageStyle = resolveVisualStyle(cleanStory, page, null, 'print');
+      const heroConfig = page.hero?.enabled ? page.hero : pIdx === 0 && cleanStory.hero?.enabled ? cleanStory.hero : undefined;
+      const heroHtml = heroConfig
+        ? renderPublishedHeroHTML(heroConfig, page.title || cleanStory.title || '', cleanStory.subtitle || '', cleanStory.brand?.logo || '', 'print', `sheet${pIdx}`)
+        : '';
+      const blocksHtml = (page.blocks || []).map((b) => renderPublishedBlockHTML(b, safeAccent, cleanStory, page, 'print')).join('\n');
       const pageTitle = escapeAttr(page.title || `Page ${pIdx + 1}`);
-      return `<article class="brochure-sheet" id="sheet-${pIdx}" aria-label="${pageTitle}">
+      return `<article class="brochure-sheet" id="sheet-${pIdx}" aria-label="${pageTitle}" style="background:${escapeAttr(pageStyle.pageBackground)};color:${escapeAttr(pageStyle.textColor)};font-family:${escapeAttr(pageStyle.bodyFont)},sans-serif;">
         <header class="sheet-header">
           <div>
-            <strong style="color:${safeAccent};font-size:13px;">${safeTitle}</strong>
+            <strong style="color:${escapeAttr(pageStyle.accentColor)};font-size:13px;font-family:${escapeAttr(pageStyle.headingFont)},sans-serif;">${safeTitle}</strong>
             ${pIdx === 0 && safeAuthor ? `<span style="margin-left:10px;color:#475569;font-size:11px;">Par ${safeAuthor}</span>` : ''}
           </div>
           <span style="font-size:11px;color:#64748b;">${pageTitle}</span>
         </header>
+        ${heroHtml}
         <div class="sheet-grid" style="display:grid;grid-template-columns:repeat(${dims.cols}, 1fr);grid-template-rows:repeat(${dims.rows}, 1fr);gap:${dims.gapPx}px;flex:1;min-height:0;">
           ${blocksHtml}
         </div>

@@ -4,14 +4,19 @@
  */
 
 import type { StoryMap } from './story';
+import type { BlockVisualOverride, PageVisualOverride, HeroConfig, RouteAnimationConfig } from './theme';
 
 export type ProjectMode = 'storymap' | 'rich-document' | 'brochure';
 
 export interface ProjectBrand {
   logo?: string;
-  primaryFont: string;
-  secondaryFont: string;
-  colors: [string, string, string]; // [Primaire, Secondaire, Accent]
+  primaryFont?: string;
+  secondaryFont?: string;
+  fontTitle?: string;
+  fontBody?: string;
+  colors?: [string, string, string]; // [Primaire, Secondaire, Accent]
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
 export type BlockType =
@@ -41,6 +46,7 @@ export interface MapFeature {
   color?: string;
   description?: string;
   numberIndex?: number;
+  routeAnimation?: RouteAnimationConfig;
 }
 
 export interface MapSceneLayer {
@@ -61,6 +67,7 @@ export interface Block {
   h: number;
   data: Record<string, unknown>;
   binding?: NarrativeBinding;
+  styleOverride?: BlockVisualOverride;
 }
 
 export interface PageLayout {
@@ -75,6 +82,8 @@ export interface Page {
   title: string;
   layout: PageLayout;
   blocks: Block[];
+  styleOverride?: PageVisualOverride;
+  hero?: HeroConfig;
 }
 
 export interface MapView {
@@ -91,6 +100,7 @@ export interface ProjectMap {
   mapStyle: string;
   view: MapView;
   layers?: MapSceneLayer[];
+  routeAnimation?: RouteAnimationConfig;
 }
 
 export interface ProjectResource {

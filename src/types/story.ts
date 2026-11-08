@@ -5,6 +5,7 @@
 import type { Step } from './step';
 import type { ProjectBrand, ProjectMode, Page, ProjectMap } from './project';
 import type { PageFormat } from './grid';
+import type { SharedThemeTokens, HeroConfig, RouteAnimationConfig } from './theme';
 
 export type UITheme = 'light' | 'dark' | 'auto';
 export type StoryFont = 'Inter' | 'Lora' | 'Merriweather' | 'Roboto' | 'Cinzel';
@@ -33,7 +34,11 @@ export type MarkerShape =
 export interface StoryAppearance {
   theme: UITheme;
   font: StoryFont;
+  headingFont?: string;
+  bodyFont?: string;
   accentColor: string;
+  panelBackground?: string;
+  textColor?: string;
   panelPosition: 'left' | 'right' | 'center';
   showProgress: boolean;
   autoplayInterval?: number;
@@ -57,6 +62,7 @@ export interface MapLayer {
 export interface StoryMap {
   id: string;
   version: string;
+  schemaVersion?: number;
   title: string;
   subtitle?: string;
   author?: string;
@@ -66,6 +72,9 @@ export interface StoryMap {
   modified: number;
   mode?: ProjectMode;
   brand?: ProjectBrand;
+  themeTokens?: Partial<SharedThemeTokens>;
+  hero?: HeroConfig;
+  routeAnimation?: RouteAnimationConfig;
   format?: PageFormat;
   pages?: Page[];
   maps?: ProjectMap[];
@@ -73,7 +82,10 @@ export interface StoryMap {
   mapStyle: string;
   layers: MapLayer[];
   steps: Step[];
+  [key: string]: unknown; // Préserve les champs inconnus ou futurs lors de l'aller-retour
 }
+
+export type Story = StoryMap;
 
 export interface StoryListItem {
   id: string;

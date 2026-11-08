@@ -1,5 +1,5 @@
 /**
- * StoryMap — Script client de préparation cartographique et gestion d'impression Brochure (P5 — C04/C05)
+ * StoryMap — Script client de préparation cartographique et gestion d'impression Brochure (P5 / N4)
  */
 
 export function getBrochureRuntimeScript(safeAccent: string): string {
@@ -20,7 +20,7 @@ function resolveStyle(s) {
     if (s === 'ofm-dark') return 'https://tiles.openfreemap.org/styles/dark';
     if (s === 'satellite' || s === 'esri-satellite') return RAST_SAT;
     if (s === 'hybrid' || s === 'esri-hybrid') return RAST_HYB;
-    if (/^(https?:|data:|\/)/.test(s)) return s;
+    if (/^(https?:|data:|\\/)/.test(s)) return s;
     return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 }
 function featCenter(f) {
@@ -80,7 +80,7 @@ function initBrochureMaps() {
         mapStates[id] = { state: st, settled: true, detail };
         checkReadiness(els.length);
     };
-    const timer = setTimeout(() => {
+    setTimeout(() => {
         els.forEach(el => { if (!mapStates[el.id] || !mapStates[el.id].settled) settle(el.id, 'timeout', 'Délai d’attente dépassé (10s)'); });
     }, 10000);
     els.forEach((el) => {
@@ -107,6 +107,18 @@ function initBrochureMaps() {
                             mEl.style.cssText = 'width:22px;height:22px;border-radius:50%;background:' + col + ';color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;';
                             mEl.textContent = String(f.numberIndex || 1);
                             new maplibregl.Marker({ element: mEl }).setLngLat(pt).addTo(map);
+                        }
+                        const animCfg = f.routeAnimation || scene.routeAnimation || storyData.routeAnimation;
+                        if (f.geometryType === 'LineString' && Array.isArray(f.coordinates) && f.coordinates.length >= 2 && animCfg && animCfg.enabled && animCfg.vehicle !== 'none') {
+                            const a = f.coordinates[f.coordinates.length - 2], b = f.coordinates[f.coordinates.length - 1];
+                            const ang = (Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI + 360) % 360;
+                            const vw = document.createElement('div'); vw.className = 'vehicle-marker-wrap static-print-vehicle';
+                            vw.style.cssText = 'width:24px;height:24px;display:flex;align-items:center;justify-content:center;';
+                            const vi = document.createElement('div'); vi.className = 'vehicle-marker-icon';
+                            vi.style.cssText = 'width:100%;height:100%;transform:rotate(' + ang.toFixed(1) + 'deg);';
+                            vi.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="' + col + '" stroke="#fff" stroke-width="1.5"><path d="M12 2L16 10H14V18H10V10H8L12 2Z"/></svg>';
+                            vw.appendChild(vi);
+                            new maplibregl.Marker({ element: vw }).setLngLat(b).addTo(map);
                         }
                     });
                 });
@@ -139,4 +151,3 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('unload', () => { Object.keys(mapInstances).forEach(k => { try { mapInstances[k].remove(); } catch (_) {} }); });
 window.addEventListener('DOMContentLoaded', initBrochureMaps);`;
 }
-

@@ -1,23 +1,25 @@
 /**
- * StoryMap — Générateur et extracteur de page HTML autonome sécurisé
+ * StoryMap — Générateur et extracteur de page HTML autonome sécurisé (Mode 1 + N2/N3/N4)
  */
 
 import type { StoryMap } from '../types/story';
 import { convertLegacyToModern } from './adapter';
-import { sanitizeHTML } from './sanitize';
+import { sanitizeHTML, escapeAttr } from './sanitize';
+import { extractProjectThemeTokens, resolveVisualStyle } from './themeResolver';
+import { renderPublishedHeroHTML } from './heroRenderer';
 
 export function generateStandaloneHTML(story: StoryMap): string {
-  const safeAccent = /^#[0-9a-fA-F]{3,8}$/.test(story.appearance?.accentColor || '')
-    ? story.appearance.accentColor
-    : '#0b7fb0';
+  const tokens = extractProjectThemeTokens(story);
+  const vStyle = resolveVisualStyle(story, null, null, 'web-interactive');
+  const safeAccent = /^#[0-9a-fA-F]{3,8}$/.test(tokens.accentColor || '') ? tokens.accentColor : '#0b7fb0';
   const isRight = story.appearance?.panelPosition === 'right';
+  const isCenter = story.appearance?.panelPosition === 'center';
   const title = story.title || 'StoryMap';
 
-  const cleanStory: StoryMap = {
-    ...story,
-    steps: (story.steps || []).map(s => ({ ...s, description: sanitizeHTML(s.description || '') })),
-  };
+  const cleanStory: StoryMap = { ...story, steps: (story.steps || []).map((s) => ({ ...s, description: sanitizeHTML(s.description || '') })) };
   const storyJson = JSON.stringify(cleanStory).replace(/</g, '\\u003c');
+  const heroHtml = cleanStory.hero?.enabled ? renderPublishedHeroHTML(cleanStory.hero, cleanStory.title || '', cleanStory.subtitle || '', cleanStory.brand?.logo || '', 'web-interactive', 'story') : '';
+  const panelPosCss = isCenter ? 'left: 50%; transform: translateX(-50%); bottom: 20px; top: auto; max-height: 55vh;' : isRight ? 'top: 20px; right: 20px; left: auto; bottom: 20px;' : 'top: 20px; left: 20px; bottom: 20px;';
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -28,14 +30,14 @@ export function generateStandaloneHTML(story: StoryMap): string {
     <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
     <style>
         * { box-sizing: border-box; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: system-ui, sans-serif; overflow: hidden; background: #0f1216; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: ${escapeAttr(vStyle.bodyFont)}, system-ui, sans-serif; overflow: hidden; background: #0f1216; }
         #map { position: absolute; inset: 0; width: 100%; height: 100%; }
         #map-fallback { display: none; position: absolute; inset: 0; background: #1a202c; color: #a0aec0; align-items: center; justify-content: center; text-align: center; padding: 2rem; }
-        .panel { position: absolute; top: 20px; ${isRight ? 'right: 20px; left: auto;' : 'left: 20px;'} bottom: 20px; width: min(420px, calc(100vw - 40px)); background: #fff; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 10; display: flex; flex-direction: column; overflow: hidden; }
+        .panel { position: absolute; ${panelPosCss} width: min(420px, calc(100vw - 40px)); background: ${escapeAttr(vStyle.surfaceCssBackground)}; color: ${escapeAttr(vStyle.textColor)}; border: ${escapeAttr(vStyle.borderCss)}; border-radius: ${escapeAttr(vStyle.radiusCss)}; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 10; display: flex; flex-direction: column; overflow: hidden; }
         .panel-header { padding: 16px 20px; border-bottom: 1px solid #e2e5eb; }
         .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #e5f2f8; color: ${safeAccent}; font-size: 11px; font-weight: 600; }
-        .panel-title { margin: 8px 0 0; font-size: 18px; font-weight: 700; color: #161b25; }
-        .panel-body { flex: 1; padding: 20px; overflow-y: auto; font-size: 14px; line-height: 1.6; color: #4d5667; }
+        .panel-title { margin: 8px 0 0; font-size: 18px; font-weight: 700; color: ${escapeAttr(vStyle.textColor)}; font-family: ${escapeAttr(vStyle.headingFont)}, sans-serif; }
+        .panel-body { flex: 1; padding: 20px; overflow-y: auto; font-size: 14px; line-height: 1.6; color: ${escapeAttr(vStyle.textColor)}; }
         .panel-body img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; }
         .panel-footer { padding: 12px 20px; border-top: 1px solid #e2e5eb; display: flex; align-items: center; justify-content: space-between; background: #f7f8fa; }
         .panel-meta { padding: 6px 16px; font-size: 10.5px; color: #858e9e; border-top: 1px solid #e2e5eb; background: #fafbfc; }
@@ -56,12 +58,14 @@ export function generateStandaloneHTML(story: StoryMap): string {
         </div>
         <div class="panel-meta">StoryMap (MIT) · Cartographie © OpenStreetMap, CARTO, Esri</div>
     </div>
+    <div id="hero-template" style="display:none">${heroHtml}</div>
     <script id="storymap-data" type="application/json">${storyJson}</script>
     <script id="story-data" type="application/json">${storyJson}</script>
     <script>
         const story = JSON.parse(document.getElementById('storymap-data').textContent);
         const steps = (story.steps || []).filter(s => !s.hidden);
-        let currentIdx = 0, map, activeMarkers = [];
+        const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        let currentIdx = 0, map, activeMarkers = [], vehicleMarker = null, vehicleTimer = null;
 
         function getStyle() {
             const s = story.mapStyle || 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
@@ -75,7 +79,7 @@ export function generateStandaloneHTML(story: StoryMap): string {
             if (s === 'fiord') return 'https://tiles.openfreemap.org/styles/fiord';
             if (s === 'ofm-positron') return 'https://tiles.openfreemap.org/styles/positron';
             if (s === 'ofm-dark') return 'https://tiles.openfreemap.org/styles/dark';
-            if (/^(https?:|data:|\/)/.test(s)) return s;
+            if (/^(https?:|data:|\\/)/.test(s)) return s;
             return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
         }
 
@@ -86,10 +90,7 @@ export function generateStandaloneHTML(story: StoryMap): string {
                 map = new maplibregl.Map({ container: 'map', style: getStyle(), center: step.camera.center, zoom: step.camera.zoom, pitch: step.camera.pitch, bearing: step.camera.bearing });
                 map.on('error', () => { document.getElementById('map-fallback').style.display = 'flex'; });
                 map.on('load', () => { addRoute(); renderStep(); });
-            } catch (e) {
-                document.getElementById('map-fallback').style.display = 'flex';
-                renderStep();
-            }
+            } catch (e) { document.getElementById('map-fallback').style.display = 'flex'; renderStep(); }
         }
 
         function addRoute() {
@@ -98,14 +99,34 @@ export function generateStandaloneHTML(story: StoryMap): string {
             if (coords.length < 2) return;
             const rStyle = (story.appearance && story.appearance.routeStyle) || 'dashed';
             if (rStyle === 'none') return;
-            let dash = [4, 2];
-            if (rStyle === 'solid') dash = undefined;
-            else if (rStyle === 'dotted') dash = [1, 2];
-            else if (rStyle === 'ship') dash = [5, 3];
+            let dash = rStyle === 'solid' ? undefined : rStyle === 'dotted' ? [1, 2] : rStyle === 'ship' ? [5, 3] : [4, 2];
             const paint = { 'line-color': '${safeAccent}', 'line-width': 3 };
             if (dash) paint['line-dasharray'] = dash;
             map.addSource('route', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } } });
             map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: paint });
+        }
+
+        function animateSegmentVehicle(fromCoord, toCoord, animCfg) {
+            if (vehicleTimer) { clearInterval(vehicleTimer); vehicleTimer = null; }
+            if (vehicleMarker) { vehicleMarker.remove(); vehicleMarker = null; }
+            if (!map || !animCfg || !animCfg.enabled || animCfg.vehicle === 'none' || !fromCoord || !toCoord) return;
+            const wrap = document.createElement('div'); wrap.className = 'vehicle-marker-wrap';
+            wrap.style.cssText = 'width:28px;height:28px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:25;';
+            const icon = document.createElement('div'); icon.className = 'vehicle-marker-icon';
+            const ang = (Math.atan2(toCoord[0] - fromCoord[0], toCoord[1] - fromCoord[1]) * 180 / Math.PI + 360) % 360;
+            icon.style.cssText = 'width:100%;height:100%;transform:rotate(' + ang.toFixed(1) + 'deg);';
+            icon.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="${safeAccent}" stroke="#fff" stroke-width="1.5"><path d="M12 2L16 10H14V18H10V10H8L12 2Z"/></svg>';
+            wrap.appendChild(icon);
+            vehicleMarker = new maplibregl.Marker({ element: wrap }).setLngLat(reducedMotion ? toCoord : fromCoord).addTo(map);
+            if (reducedMotion) return;
+            let elapsed = 0; const dur = Math.max(800, (animCfg.durationSec || 3) * 1000);
+            vehicleTimer = setInterval(() => {
+                if (document.hidden) return;
+                elapsed += 50;
+                const t = Math.min(1, elapsed / dur);
+                vehicleMarker.setLngLat([fromCoord[0] + (toCoord[0] - fromCoord[0]) * t, fromCoord[1] + (toCoord[1] - fromCoord[1]) * t]);
+                if (t >= 1) { clearInterval(vehicleTimer); vehicleTimer = null; }
+            }, 50);
         }
 
         function renderStep() {
@@ -114,28 +135,29 @@ export function generateStandaloneHTML(story: StoryMap): string {
             document.getElementById('step-title').textContent = step.title;
             const body = document.getElementById('step-body');
             body.textContent = '';
+            if (currentIdx === 0) {
+                const tpl = document.getElementById('hero-template');
+                if (tpl && tpl.innerHTML) { const h = document.createElement('div'); h.innerHTML = tpl.innerHTML; body.appendChild(h); }
+            }
             if (step.media && step.media.url) {
                 const img = document.createElement('img');
                 img.src = step.media.url; img.alt = step.media.alt || step.title || '';
                 body.appendChild(img);
             }
-            const desc = document.createElement('div');
-            desc.innerHTML = step.description || '';
-            body.appendChild(desc);
-
+            const desc = document.createElement('div'); desc.innerHTML = step.description || ''; body.appendChild(desc);
             const total = steps.length || 1;
             document.getElementById('step-count').textContent = (currentIdx + 1) + ' / ' + total;
             document.getElementById('btn-prev').disabled = currentIdx === 0;
             document.getElementById('btn-next').disabled = currentIdx === total - 1;
 
             if (map && step.camera) {
-                map.flyTo({ center: step.camera.center, zoom: step.camera.zoom, pitch: step.camera.pitch, bearing: step.camera.bearing, essential: true, duration: 1800 });
-                activeMarkers.forEach(m => m.remove());
-                activeMarkers = [];
-                const markersData = step.markers || [{ coordinates: step.camera.center }];
-                markersData.forEach(m => {
+                map.flyTo({ center: step.camera.center, zoom: step.camera.zoom, pitch: step.camera.pitch, bearing: step.camera.bearing, essential: true, duration: reducedMotion ? 0 : 1800 });
+                activeMarkers.forEach(m => m.remove()); activeMarkers = [];
+                (step.markers || [{ coordinates: step.camera.center }]).forEach(m => {
                     activeMarkers.push(new maplibregl.Marker({ color: '${safeAccent}' }).setLngLat(m.coordinates).addTo(map));
                 });
+                const prevS = currentIdx > 0 ? steps[currentIdx - 1] : null;
+                animateSegmentVehicle(prevS && prevS.camera ? prevS.camera.center : null, step.camera.center, step.routeAnimation || story.routeAnimation);
             }
         }
 

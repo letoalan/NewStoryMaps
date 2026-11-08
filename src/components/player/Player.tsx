@@ -1,5 +1,5 @@
 /**
- * StoryMap — Lecteur plein écran interactif avec tracé multi-styles, marqueurs & diagnostics (C10/C11)
+ * StoryMap — Lecteur plein écran interactif avec tracé multi-styles, véhicule animé (N4) & diagnostics
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -9,14 +9,11 @@ import { useStory } from '../../context/StoryContext';
 import { resolveMapStyle } from '../../types/map';
 import { attachMapDiagnostics } from '../../core/mapDiagnostics';
 import { syncRouteLayer, syncCanvasMarkers } from '../../core/canvasLayers';
+import { createVehicleController, createTwoLevelVehicleDomElement, VehicleController } from '../../core/vehicleController';
 import { PlayerNarrative } from './PlayerNarrative';
 import { RefreshCw, X } from 'lucide-react';
 
-interface PlayerProps {
-  onExit?: () => void;
-}
-
-export const Player: React.FC<PlayerProps> = ({ onExit }) => {
+export const Player: React.FC<{ onExit?: () => void }> = ({ onExit }) => {
   const { story } = useStory();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -26,6 +23,8 @@ export const Player: React.FC<PlayerProps> = ({ onExit }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const markersRef = useRef<Marker[]>([]);
+  const vehicleMarkerRef = useRef<Marker | null>(null);
+  const vehicleCtrlRef = useRef<VehicleController | null>(null);
   const currentStyleRef = useRef<string>(story?.mapStyle || '');
 
   const steps = story?.steps.filter((s) => !s.hidden) || [];
@@ -65,6 +64,8 @@ export const Player: React.FC<PlayerProps> = ({ onExit }) => {
     canvas?.addEventListener('webglcontextlost', handleContextLost);
     canvas?.addEventListener('webglcontextrestored', handleContextRestored);
 
+    map.on('dragstart', () => vehicleCtrlRef.current?.notifyUserMapInteraction());
+    map.on('zoomstart', () => vehicleCtrlRef.current?.notifyUserMapInteraction());
     map.on('load', () => rebuildPlayerContents(map));
     mapRef.current = map;
 
@@ -73,6 +74,8 @@ export const Player: React.FC<PlayerProps> = ({ onExit }) => {
       detachDiagnostics();
       canvas?.removeEventListener('webglcontextlost', handleContextLost);
       canvas?.removeEventListener('webglcontextrestored', handleContextRestored);
+      vehicleCtrlRef.current?.destroy();
+      vehicleMarkerRef.current?.remove();
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       map.remove();
@@ -97,6 +100,38 @@ export const Player: React.FC<PlayerProps> = ({ onExit }) => {
       pitch: currentStep.camera.pitch, bearing: currentStep.camera.bearing, essential: true, duration: 1600,
     });
     rebuildPlayerContents(map);
+
+    vehicleCtrlRef.current?.destroy();
+    vehicleMarkerRef.current?.remove();
+    vehicleMarkerRef.current = null;
+
+    const animCfg = currentStep.routeAnimation || story.routeAnimation;
+    if (animCfg && animCfg.enabled && animCfg.vehicle !== 'none' && currentIdx > 0) {
+      const prevStep = steps[currentIdx - 1];
+      const coords: Array<[number, number]> = [prevStep.camera.center, currentStep.camera.center];
+      const { wrapper, innerIcon } = createTwoLevelVehicleDomElement(
+        document,
+        animCfg,
+        story.appearance?.accentColor || '#d97706',
+        0
+      );
+      const mk = new Marker({ element: wrapper }).setLngLat(coords[0]).addTo(map);
+      vehicleMarkerRef.current = mk;
+      const reduced = typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+      const ctrl = createVehicleController({
+        coords,
+        config: animCfg,
+        prefersReducedMotion: reduced,
+        onSample: (sample) => {
+          mk.setLngLat(sample.coordinates);
+          if (animCfg.orientToRoute !== false) {
+            innerIcon.style.transform = `rotate(${sample.bearing}deg)`;
+          }
+        },
+      });
+      vehicleCtrlRef.current = ctrl;
+      ctrl.play();
+    }
   }, [currentIdx, currentStep?.camera, story?.appearance, rebuildPlayerContents]);
 
   useEffect(() => {
@@ -106,9 +141,9 @@ export const Player: React.FC<PlayerProps> = ({ onExit }) => {
         if (prev >= steps.length - 1) { setIsPlaying(false); return prev; }
         return prev + 1;
       });
-    }, 5000);
+    }, story?.appearance?.autoplayInterval || 5000);
     return () => clearInterval(timer);
-  }, [isPlaying, steps.length]);
+  }, [isPlaying, steps.length, story?.appearance?.autoplayInterval]);
 
   return (
     <div className="player">
@@ -128,7 +163,7 @@ export const Player: React.FC<PlayerProps> = ({ onExit }) => {
       )}
       {currentStep && (
         <PlayerNarrative
-          step={currentStep} index={currentIdx} total={steps.length}
+          step={currentStep} index={currentIdx} total={steps.length} story={story}
           isPlaying={isPlaying} onNext={() => setCurrentIdx((i) => Math.min(steps.length - 1, i + 1))}
           onPrev={() => setCurrentIdx((i) => Math.max(0, i - 1))} onTogglePlay={() => setIsPlaying(!isPlaying)}
         />

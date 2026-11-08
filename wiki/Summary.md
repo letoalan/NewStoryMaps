@@ -76,7 +76,19 @@ Tous les fichiers respectent strictement la contrainte $\le 195$ lignes.
 | [`src/components/dialogs/BindingPickerModal.tsx`](file:///src/components/dialogs/BindingPickerModal.tsx) | 125 | Sélecteur d'association narrative (P3) | [Documentation](file:///wiki/dialogs/binding-picker.md) |
 | [`src/components/dialogs/BrochureModal.tsx`](file:///src/components/dialogs/BrochureModal.tsx) | 142 | Prévol honnête, conversion 2→3 et export Brochure A4 / PDF (P5, C08) | [Documentation](file:///wiki/core/brochure.md) |
 | [`src/components/player/Player.tsx`](file:///src/components/player/Player.tsx) | 139 | Lecteur immersif plein écran avec restauration WebGL | [Documentation](file:///wiki/components/Player.md) |
-| [`src/components/player/PlayerNarrative.tsx`](file:///src/components/player/PlayerNarrative.tsx) | 85 | Panneau narratif sécurisé | [Documentation](file:///wiki/player/player-narrative.md) |
+| [`src/types/theme.ts`](file:///src/types/theme.ts) | 129 | Contrats du thème partagé, Hero, Véhicules & Profils de sortie (N0-N4) | [Documentation](file:///wiki/verification/N5-acceptance.md) |
+| [`src/core/renderMatrix.ts`](file:///src/core/renderMatrix.ts) | 129 | Matrice blocs/supports & validation de schéma (N0) | [Documentation](file:///wiki/verification/N5-acceptance.md) |
+| [`src/core/canonicalFixtures.ts`](file:///src/core/canonicalFixtures.ts) | 154 | Fixtures canoniques Modes 1, 2 et 3 (N0/N5) | [Documentation](file:///wiki/verification/N5-acceptance.md) |
+| [`src/core/blockCatalog.ts`](file:///src/core/blockCatalog.ts) | 165 | Catalogue partagé, conversion sans perte & placement flottant (N1) | [Documentation](file:///wiki/verification/N5-acceptance.md) |
+| [`src/core/themeResolver.ts`](file:///src/core/themeResolver.ts) | 158 | Résolution pure du thème partagé, rgba & contraste WCAG (N2) | [Documentation](file:///wiki/verification/N5-acceptance.md) |
+| [`src/core/layoutTemplates.ts`](file:///src/core/layoutTemplates.ts) | 141 | Modèles de structure avec aperçu sans perte de bloc (N2) | [Documentation](file:///wiki/verification/N5-acceptance.md) |
+| [`src/core/heroRenderer.ts`](file:///src/core/heroRenderer.ts) | 173 | Moteur de rendu Hero photo/vidéo/voile & repli statique (N3) | [Documentation](file:///wiki/verification/N5-acceptance.md) |
+| [`src/core/vehicleCatalog.ts`](file:///src/core/vehicleCatalog.ts) | 116 | Catalogue de 7 véhicules CC0 & assainissement SVG (N4) | [Documentation](file:///wiki/verification/N5-acceptance.md) |
+| [`src/core/routeInterpolation.ts`](file:///src/core/routeInterpolation.ts) | 154 | Interpolation par distance, antiméridien & cap (N4) | [Documentation](file:///wiki/verification/N5-acceptance.md) |
+| [`src/core/vehicleController.ts`](file:///src/core/vehicleController.ts) | 171 | Contrôleur temporel & marqueur DOM à 2 niveaux (N4) | [Documentation](file:///wiki/verification/N5-acceptance.md) |
+| [`src/components/document/HeroSection.tsx`](file:///src/components/document/HeroSection.tsx) | 132 | Composant React Hero photo/vidéo/poster (N3) | [Documentation](file:///wiki/verification/N5-acceptance.md) |
+| [`src/components/dialogs/BlockInspectorModal.tsx`](file:///src/components/dialogs/BlockInspectorModal.tsx) | 189 | Inspecteur détaillé de bloc : contenu, remplacement & style (N1/N2) | [Documentation](file:///wiki/verification/N5-acceptance.md) |
+| [`src/components/player/PlayerNarrative.tsx`](file:///src/components/player/PlayerNarrative.tsx) | 139 | Panneau narratif sécurisé avec thème & Hero | [Documentation](file:///wiki/player/player-narrative.md) |
 
 ---
 
@@ -91,5 +103,12 @@ Tous les fichiers respectent strictement la contrainte $\le 195$ lignes.
 | [`scripts/verify-p3.mjs`](file:///scripts/verify-p3.mjs) | 188 | Recette automatisée P3 (H01 à H09, V02/V03, 10 styles sans 404) |
 | [`scripts/verify-p4.mjs`](file:///scripts/verify-p4.mjs) | 144 | Recette automatisée P4 (I01 à I06, C01 délégation, C03 ciblage) |
 | [`scripts/verify-p5.mjs`](file:///scripts/verify-p5.mjs) | 153 | Recette automatisée P5 (J01 à J11, C04 readiness, C06 numérotation, C07 prévol) |
-| [`scripts/verify-p6.mjs`](file:///scripts/verify-p6.mjs) | 166 | Recette automatisée finale P6 (K01 à K07, multi-modes, stress) |
+| [`scripts/verify-p6.mjs`](file:///scripts/verify-p6.mjs) | 180 | Recette automatisée finale P6 (K01 à K07, multi-modes, stress) |
+| [`scripts/verify-n0.mjs`](file:///scripts/verify-n0.mjs) | 108 | Recette automatisée N0 (contrats de rendu, schéma, fixtures) |
+| [`scripts/verify-n1.mjs`](file:///scripts/verify-n1.mjs) | 141 | Recette automatisée N1 (palette flottante, conversion sans perte) |
+| [`scripts/verify-n2.mjs`](file:///scripts/verify-n2.mjs) | 150 | Recette automatisée N2 (thème partagé, rgba, WCAG, modèles structurels) |
+| [`scripts/verify-n3.mjs`](file:///scripts/verify-n3.mjs) | 124 | Recette automatisée N3 (Hero photo/vidéo, poster prévol, import ZIP) |
+| [`scripts/verify-n4.mjs`](file:///scripts/verify-n4.mjs) | 158 | Recette automatisée N4 (7 véhicules, interpolation, antiméridien, DOM 2 niveaux) |
+| [`scripts/verify-n5.mjs`](file:///scripts/verify-n5.mjs) | 191 | Recette automatisée N5 (bout en bout, runtime VM, perfs, <= 195 lignes) |
 | [`wiki/verification/P6-acceptance.md`](file:///wiki/verification/P6-acceptance.md) | 68 | Rapport de réception et preuves d'exécution P6 |
+| [`wiki/verification/N5-acceptance.md`](file:///wiki/verification/N5-acceptance.md) | 50 | Rapport de réception et preuves d'exécution N0 à N5 |

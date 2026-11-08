@@ -1,11 +1,14 @@
 /**
- * StoryMap — Volet narratif flottant du lecteur (Player)
+ * StoryMap — Volet narratif flottant du lecteur (Player — Mode 1 + Thème partagé N2 + Hero N3)
  */
 
 import React from 'react';
 import { Step } from '../../types/step';
+import { Story } from '../../types/story';
 import { ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
 import { sanitizeHTML } from '../../core/sanitize';
+import { resolveVisualStyle } from '../../core/themeResolver';
+import { HeroSection } from '../document/HeroSection';
 
 interface PlayerNarrativeProps {
   step: Step;
@@ -14,6 +17,7 @@ interface PlayerNarrativeProps {
   isPlaying: boolean;
   position?: 'left' | 'right' | 'center';
   font?: string;
+  story?: Partial<Story> | null;
   onPrev: () => void;
   onNext: () => void;
   onTogglePlay: () => void;
@@ -26,39 +30,66 @@ export const PlayerNarrative: React.FC<PlayerNarrativeProps> = ({
   isPlaying,
   position = 'left',
   font = 'Inter',
+  story,
   onPrev,
   onNext,
   onTogglePlay,
 }) => {
-  const isRight = position === 'right';
+  const vStyle = resolveVisualStyle(story, null, null, 'web-interactive');
+  const effPos = story?.appearance?.panelPosition || position;
+  const isRight = effPos === 'right';
+  const isCenter = effPos === 'center';
 
   return (
     <div
       style={{
         position: 'absolute',
-        top: '20px',
-        left: isRight ? 'auto' : '20px',
+        top: isCenter ? 'auto' : '20px',
+        left: isCenter ? '50%' : isRight ? 'auto' : '20px',
         right: isRight ? '20px' : 'auto',
         bottom: '20px',
+        transform: isCenter ? 'translateX(-50%)' : 'none',
+        maxHeight: isCenter ? '58vh' : 'none',
         width: 'min(420px, calc(100vw - 40px))',
-        background: 'var(--surface)',
-        borderRadius: '16px',
+        background: vStyle.surfaceCssBackground,
+        color: vStyle.textColor,
+        border: vStyle.borderCss,
+        borderRadius: vStyle.radiusCss,
         boxShadow: 'var(--shadow-lg)',
         display: 'flex',
         flexDirection: 'column',
         zIndex: 10,
         overflow: 'hidden',
-        fontFamily: font,
+        fontFamily: vStyle.bodyFont || font,
       }}
     >
       <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
-        <span className="badge badge-accent">
+        <span className="badge badge-accent" style={{ color: vStyle.accentColor }}>
           Étape {index + 1} sur {total}
         </span>
-        <h2 style={{ margin: '8px 0 0', fontSize: '18px', fontWeight: 700 }}>{step.title}</h2>
+        <h2
+          style={{
+            margin: '8px 0 0',
+            fontSize: '18px',
+            fontWeight: 700,
+            fontFamily: vStyle.headingFont,
+            color: vStyle.textColor,
+          }}
+        >
+          {step.title}
+        </h2>
       </div>
 
       <div className="scroll" style={{ flex: 1, padding: '20px' }}>
+        {index === 0 && story?.hero?.enabled && (
+          <HeroSection
+            hero={story.hero}
+            fallbackTitle={story.title}
+            fallbackSubtitle={story.subtitle}
+            fallbackLogo={story.brand?.logo}
+            outputProfile="web-interactive"
+          />
+        )}
         {step.media?.url && (
           <div style={{ marginBottom: '16px' }}>
             <img
@@ -67,14 +98,14 @@ export const PlayerNarrative: React.FC<PlayerNarrativeProps> = ({
               style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '8px' }}
             />
             {step.media.caption && (
-              <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--text-3)' }}>
+              <p style={{ margin: '6px 0 0', fontSize: '12px', color: vStyle.mutedTextColor }}>
                 {step.media.caption}
               </p>
             )}
           </div>
         )}
         <div
-          style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text-2)' }}
+          style={{ fontSize: '14px', lineHeight: 1.6, color: vStyle.textColor }}
           dangerouslySetInnerHTML={{ __html: sanitizeHTML(step.description) }}
         />
       </div>

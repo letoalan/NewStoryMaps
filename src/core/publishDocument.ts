@@ -1,5 +1,5 @@
 /**
- * StoryMap — Générateur d'export HTML autonome pour documents enrichis avec cartes MapLibre (P4 — V01/V04/V05/V08)
+ * StoryMap — Générateur d'export HTML autonome pour documents enrichis avec cartes MapLibre (P4 / N2 / N3 / N4)
  */
 
 import type { StoryMap } from '../types/story';
@@ -8,10 +8,12 @@ import { escapeAttr } from './sanitize';
 import { renderPublishedPageHTML, sanitizePublishedStory } from './publishDocumentBlocks';
 import { getDocumentViewerStyles } from './publishStyles';
 import { getDocumentRuntimeScript } from './publishDocumentRuntime';
+import { extractProjectThemeTokens } from './themeResolver';
 
 export function generateDocumentHTML(story: StoryMap): string {
-  const safeAccent = /^#[0-9a-f]{6}$/i.test(story.appearance?.accentColor || '')
-    ? story.appearance.accentColor
+  const tokens = extractProjectThemeTokens(story);
+  const safeAccent = /^#[0-9a-f]{3,8}$/i.test(tokens.accentColor || '')
+    ? tokens.accentColor
     : '#0b7fb0';
   const cleanStory = sanitizePublishedStory(story, safeAccent);
   const safeTitle = escapeAttr(cleanStory.title || 'Document StoryMap');
@@ -20,7 +22,7 @@ export function generateDocumentHTML(story: StoryMap): string {
   const pages = cleanStory.pages && cleanStory.pages.length > 0 ? cleanStory.pages : [{
     id: 'p1', title: 'Page 1', layout: { format: 'a4-portrait' as PageFormat, gridColumns: 6, gridRows: 8 }, blocks: [],
   }];
-  const pagesHtml = pages.map((p, idx) => renderPublishedPageHTML(p, idx, story.format || 'a4-portrait', safeAccent)).join('\n');
+  const pagesHtml = pages.map((p, idx) => renderPublishedPageHTML(p, idx, story.format || 'a4-portrait', safeAccent, cleanStory, 'web-interactive')).join('\n');
   const sommaireHtml = pages.map((p, idx) => `<button type="button" class="toc-item" id="toc-${idx}" data-action="goto-page" data-page-idx="${idx}"><strong>${idx + 1}.</strong> ${escapeAttr(p.title || `Page ${idx + 1}`)}</button>`).join('\n');
   const styles = getDocumentViewerStyles(safeAccent);
   const scriptContent = getDocumentRuntimeScript(pages.length, safeAccent);

@@ -1,8 +1,5 @@
 /**
  * Script de validation automatisée P6 (K01 -> K07)
- * Vérifie : circuit touristique 5 étapes dans les 3 modes (K01), comparaison territoriale multi-cartes (K02),
- * accessibilité, clavier et réduction des mouvements (K03), charge et saturation de grille (K04),
- * résolution précise des associations narratives et réimport médias Mode 2/3.
  */
 
 import assert from 'node:assert';
@@ -19,7 +16,6 @@ import { createZip } from '../src/core/zip.ts';
 
 console.log('=== LANCEMENT DE LA RECETTE FINALE P6 (K01 -> K07) ===\n');
 
-// 1. K01 : Circuit touristique cinq étapes dans les 3 modes & associations ciblées
 function testFiveStepTourInThreeModes() {
   console.log('Test 1 : Circuit touristique 5 étapes dans les 3 modes (K01)...');
   const tourStory = {
@@ -36,7 +32,6 @@ function testFiveStepTourInThreeModes() {
     ],
   };
 
-  // Mode 1 : StoryMap classique
   const htmlMode1 = generateStandaloneHTML(tourStory);
   assert.ok(htmlMode1.includes('Circuit Patrimoine Parisien'));
   assert.ok(htmlMode1.includes('Montmartre'));
@@ -47,7 +42,6 @@ function testFiveStepTourInThreeModes() {
   assert.strictEqual(v2Exchange.story?.chapters?.length, 5);
   assert.strictEqual(convertLegacyToModern(v2Exchange).steps.length, 5);
 
-  // Mode 2 : Document enrichi avec ciblage narratif précis par ID
   const docStory = {
     ...tourStory, mode: 'rich-document', format: 'a4-portrait',
     maps: [{
@@ -69,13 +63,12 @@ function testFiveStepTourInThreeModes() {
   const htmlMode2 = generateDocumentHTML(docStory);
   assert.ok(htmlMode2.includes('data-action="narrative-binding"'));
   assert.ok(htmlMode2.includes("['==', ['get', 'id'], featId]"), 'Action narrative filtrée par ID exact de figuré');
-  assert.ok(htmlMode2.includes('doc-map-marker-wrap') && htmlMode2.includes('doc-map-marker-pin'), 'Structure à deux niveaux : wrapper MapLibre + pin interne');
+  assert.ok(htmlMode2.includes('doc-map-marker-wrap') && htmlMode2.includes('doc-map-marker-pin'), 'Structure à deux niveaux');
   assert.ok(htmlMode2.includes('data-active-filter'), 'Prise en charge de la réinitialisation/bascule du filtre');
   assert.ok(htmlMode2.includes('scale(1.4)'), 'Surbrillance visuelle animée sur le pin du marqueur');
   const reopened2 = extractStoryFromHTML(htmlMode2);
   assert.strictEqual(reopened2.maps[0].layers[0].features.length, 5);
 
-  // Mode 3 : Brochure statique A4
   const { brochure, report } = convertRichDocumentToBrochure(docStory);
   assert.strictEqual(brochure.mode, 'brochure');
   assert.strictEqual(report.numberedBindingsCount, 1);
@@ -89,14 +82,12 @@ function testFiveStepTourInThreeModes() {
   console.log('  -> Circuit touristique 5 étapes validé dans les 3 modes (K01).');
 }
 
-// 2. K02 : Récit historique, comparaison territoriale et anciens formats
 function testHistoricalAndTerritorialComparison() {
   console.log('Test 2 : Comparaison territoriale multi-cartes et formats anciens (K02)...');
   const map1850 = createDefaultProjectMap('map-1850', 'Paris en 1850');
   const map2026 = createDefaultProjectMap('map-2026', 'Grand Paris 2026');
   const updated1850 = updateMapView(map1850, { center: [2.32, 48.85], zoom: 13, pitch: 10 });
   const updated2026 = updateMapView(map2026, { center: [2.40, 48.90], zoom: 11, pitch: 40 });
-
   assert.notDeepStrictEqual(updated1850.view.center, updated2026.view.center);
   assert.notStrictEqual(updated1850.view.zoom, updated2026.view.zoom);
 
@@ -107,7 +98,6 @@ function testHistoricalAndTerritorialComparison() {
   console.log('  -> Comparaison multi-cartes et résilience formats historiques validées (K02).');
 }
 
-// 3. K03 : Clavier, mobile, accessibilité et réduction de mouvements
 function testAccessibilityAndControls() {
   console.log('Test 3 : Clavier, mobile, accessibilité ARIA et réduction des mouvements (K03)...');
   assert.strictEqual(shouldIgnoreReaderKeyEvent({ tagName: 'INPUT' }), true);
@@ -115,7 +105,6 @@ function testAccessibilityAndControls() {
   assert.strictEqual(shouldIgnoreReaderKeyEvent({ tagName: 'CANVAS', closest: (s) => s === '.maplibregl-map' ? {} : null }), true);
   assert.strictEqual(shouldIgnoreReaderKeyEvent({ tagName: 'BUTTON', closest: (s) => s === '[data-carousel-control="true"]' ? {} : null }), true);
   assert.strictEqual(shouldIgnoreReaderKeyEvent({ tagName: 'MAIN', closest: () => null }), false);
-
   assert.strictEqual(computeNextPageIndex(0, 5, 'prev'), 0);
   assert.strictEqual(computeNextPageIndex(4, 5, 'next'), 4);
   assert.strictEqual(computeNextPageIndex(2, 5, 'next'), 3);
@@ -132,24 +121,19 @@ function testAccessibilityAndControls() {
   console.log('  -> Arbitrage clavier, navigation bornée et accessibilité ARIA validés (K03).');
 }
 
-// 4. K04 : Saturation de grille, stress-test et intégrité des données
 function testGridSaturationAndStress() {
   console.log('Test 4 : Saturation de grille et stress-test d’intégrité (K04)...');
   const inputBlocks = Array.from({ length: 10 }, (_, i) => ({
     id: `blk-${i + 1}`, type: 'text', x: 0, y: 0, w: 1, h: 1, data: { text: `Bloc ${i + 1}` },
   }));
   const res = refitBlocksDetailed(inputBlocks, 2, 2);
-  assert.strictEqual(res.placed.length, 4, 'Exactement 4 cellules 1x1 peuvent occuper la grille 2x2');
-  assert.strictEqual(res.unplaced.length, 6, 'Les 6 blocs excédentaires doivent être isolés sans collision');
+  assert.strictEqual(res.placed.length, 4);
+  assert.strictEqual(res.unplaced.length, 6);
   assert.strictEqual(res.overflowCount, 6);
-
-  for (const b of res.placed) {
-    assert.strictEqual(hasCollision(b, res.placed, b.id), false, `Collision détectée pour ${b.id}`);
-  }
+  for (const b of res.placed) assert.strictEqual(hasCollision(b, res.placed, b.id), false);
   console.log('  -> Saturation extrême de grille gérée sans collision (K04).');
 }
 
-// 5. Réimportation d'images relatives en Mode 2 / 3 depuis une archive ZIP
 async function testZipRelativeImagesMode2() {
   console.log('Test 5 : Réimportation d’images relatives dans pages & blocs Mode 2 / 3 (io.ts)...');
   const testImgA = new Uint8Array([137, 80, 78, 71, 1, 1, 1, 1]);
@@ -173,16 +157,12 @@ async function testZipRelativeImagesMode2() {
   ]);
   const importedList = await parseStoryFile(zipBlob);
   assert.strictEqual(importedList.length, 1);
-  const importedDoc = importedList[0];
-  const bImg = importedDoc.pages[0].blocks[0];
-  const bSheet = importedDoc.pages[0].blocks[1];
-  const bGal = importedDoc.pages[0].blocks[2];
-  const bTxt = importedDoc.pages[0].blocks[3];
-  assert.ok(bImg.data.url.startsWith('data:image/png;base64,'), 'Image simple convertie');
-  assert.ok(bSheet.data.contactSheetItems[0].url.startsWith('data:image/png;base64,'), 'Planche contact convertie');
-  assert.ok(bGal.data.items[0].startsWith('data:image/png;base64,'), 'Galerie items convertie');
-  assert.ok(bTxt.data.text.includes('src="data:image/png;base64,'), 'Image HTML interne de bloc convertie');
-  assert.notStrictEqual(bImg.data.url, bSheet.data.contactSheetItems[0].url, 'folderA et folderB désambiguïsés');
+  const [bImg, bSheet, bGal, bTxt] = importedList[0].pages[0].blocks;
+  assert.ok(bImg.data.url.startsWith('data:image/png;base64,'));
+  assert.ok(bSheet.data.contactSheetItems[0].url.startsWith('data:image/png;base64,'));
+  assert.ok(bGal.data.items[0].startsWith('data:image/png;base64,'));
+  assert.ok(bTxt.data.text.includes('src="data:image/png;base64,'));
+  assert.notStrictEqual(bImg.data.url, bSheet.data.contactSheetItems[0].url);
   console.log('  -> Résolution sans ambiguïté des images relatives Mode 2/3 dans ZIP validée.');
 }
 
@@ -195,7 +175,4 @@ async function runAll() {
   console.log('\n=== TOUTES LES VÉRIFICATIONS P6 (K01 -> K07) ONT RÉUSSI AVEC SUCCÈS ! ===');
 }
 
-runAll().catch((err) => {
-  console.error('\n❌ ERREUR LORS DE LA VALIDATION P6 :', err);
-  process.exit(1);
-});
+runAll().catch((err) => { console.error('\n❌ ERREUR LORS DE LA VALIDATION P6 :', err); process.exit(1); });

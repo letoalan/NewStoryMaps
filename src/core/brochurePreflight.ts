@@ -1,5 +1,5 @@
 /**
- * StoryMap — Contrôle prévol (Preflight) honnête avant génération Brochure A4 (C07 / J10)
+ * StoryMap — Contrôle prévol (Preflight) honnête avant génération Brochure A4 (C07 / J10 / N3.12)
  */
 
 import type { StoryMap } from '../types/story';
@@ -13,6 +13,7 @@ export interface PreflightIssue {
     | 'DYNAMIC_GALLERY'
     | 'TEXT_OVERFLOW'
     | 'MISSING_MEDIA_URL'
+    | 'MISSING_VIDEO_POSTER'
     | 'MISSING_MAP_SCENE'
     | 'MISSING_MAP_ATTRIBUTION'
     | 'UNNUMBERED_BINDING';
@@ -48,7 +49,24 @@ export function runBrochurePreflight(story: StoryMap): BrochurePreflightReport {
   let missingAttributionCount = 0;
   let textBlockCount = 0;
 
+  if (story.hero?.enabled && story.hero.mediaType === 'video' && !(story.hero.posterUrl || '').trim()) {
+    issues.push({
+      severity: 'error',
+      pageIndex: 0,
+      code: 'MISSING_VIDEO_POSTER',
+      message: 'Couverture Hero vidéo du projet : image de repli (posterUrl) obligatoire pour la brochure A4.',
+    });
+  }
+
   pages.forEach((page, pIdx) => {
+    if (page.hero?.enabled && page.hero.mediaType === 'video' && !(page.hero.posterUrl || '').trim()) {
+      issues.push({
+        severity: 'error',
+        pageIndex: pIdx,
+        code: 'MISSING_VIDEO_POSTER',
+        message: `Page ${pIdx + 1} : couverture Hero vidéo sans image de repli (posterUrl).`,
+      });
+    }
     const fmt = page.layout?.format || story.format || 'a4-portrait';
     if (fmt !== 'a4-portrait' && fmt !== 'a4-landscape') {
       issues.push({ severity: 'warning', pageIndex: pIdx, code: 'NON_A4_FORMAT', message: `Page ${pIdx + 1} : format "${fmt}" normalisé en A4.` });
@@ -68,19 +86,13 @@ export function runBrochurePreflight(story: StoryMap): BrochurePreflightReport {
         const mapScene = targetMapId ? maps.find((m) => m.id === targetMapId) : maps[0];
         if (!mapScene) {
           issues.push({
-            severity: 'error',
-            pageIndex: pIdx,
-            blockId: b.id,
-            code: 'MISSING_MAP_SCENE',
-            message: targetMapId
-              ? `Page ${pIdx + 1} : scène cartographique "${targetMapId}" introuvable.`
-              : `Page ${pIdx + 1} : aucune scène cartographique disponible dans le document.`,
+            severity: 'error', pageIndex: pIdx, blockId: b.id, code: 'MISSING_MAP_SCENE',
+            message: targetMapId ? `Page ${pIdx + 1} : scène cartographique "${targetMapId}" introuvable.` : `Page ${pIdx + 1} : aucune scène cartographique disponible.`,
           });
         }
         const provider = detectMapProvider(mapScene?.mapStyle);
         const mapCaption = String(b.data.caption || b.data.attribution || '').toLowerCase();
         const hasProviderCredit = mapCaption.includes(provider.requiredCredit.toLowerCase()) || pageSourceText.includes(provider.requiredCredit.toLowerCase()) || mapCaption.includes('openstreetmap') || pageSourceText.includes('openstreetmap');
-
         if (!hasProviderCredit) {
           missingAttributionCount++;
           issues.push({ severity: 'warning', pageIndex: pIdx, blockId: b.id, code: 'MISSING_MAP_ATTRIBUTION', message: `Page ${pIdx + 1} : carte "${b.id}" requiert les attributions du fournisseur (${provider.name}).` });
@@ -107,9 +119,8 @@ export function runBrochurePreflight(story: StoryMap): BrochurePreflightReport {
     pageCount: Math.max(1, pages.length),
     mapCount,
     selectableTextPresent: textBlockCount > 0 || Boolean(story.title),
-    selectableTextGuaranteed: false, // Honnêteté C07 : garantie dépend du moteur d'impression PDF du navigateur
+    selectableTextGuaranteed: false,
     attributionsPresent: mapCount === 0 || missingAttributionCount === 0,
     issues,
   };
 }
-

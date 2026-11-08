@@ -1,34 +1,49 @@
 /**
- * StoryMap — Script client autonome embarqué pour documents interactifs (P4 — V01/V04/V05/V08)
+ * StoryMap — Script client autonome embarqué pour documents interactifs (P4 / N3 / N4)
  */
 
 export function getDocumentRuntimeScript(total: number, safeAccent: string): string {
   return `const storyData = JSON.parse(document.getElementById('storymap-data').textContent);
 const total = ${total}, reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let curPage = 0, curProfile = 'slide';
-const mapInstances = {};
+const mapInstances = {}, vehicleTimers = {};
 const RAST_SAT = { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }] };
 const RAST_HYB = { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 }, labels: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }, { id: 'labels', type: 'raster', source: 'labels' }] };
 function resolveStyle(s) {
     if (!s || s === 'positron') return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
     if (s === 'voyager') return 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
     if (s === 'dark-matter' || s === 'dark') return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-    if (s === 'liberty') return 'https://tiles.openfreemap.org/styles/liberty';
-    if (s === 'bright') return 'https://tiles.openfreemap.org/styles/bright';
-    if (s === 'fiord') return 'https://tiles.openfreemap.org/styles/fiord';
-    if (s === 'ofm-positron') return 'https://tiles.openfreemap.org/styles/positron';
-    if (s === 'ofm-dark') return 'https://tiles.openfreemap.org/styles/dark';
+    if (s === 'liberty' || s === 'bright' || s === 'fiord') return 'https://tiles.openfreemap.org/styles/' + s;
+    if (s === 'ofm-positron' || s === 'ofm-dark') return 'https://tiles.openfreemap.org/styles/' + s.slice(4);
     if (s === 'satellite' || s === 'esri-satellite') return RAST_SAT;
     if (s === 'hybrid' || s === 'esri-hybrid') return RAST_HYB;
-    if (/^(https?:|data:|\/)/.test(s)) return s;
-    return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+    return /^(https?:|data:|\\/)/.test(s) ? s : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 }
 function featCenter(f) {
     const c = f && f.coordinates;
     if (!Array.isArray(c) || !c.length) return null;
-    if (f.geometryType === 'Point') return [c[0], c[1]];
-    if (f.geometryType === 'LineString') return c[Math.floor(c.length / 2)];
-    return (f.geometryType === 'Polygon' && Array.isArray(c[0]) && c[0].length) ? c[0][0] : null;
+    return f.geometryType === 'Point' ? [c[0], c[1]] : f.geometryType === 'LineString' ? c[Math.floor(c.length / 2)] : (f.geometryType === 'Polygon' && Array.isArray(c[0]) && c[0].length) ? c[0][0] : null;
+}
+function attachLineVehicle(map, elId, coords, animCfg, col) {
+    if (!animCfg || !animCfg.enabled || animCfg.vehicle === 'none' || !Array.isArray(coords) || coords.length < 2) return;
+    const wrap = document.createElement('div'); wrap.className = 'vehicle-marker-wrap';
+    wrap.style.cssText = 'width:26px;height:26px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:20;';
+    const icon = document.createElement('div'); icon.className = 'vehicle-marker-icon';
+    icon.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;transform-origin:center center;';
+    icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="' + col + '" stroke="#fff" stroke-width="1.5"><path d="M12 2L16 10H14V18H10V10H8L12 2Z"/></svg>';
+    wrap.appendChild(icon);
+    const mk = new maplibregl.Marker({ element: wrap }).setLngLat(reducedMotion ? coords[coords.length - 1] : coords[0]).addTo(map);
+    if (reducedMotion) return;
+    let t = 0; const dur = Math.max(1000, (animCfg.durationSec || 4) * 1000);
+    vehicleTimers[elId] = setInterval(() => {
+        if (document.hidden) return;
+        t = (t + 50) % dur;
+        const p = t / dur, idx = Math.min(coords.length - 2, Math.floor(p * (coords.length - 1))), lt = (p * (coords.length - 1)) - idx;
+        const a = coords[idx], b = coords[idx + 1];
+        const ang = (Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI + 360) % 360;
+        mk.setLngLat([a[0] + (b[0] - a[0]) * lt, a[1] + (b[1] - a[1]) * lt]);
+        icon.style.transform = 'rotate(' + ang.toFixed(1) + 'deg)';
+    }, 50);
 }
 function initDocMaps() {
     const maps = storyData.maps || [];
@@ -40,10 +55,7 @@ function initDocMaps() {
             const fb = document.getElementById(el.id.replace('doc-map-', 'doc-map-fb-'));
             if (fb) {
                 fb.style.display = 'flex';
-                if (!scene && mapId) {
-                    const p = fb.querySelector('p');
-                    if (p) p.textContent = 'Scène cartographique "' + mapId + '" introuvable';
-                }
+                if (!scene && mapId) { const p = fb.querySelector('p'); if (p) p.textContent = 'Scène cartographique "' + mapId + '" introuvable'; }
             }
             return;
         }
@@ -59,17 +71,14 @@ function initDocMaps() {
                     feats.push({ type: 'Feature', id: f.id, geometry: { type: f.geometryType, coordinates: f.coordinates }, properties: { id: f.id, color: col } });
                     const pt = featCenter(f);
                     if (pt) {
-                        const wrap = document.createElement('div');
-                        wrap.className = 'doc-map-marker-wrap';
-                        wrap.setAttribute('data-feat-id', f.id);
+                        const wrap = document.createElement('div'); wrap.className = 'doc-map-marker-wrap'; wrap.setAttribute('data-feat-id', f.id);
                         wrap.style.cssText = 'width:24px;height:24px;display:flex;align-items:center;justify-content:center;pointer-events:auto;';
-                        const pin = document.createElement('div');
-                        pin.className = 'doc-map-marker-pin';
+                        const pin = document.createElement('div'); pin.className = 'doc-map-marker-pin';
                         pin.style.cssText = 'width:22px;height:22px;border-radius:50%;background:' + col + ';color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:transform 0.3s ease,box-shadow 0.3s ease;';
-                        pin.textContent = String(f.numberIndex || 1);
-                        wrap.appendChild(pin);
+                        pin.textContent = String(f.numberIndex || 1); wrap.appendChild(pin);
                         new maplibregl.Marker({ element: wrap }).setLngLat(pt).addTo(map);
                     }
+                    if (f.geometryType === 'LineString') attachLineVehicle(map, el.id + '-' + f.id, f.coordinates, f.routeAnimation || scene.routeAnimation || storyData.routeAnimation, col);
                 });
             });
             map.addSource('scene-shapes', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
@@ -86,19 +95,14 @@ function triggerNarrativeBinding(mapId, featId, action) {
     const pt = featCenter(targetFeat);
     document.querySelectorAll('.doc-map-canvas').forEach(el => {
         if (el.getAttribute('data-map-id') !== mapId) return;
-        const m = mapInstances[el.id];
-        if (!m) return;
-        if (action === 'zoom' && pt) {
-            m.flyTo({ center: pt, zoom: 14, duration: reducedMotion ? 0 : 800 });
-        } else if (action === 'highlight') {
+        const m = mapInstances[el.id]; if (!m) return;
+        if (action === 'zoom' && pt) m.flyTo({ center: pt, zoom: 14, duration: reducedMotion ? 0 : 800 });
+        else if (action === 'highlight') {
             if (pt) m.panTo(pt, { duration: reducedMotion ? 0 : 500 });
             el.querySelectorAll('.doc-map-marker-wrap').forEach(w => {
                 const pin = w.querySelector('.doc-map-marker-pin');
-                if (!pin) return;
-                if (w.getAttribute('data-feat-id') === featId) {
-                    w.style.zIndex = '100';
-                    pin.style.transform = 'scale(1.4)';
-                    pin.style.boxShadow = '0 0 0 4px #e11d48';
+                if (pin && w.getAttribute('data-feat-id') === featId) {
+                    w.style.zIndex = '100'; pin.style.transform = 'scale(1.4)'; pin.style.boxShadow = '0 0 0 4px #e11d48';
                     setTimeout(() => { w.style.zIndex = '1'; pin.style.transform = 'scale(1)'; pin.style.boxShadow = 'none'; }, 2500);
                 }
             });
@@ -114,29 +118,23 @@ function triggerNarrativeBinding(mapId, featId, action) {
                 const isReset = (el.getAttribute('data-active-filter') === featId);
                 if (isReset || !targetFeat) {
                     el.removeAttribute('data-active-filter');
-                    m.setFilter('scene-lines-layer', ['!=', ['geometry-type'], 'Point']);
-                    m.setFilter('scene-polygons-fill', ['==', ['geometry-type'], 'Polygon']);
+                    m.setFilter('scene-lines-layer', ['!=', ['geometry-type'], 'Point']); m.setFilter('scene-polygons-fill', ['==', ['geometry-type'], 'Polygon']);
                     el.querySelectorAll('.doc-map-marker-wrap').forEach(w => { w.style.display = 'flex'; });
                 } else {
                     el.setAttribute('data-active-filter', featId);
-                    m.setFilter('scene-lines-layer', ['==', ['get', 'id'], featId]);
-                    m.setFilter('scene-polygons-fill', ['==', ['get', 'id'], featId]);
-                    el.querySelectorAll('.doc-map-marker-wrap').forEach(w => {
-                        w.style.display = (w.getAttribute('data-feat-id') === featId) ? 'flex' : 'none';
-                    });
+                    m.setFilter('scene-lines-layer', ['==', ['get', 'id'], featId]); m.setFilter('scene-polygons-fill', ['==', ['get', 'id'], featId]);
+                    el.querySelectorAll('.doc-map-marker-wrap').forEach(w => { w.style.display = (w.getAttribute('data-feat-id') === featId) ? 'flex' : 'none'; });
                 }
             } catch (_) {}
         }
     });
 }
 function stepGallery(id, delta) {
-    const box = document.getElementById('gal-' + id);
-    if (!box) return;
+    const box = document.getElementById('gal-' + id); if (!box) return;
     const count = Number(box.getAttribute('data-count')) || 1, cur = ((Number(box.getAttribute('data-cur')) || 0) + delta + count) % count;
     box.setAttribute('data-cur', String(cur));
     document.querySelectorAll('.gallery-slide[data-gallery="' + id + '"]').forEach((img, idx) => { img.style.display = idx === cur ? 'block' : 'none'; });
-    const lbl = document.getElementById('gal-lbl-' + id);
-    if (lbl) lbl.textContent = (cur + 1) + '/' + count;
+    const lbl = document.getElementById('gal-lbl-' + id); if (lbl) lbl.textContent = (cur + 1) + '/' + count;
 }
 function setProfile(p) {
     curProfile = p; document.getElementById('main-stage').className = 'profile-' + p;
@@ -173,6 +171,7 @@ document.addEventListener('click', (e) => {
     if (!btn) return;
     const act = btn.getAttribute('data-action');
     if (act === 'narrative-binding') triggerNarrativeBinding(btn.getAttribute('data-map-id'), btn.getAttribute('data-feature-id'), btn.getAttribute('data-binding-action'));
+    else if (act === 'toggle-hero-video') { const v = document.getElementById(btn.getAttribute('data-video-id')); if (v) { if (v.paused) { v.play().catch(()=>{}); btn.textContent = 'Pause vidéo'; } else { v.pause(); btn.textContent = 'Lire vidéo'; } } }
     else if (act === 'gallery-prev') stepGallery(btn.getAttribute('data-gallery-id'), -1);
     else if (act === 'gallery-next') stepGallery(btn.getAttribute('data-gallery-id'), 1);
     else if (act === 'goto-page') { setPage(Number(btn.getAttribute('data-page-idx'))); toggleToc(false); }
@@ -190,4 +189,3 @@ window.addEventListener('keydown', (e) => {
 });
 window.addEventListener('DOMContentLoaded', updateUI); updateUI();`;
 }
-

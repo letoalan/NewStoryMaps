@@ -36,6 +36,8 @@ export interface StepMarker {
   style?: MarkerStyle;
 }
 
+import type { RouteAnimationConfig } from './theme';
+
 export interface Step {
   id: string;
   title: string;
@@ -45,6 +47,7 @@ export interface Step {
   markers?: StepMarker[];
   activeLayers?: string[];
   hidden?: boolean;
+  routeAnimation?: RouteAnimationConfig;
 }
 
 export type StoryStep = Step;

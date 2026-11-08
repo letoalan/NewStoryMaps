@@ -1,10 +1,11 @@
 /**
- * StoryMap — Lecteur / Présentateur immersif de documents enrichis (Mode 2 / Mode 3, P4 — V04/V05)
+ * StoryMap — Lecteur / Présentateur immersif de documents enrichis (Mode 2 / Mode 3, P4 / N2 / N3)
  */
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { PageGrid } from './PageGrid';
+import { HeroSection } from './HeroSection';
 import { PageFormat } from '../../types/grid';
 import { Page } from '../../types/project';
 import { ReaderProfile, shouldIgnoreReaderKeyEvent, computeNextPageIndex } from '../../core/readerNavigation';
@@ -26,7 +27,9 @@ export const DocumentReader: React.FC<{ onExit: () => void }> = ({ onExit }) => 
     id: 'p1', title: 'Page 1', layout: { format: story?.format || 'a4-portrait', gridColumns: 6, gridRows: 8, marginMm: 15 }, blocks: [],
   }];
   const totalPages = pages.length;
-  const currentFormat: PageFormat = pages[currentPageIndex]?.layout.format || story?.format || 'a4-portrait';
+  const currentPage = pages[currentPageIndex] || pages[0];
+  const currentFormat: PageFormat = currentPage?.layout.format || story?.format || 'a4-portrait';
+  const currentHero = currentPage?.hero?.enabled ? currentPage.hero : currentPageIndex === 0 && story?.hero?.enabled ? story.hero : undefined;
 
   const goToPage = (targetIdx: number) => {
     const clamped = computeNextPageIndex(targetIdx, totalPages, 0);
@@ -94,18 +97,23 @@ export const DocumentReader: React.FC<{ onExit: () => void }> = ({ onExit }) => 
 
       <main style={{ flex: 1, overflow: 'auto', display: 'flex', justifyContent: 'center', alignItems: profile === 'slide' ? 'center' : 'flex-start', padding: '24px' }}>
         {profile === 'slide' && (
-          <div style={{ transform: 'scale(0.92)', transformOrigin: 'center center', transition: reducedMotion ? 'none' : 'transform 0.2s ease' }}>
-            <PageGrid format={currentFormat} blocks={pages[currentPageIndex]?.blocks || []} onChangeBlocks={() => {}} isEditable={false} />
+          <div style={{ transform: 'scale(0.92)', transformOrigin: 'center center', transition: reducedMotion ? 'none' : 'transform 0.2s ease', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {currentHero && <div style={{ width: '100%', maxWidth: '794px' }}><HeroSection hero={currentHero} fallbackTitle={currentPage?.title || story?.title} fallbackSubtitle={story?.subtitle} fallbackLogo={story?.brand?.logo} outputProfile="slide" /></div>}
+            <PageGrid format={currentFormat} blocks={currentPage?.blocks || []} onChangeBlocks={() => {}} isEditable={false} story={story} page={currentPage} mode={story?.mode} outputProfile="slide" />
           </div>
         )}
         {(profile === 'vertical' || profile === 'horizontal') && (
           <div style={{ display: 'flex', flexDirection: profile === 'vertical' ? 'column' : 'row', gap: '32px', alignItems: profile === 'vertical' ? 'center' : 'flex-start' }}>
-            {pages.map((p, idx) => (
-              <div key={p.id} id={`reader-page-${idx}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '11px', color: '#94a3b8' }}>Page {idx + 1} — {p.title}</span>
-                <PageGrid format={p.layout.format || currentFormat} blocks={p.blocks || []} onChangeBlocks={() => {}} isEditable={false} />
-              </div>
-            ))}
+            {pages.map((p, idx) => {
+              const pHero = p.hero?.enabled ? p.hero : idx === 0 && story?.hero?.enabled ? story.hero : undefined;
+              return (
+                <div key={p.id} id={`reader-page-${idx}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>Page {idx + 1} — {p.title}</span>
+                  {pHero && <div style={{ width: '100%', maxWidth: '794px' }}><HeroSection hero={pHero} fallbackTitle={p.title || story?.title} fallbackSubtitle={story?.subtitle} fallbackLogo={story?.brand?.logo} outputProfile="web-interactive" /></div>}
+                  <PageGrid format={p.layout.format || currentFormat} blocks={p.blocks || []} onChangeBlocks={() => {}} isEditable={false} story={story} page={p} mode={story?.mode} outputProfile="web-interactive" />
+                </div>
+              );
+            })}
           </div>
         )}
       </main>

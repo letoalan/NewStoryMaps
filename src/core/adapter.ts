@@ -4,6 +4,7 @@
 
 import type { StoryMap, MapLayer } from '../types/story';
 import type { Step } from '../types/step';
+import { validateProjectSchemaVersion } from './renderMatrix';
 
 export interface LegacyV2Exchange {
   format?: string;
@@ -55,6 +56,8 @@ export function isLegacyV1Story(data: unknown): boolean {
 
 export function convertLegacyToModern(legacy: unknown): StoryMap {
   if (isModernStoryMap(legacy)) {
+    const verCheck = validateProjectSchemaVersion(legacy);
+    if (!verCheck.valid) throw new Error(verCheck.error);
     return {
       ...legacy,
       steps: legacy.steps || [],

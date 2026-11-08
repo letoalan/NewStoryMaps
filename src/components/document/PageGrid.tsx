@@ -1,14 +1,19 @@
 /**
- * StoryMap — Grille de mise en page documentaire (P2 — G01/G02/G03/G05)
+ * StoryMap — Grille de mise en page documentaire (P2 / N1 / N2)
  */
 
-import React, { useState } from 'react';
-import { Block, BlockType } from '../../types/project';
+import React, { useState, useEffect } from 'react';
+import { Block, BlockType, Page, ProjectMode } from '../../types/project';
+import { Story } from '../../types/story';
 import { PageFormat } from '../../types/grid';
+import { BlockVisualOverride, OutputProfile } from '../../types/theme';
 import { getGridDimensions, expandBlock, shrinkBlock, duplicateBlock, deleteBlock, addBlock } from '../../core/grid';
+import { convertBlockTypePreservingContent } from '../../core/blockCatalog';
+import { resolveVisualStyle } from '../../core/themeResolver';
 import { BlockContextMenu } from './BlockContextMenu';
 import { EmptyCellMenu } from './EmptyCellMenu';
 import { BlockRenderer } from './BlockRenderer';
+import { BlockInspectorModal } from '../dialogs/BlockInspectorModal';
 import { Plus } from 'lucide-react';
 
 interface PageGridProps {
@@ -17,13 +22,25 @@ interface PageGridProps {
   onChangeBlocks: (blocks: Block[]) => void;
   onOpenBinding?: (block: Block) => void;
   isEditable?: boolean;
+  story?: Partial<Story> | null;
+  page?: Partial<Page> | null;
+  mode?: ProjectMode;
+  outputProfile?: OutputProfile;
 }
 
-export const PageGrid: React.FC<PageGridProps> = ({ format, blocks, onChangeBlocks, onOpenBinding, isEditable = true }) => {
+export const PageGrid: React.FC<PageGridProps> = ({
+  format, blocks, onChangeBlocks, onOpenBinding, isEditable = true, story, page, mode, outputProfile,
+}) => {
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-  const [activeEmptyCell, setActiveEmptyCell] = useState<{ x: number; y: number } | null>(null);
+  const [activeEmptyCell, setActiveEmptyCell] = useState<{ x: number; y: number; anchorEl: HTMLElement | null } | null>(null);
+  const [inspectedBlock, setInspectedBlock] = useState<{ id: string; tab: 'content' | 'replace' | 'style' } | null>(null);
 
+  const effectiveMode: ProjectMode = mode || story?.mode || 'rich-document';
+  const effectiveProfile: OutputProfile = outputProfile || (isEditable ? 'editor' : 'web-interactive');
+  const pageStyle = resolveVisualStyle(story, page, null, effectiveProfile);
   const { cols, rows, cellWidthPx, cellHeightPx, gapPx, marginMm, aspectRatio } = getGridDimensions(format);
+
+  useEffect(() => { setActiveEmptyCell(null); }, [format, page?.id]);
 
   const occupiedMatrix: Array<Array<Block | null>> = Array.from({ length: rows }, () => Array.from({ length: cols }, () => null));
   blocks.forEach((b) => {
@@ -37,8 +54,19 @@ export const PageGrid: React.FC<PageGridProps> = ({ format, blocks, onChangeBloc
   const handleUpdateBlockData = (id: string, patch: Record<string, unknown>) => {
     onChangeBlocks(blocks.map((b) => (b.id === id ? { ...b, data: { ...b.data, ...patch } } : b)));
   };
-  const handleTypeChange = (id: string, type: BlockType) => {
-    onChangeBlocks(blocks.map((b) => (b.id === id ? { ...b, type } : b)));
+
+  const handleTypeChange = (id: string, targetType: BlockType) => {
+    onChangeBlocks(blocks.map((b) => (b.id === id ? convertBlockTypePreservingContent(b, targetType) : b)));
+  };
+
+  const handleStyleChange = (id: string, styleOverride?: BlockVisualOverride) => {
+    onChangeBlocks(blocks.map((b) => {
+      if (b.id !== id) return b;
+      const next = { ...b };
+      if (!styleOverride || styleOverride.styleMode === 'inherit') delete next.styleOverride;
+      else next.styleOverride = styleOverride;
+      return next;
+    }));
   };
 
   const handleExpand = (blockId: string, dir: 'right' | 'down') => {
@@ -60,23 +88,22 @@ export const PageGrid: React.FC<PageGridProps> = ({ format, blocks, onChangeBloc
   const handleDelete = (blockId: string) => {
     onChangeBlocks(deleteBlock(blocks, blockId));
     if (selectedBlockId === blockId) setSelectedBlockId(null);
+    if (inspectedBlock?.id === blockId) setInspectedBlock(null);
   };
 
   const handleAddBlockToCell = (x: number, y: number, type: BlockType) => {
-    const newBlock: Block = {
-      id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, type, x, y, w: 1, h: 1,
-      data: type === 'table' ? { rows: [['En-tête 1', 'En-tête 2'], ['Donnée 1', 'Donnée 2']] } : { text: '' },
-    };
-    const res = addBlock(blocks, newBlock, cols, rows);
-    if (res.success) {
-      onChangeBlocks(res.blocks); setSelectedBlockId(newBlock.id); setActiveEmptyCell(null);
-    } else if (res.error) alert(res.error);
+    const seed = convertBlockTypePreservingContent({ id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, type: 'text', x, y, w: 1, h: 1, data: { text: '' } }, type);
+    const res = addBlock(blocks, seed, cols, rows);
+    if (res.success) { onChangeBlocks(res.blocks); setSelectedBlockId(seed.id); setActiveEmptyCell(null); }
+    else if (res.error) alert(res.error);
   };
+
+  const activeInspectedBlock = inspectedBlock ? blocks.find((b) => b.id === inspectedBlock.id) || null : null;
 
   return (
     <div
       className="page-grid-container"
-      style={{ display: 'inline-block', padding: `${marginMm}mm`, background: '#fff', boxShadow: 'var(--shadow-lg)', borderRadius: 'var(--r)', position: 'relative', userSelect: 'none', aspectRatio }}
+      style={{ display: 'inline-block', padding: `${marginMm}mm`, background: pageStyle.pageBackground, color: pageStyle.textColor, fontFamily: pageStyle.bodyFont, boxShadow: 'var(--shadow-lg)', borderRadius: 'var(--r)', position: 'relative', userSelect: 'none', aspectRatio }}
       onClick={() => { setSelectedBlockId(null); setActiveEmptyCell(null); }}
     >
       <div className="page-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${cellWidthPx}px)`, gridTemplateRows: `repeat(${rows}, ${cellHeightPx}px)`, gap: `${gapPx}px`, position: 'relative' }}>
@@ -85,13 +112,13 @@ export const PageGrid: React.FC<PageGridProps> = ({ format, blocks, onChangeBloc
             const isOccupied = !!occupiedMatrix[y][x];
             const isCurrentActive = activeEmptyCell?.x === x && activeEmptyCell?.y === y;
             return (
-              <div key={`cell-${x}-${y}`} style={{ gridColumn: x + 1, gridRow: y + 1, border: isOccupied ? 'none' : '1px dashed var(--border)', borderRadius: 'var(--r)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div key={`cell-${x}-${y}`} style={{ gridColumn: x + 1, gridRow: y + 1, border: isOccupied || !isEditable ? 'none' : '1px dashed var(--border)', borderRadius: 'var(--r)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {!isOccupied && isEditable && (
                   <>
-                    <button className="btn btn-ghost btn-icon" style={{ opacity: 0.35, borderRadius: '50%', width: '28px', height: '28px' }} title={`Ajouter un bloc en (${x + 1}, ${y + 1})`} onClick={(e) => { e.stopPropagation(); setActiveEmptyCell({ x, y }); }}>
+                    <button type="button" className="btn btn-ghost btn-icon" style={{ opacity: isCurrentActive ? 0.9 : 0.35, borderRadius: '50%', width: '28px', height: '28px' }} title={`Ajouter un bloc en (${x + 1}, ${y + 1})`} onClick={(e) => { e.stopPropagation(); setActiveEmptyCell({ x, y, anchorEl: e.currentTarget }); }}>
                       <Plus size={16} />
                     </button>
-                    {isCurrentActive && <EmptyCellMenu x={x} y={y} onSelectType={(t) => handleAddBlockToCell(x, y, t)} onClose={() => setActiveEmptyCell(null)} />}
+                    {isCurrentActive && <EmptyCellMenu x={x} y={y} anchorEl={activeEmptyCell.anchorEl} mode={effectiveMode} onSelectType={(t) => handleAddBlockToCell(x, y, t)} onClose={() => setActiveEmptyCell(null)} />}
                   </>
                 )}
               </div>
@@ -101,30 +128,37 @@ export const PageGrid: React.FC<PageGridProps> = ({ format, blocks, onChangeBloc
 
         {blocks.map((b) => {
           const isSelected = selectedBlockId === b.id;
+          const bStyle = resolveVisualStyle(story, page, b, effectiveProfile);
+          const editorOutline = isEditable ? (isSelected ? '2px solid var(--accent)' : bStyle.showEditorGuide ? '1px dashed rgba(148, 163, 184, 0.55)' : 'none') : 'none';
+
           return (
             <div
-              key={b.id}
-              style={{
-                gridColumn: `${b.x + 1} / span ${b.w}`, gridRow: `${b.y + 1} / span ${b.h}`, position: 'relative',
-                zIndex: isSelected ? 30 : 10, outline: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
-                outlineOffset: '2px', borderRadius: 'var(--r)', background: 'var(--surface)', overflow: 'visible',
-              }}
-              onClick={(e) => { e.stopPropagation(); setSelectedBlockId(b.id); }}
+              key={b.id} data-block-id={b.id} data-style-mode={b.styleOverride?.styleMode || 'inherit'}
+              style={{ gridColumn: `${b.x + 1} / span ${b.w}`, gridRow: `${b.y + 1} / span ${b.h}`, position: 'relative', zIndex: isSelected ? 30 : 10, outline: editorOutline, outlineOffset: '2px', borderRadius: bStyle.radiusCss, background: bStyle.surfaceCssBackground, border: bStyle.borderCss, boxShadow: bStyle.shadowCss, color: bStyle.textColor, overflow: 'visible' }}
+              onClick={(e) => { e.stopPropagation(); if (isEditable) setSelectedBlockId(b.id); }}
             >
               {isSelected && isEditable && (
                 <BlockContextMenu
-                  block={b} onChangeType={(t) => handleTypeChange(b.id, t)} onExpand={(d) => handleExpand(b.id, d)}
-                  onShrink={() => handleShrink(b.id)} onDuplicate={() => handleDuplicate(b.id)} onDelete={() => handleDelete(b.id)}
+                  block={b} mode={effectiveMode} onChangeType={(t) => handleTypeChange(b.id, t)}
+                  onExpand={(d) => handleExpand(b.id, d)} onShrink={() => handleShrink(b.id)}
+                  onDuplicate={() => handleDuplicate(b.id)} onDelete={() => handleDelete(b.id)}
                   onOpenBinding={onOpenBinding ? () => onOpenBinding(b) : undefined}
+                  onOpenInspector={(tab) => setInspectedBlock({ id: b.id, tab })}
                 />
               )}
-              <div style={{ width: '100%', height: '100%', overflow: 'auto' }}>
+              <div style={{ width: '100%', height: '100%', overflow: 'auto', padding: bStyle.paddingCss }}>
                 <BlockRenderer block={b} onChange={(p) => handleUpdateBlockData(b.id, p)} isEditable={isEditable} />
               </div>
             </div>
           );
         })}
       </div>
+
+      <BlockInspectorModal
+        isOpen={!!activeInspectedBlock} block={activeInspectedBlock} mode={effectiveMode}
+        initialTab={inspectedBlock?.tab || 'content'} onClose={() => setInspectedBlock(null)}
+        onUpdateData={handleUpdateBlockData} onChangeType={handleTypeChange} onUpdateStyle={handleStyleChange}
+      />
     </div>
   );
 };

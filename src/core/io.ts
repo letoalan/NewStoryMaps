@@ -38,10 +38,7 @@ export async function exportStoryToSiteZip(story: StoryMap): Promise<void> {
   const readme = [
     `Storymap : ${story.title || 'Sans titre'}`,
     `Exportée avec StoryMap le ${new Date().toLocaleString('fr-FR')}.`,
-    '', 'Contenu de l’archive :',
-    '  index.html         — lecteur autonome de la storymap',
-    '  storymap.json      — document moderne canonique',
-    '  v2.storymap.json   — données au format d’échange historique v2',
+    '  index.html / storymap.json / v2.storymap.json',
   ].join('\r\n');
 
   const zipBlob = await createZip([
@@ -82,11 +79,10 @@ export async function parseStoryFile(file: File | Blob): Promise<StoryMap[]> {
 }
 
 export function parseStoryJSON(jsonString: string): StoryMap {
-  try {
-    return convertLegacyToModern(JSON.parse(jsonString));
-  } catch {
-    throw new Error('Le fichier n’est pas un document JSON valide.');
-  }
+  let parsed: unknown;
+  try { parsed = JSON.parse(jsonString); }
+  catch { throw new Error('Le fichier n’est pas un document JSON valide.'); }
+  return convertLegacyToModern(parsed);
 }
 
 export function parseStoryHTML(htmlString: string): StoryMap {
@@ -95,7 +91,7 @@ export function parseStoryHTML(htmlString: string): StoryMap {
 
 function uint8ArrayToDataUrl(bytes: Uint8Array, filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase();
-  const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : ext === 'svg' ? 'image/svg+xml' : 'image/jpeg';
+  const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : ext === 'svg' ? 'image/svg+xml' : ext === 'mp4' ? 'video/mp4' : ext === 'webm' ? 'video/webm' : 'image/jpeg';
   let binary = '';
   for (let i = 0; i < bytes.length; i += 8192) {
     binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 8192)));
@@ -104,16 +100,16 @@ function uint8ArrayToDataUrl(bytes: Uint8Array, filename: string): string {
 }
 
 async function resolveRelativeImages(story: StoryMap, entries: ZipReadEntry[]): Promise<StoryMap> {
-  const imageEntries = entries.filter(e => /\.(jpe?g|png|webp|svg|gif)$/i.test(e.name));
-  if (imageEntries.length === 0) return story;
+  const mediaEntries = entries.filter(e => /\.(jpe?g|png|webp|svg|gif|mp4|webm)$/i.test(e.name));
+  if (mediaEntries.length === 0) return story;
 
   const resolveUrl = async (url?: string): Promise<string> => {
     if (!url || url.startsWith('http') || url.startsWith('data:')) return url || '';
     const target = url.replace(/^\.?\//, '').toLowerCase();
-    let m = imageEntries.find(e => e.name.toLowerCase() === target || e.name.toLowerCase().endsWith('/' + target));
+    let m = mediaEntries.find(e => e.name.toLowerCase() === target || e.name.toLowerCase().endsWith('/' + target));
     if (!m) {
       const bname = target.split('/').pop() || target;
-      m = imageEntries.find(e => (e.name.split('/').pop() || '').toLowerCase() === bname);
+      m = mediaEntries.find(e => (e.name.split('/').pop() || '').toLowerCase() === bname);
     }
     return m ? uint8ArrayToDataUrl(await m.bytes(), m.name) : url;
   };
@@ -121,7 +117,7 @@ async function resolveRelativeImages(story: StoryMap, entries: ZipReadEntry[]): 
   const resolveHtml = async (html?: string): Promise<string> => {
     if (!html || !/<img\b/i.test(html)) return html || '';
     let res = html;
-    for (const ie of imageEntries) {
+    for (const ie of mediaEntries) {
       const bname = ie.name.split('/').pop() || ie.name;
       const re = new RegExp(`src=["'][^"']*${bname}["']`, 'gi');
       if (re.test(res)) res = res.replace(re, `src="${uint8ArrayToDataUrl(await ie.bytes(), ie.name)}"`);
@@ -129,34 +125,33 @@ async function resolveRelativeImages(story: StoryMap, entries: ZipReadEntry[]): 
     return res;
   };
 
+  if (story.brand?.logo) story.brand.logo = await resolveUrl(story.brand.logo);
+  if (story.hero?.mediaUrl) story.hero.mediaUrl = await resolveUrl(story.hero.mediaUrl);
+  if (story.hero?.posterUrl) story.hero.posterUrl = await resolveUrl(story.hero.posterUrl);
+  if (story.hero?.logoUrl) story.hero.logoUrl = await resolveUrl(story.hero.logoUrl);
+
   for (const step of story.steps || []) {
     if (step.media?.url) step.media.url = await resolveUrl(step.media.url);
     if (step.description) step.description = await resolveHtml(step.description);
   }
 
   for (const page of story.pages || []) {
+    if (page.hero?.mediaUrl) page.hero.mediaUrl = await resolveUrl(page.hero.mediaUrl);
+    if (page.hero?.posterUrl) page.hero.posterUrl = await resolveUrl(page.hero.posterUrl);
+    if (page.hero?.logoUrl) page.hero.logoUrl = await resolveUrl(page.hero.logoUrl);
     for (const b of page.blocks || []) {
       if (!b.data) continue;
       if (typeof b.data.url === 'string') b.data.url = await resolveUrl(b.data.url);
       if (typeof b.data.text === 'string') b.data.text = await resolveHtml(b.data.text);
       if (typeof b.data.html === 'string') b.data.html = await resolveHtml(b.data.html);
-      if (Array.isArray(b.data.items)) {
-        for (let i = 0; i < b.data.items.length; i++) {
-          const it = b.data.items[i];
-          if (typeof it === 'string') b.data.items[i] = await resolveUrl(it);
-          else if (it?.url) it.url = await resolveUrl(it.url);
-        }
-      }
-      if (Array.isArray(b.data.images)) {
-        for (let i = 0; i < b.data.images.length; i++) {
-          const it = b.data.images[i];
-          if (typeof it === 'string') b.data.images[i] = await resolveUrl(it);
-          else if (it?.url) it.url = await resolveUrl(it.url);
-        }
-      }
-      if (Array.isArray(b.data.contactSheetItems)) {
-        for (const it of b.data.contactSheetItems) {
-          if (it?.url) it.url = await resolveUrl(it.url);
+      for (const arrKey of ['items', 'images', 'contactSheetItems'] as const) {
+        const list = b.data[arrKey];
+        if (Array.isArray(list)) {
+          for (let i = 0; i < list.length; i++) {
+            const it = list[i];
+            if (typeof it === 'string') list[i] = await resolveUrl(it);
+            else if (it?.url) it.url = await resolveUrl(it.url);
+          }
         }
       }
     }
@@ -172,15 +167,11 @@ async function parseZipArchive(file: Blob): Promise<StoryMap[]> {
     jsonEntries = jsonEntries.filter(x => !x.name.endsWith('v2.storymap.json'));
   }
   for (const e of jsonEntries) {
-    try {
-      stories.push(await resolveRelativeImages(parseStoryJSON(await e.text()), entries));
-    } catch { /* ignorer */ }
+    try { stories.push(await resolveRelativeImages(parseStoryJSON(await e.text()), entries)); } catch { /* ignore */ }
   }
   if (stories.length > 0) return stories;
   for (const e of entries.filter(x => x.name.endsWith('.html') || x.name.endsWith('.htm'))) {
-    try {
-      stories.push(await resolveRelativeImages(parseStoryHTML(await e.text()), entries));
-    } catch { /* ignorer */ }
+    try { stories.push(await resolveRelativeImages(parseStoryHTML(await e.text()), entries)); } catch { /* ignore */ }
   }
   if (stories.length === 0) throw new Error('Aucune storymap valide n’a été trouvée dans cette archive ZIP.');
   return stories;
