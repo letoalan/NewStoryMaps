@@ -59,7 +59,6 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       cursorMarkerRef.current?.remove();
-      cursorMarkerRef.current = null;
       map.remove();
       mapRef.current = null;
     };
@@ -71,11 +70,8 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
     if (currentStyleRef.current === activeMap.mapStyle) return;
     currentStyleRef.current = activeMap.mapStyle;
     map.setStyle(resolveMapStyle(activeMap.mapStyle));
-    const handleStyleLoad = () => {
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = renderSceneLayersOnMap(map, activeMap, undefined, draftVertices);
-    };
-    if (map.isStyleLoaded()) handleStyleLoad(); else map.once('style.load', handleStyleLoad);
+    const sync = () => { markersRef.current.forEach((m) => m.remove()); markersRef.current = renderSceneLayersOnMap(map, activeMap, undefined, draftVertices); };
+    if (map.isStyleLoaded()) sync(); else map.once('style.load', sync);
   }, [activeMap.mapStyle]);
 
   useEffect(() => {
@@ -103,10 +99,7 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
     if (!map) return;
     const center = map.getCenter(), b = map.getBounds();
     updateActiveMap({
-      view: {
-        center: [center.lng, center.lat], zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing(),
-        bounds: [[b.getWest(), b.getSouth()], [b.getEast(), b.getNorth()]],
-      },
+      view: { center: [center.lng, center.lat], zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing(), bounds: [[b.getWest(), b.getSouth()], [b.getEast(), b.getNorth()]] },
     });
   };
 
@@ -121,10 +114,7 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
     } else if (newFeatureType === 'Polygon') {
       coords = draftVertices.length >= 3 ? [[...draftVertices, draftVertices[0]]] : [[[lng, lat], [lng + 0.01, lat], [lng + 0.01, lat + 0.01], [lng, lat + 0.01], [lng, lat]]];
     }
-    const feat: MapFeature = {
-      id: `feat-${activeMap.id}-${Date.now()}`, name, geometryType: newFeatureType,
-      coordinates: coords, color: '#0b7fb0', numberIndex: totalFeats,
-    };
+    const feat: MapFeature = { id: `feat-${activeMap.id}-${Date.now()}`, name, geometryType: newFeatureType, coordinates: coords, color: '#0b7fb0', numberIndex: totalFeats };
     onUpdateMaps(currentMaps.map((m, idx) => (idx === selectedMapIndex ? addFeatureToLayer(m, layerId, feat) : m)));
     setNewFeatureName('');
     setDraftVertices([]);
@@ -134,12 +124,9 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
     <div style={{ position: 'fixed', inset: 0, zIndex: 1200, backgroundColor: 'rgba(0,0,0,0.5)', display: 'grid', placeItems: 'center', padding: '16px' }} onClick={onClose}>
       <div className="dialog-box" style={{ background: 'var(--surface)', borderRadius: 'var(--r-lg)', width: '100%', maxWidth: '900px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Map size={18} color="var(--accent)" /><h2 style={{ fontSize: '15px', fontWeight: 600, margin: 0 }}>Atelier Carte & Scènes Cartographiques</h2>
-          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Map size={18} color="var(--accent)" /><h2 style={{ fontSize: '15px', fontWeight: 600, margin: 0 }}>Atelier Carte & Scènes Cartographiques</h2></div>
           <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={16} /></button>
         </div>
-
         <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', flex: 1, minHeight: '440px', overflow: 'hidden' }}>
           <div style={{ padding: '14px', borderRight: '1px solid var(--border)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -148,7 +135,6 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
               </select>
               <button className="btn btn-ghost btn-sm" onClick={() => { onUpdateMaps([...currentMaps, createDefaultProjectMap(`map-${Date.now()}`, `Carte ${currentMaps.length + 1}`)]); setSelectedMapIndex(currentMaps.length); }}><Plus size={13} /></button>
             </div>
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label style={{ fontSize: '11px', fontWeight: 600 }}>Nom & Fond de carte</label>
               <input type="text" className="input" style={{ height: '26px', fontSize: '12px' }} value={activeMap.name} onChange={(e) => updateActiveMap({ name: e.target.value })} />
@@ -156,20 +142,23 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
                 {MAP_STYLES.map((st) => (<option key={st.id} value={st.id}>{st.name} ({st.provider})</option>))}
               </select>
             </div>
-
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 600 }}><Layers size={13} /> Couches & Entités</span>
                 <button className="btn btn-ghost btn-xs" onClick={() => updateActiveMap({ layers: [...(activeMap.layers || []), { id: `layer-${Date.now()}`, name: `Couche ${(activeMap.layers || []).length + 1}`, visible: true, features: [] }] })}><Plus size={11} /> Couche</button>
               </div>
-
               {(activeMap.layers || []).map((l) => (
                 <div key={l.id} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '4px', padding: '8px', marginBottom: '8px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                     <span style={{ fontSize: '11.5px', fontWeight: 600 }}>{l.name}</span>
-                    <button className="btn btn-ghost btn-icon btn-xs" onClick={() => updateActiveMap({ layers: activeMap.layers?.map((ly) => (ly.id === l.id ? { ...ly, visible: !ly.visible } : ly)) })}>
-                      {l.visible ? <Eye size={12} color="var(--accent)" /> : <EyeOff size={12} />}
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                      <button type="button" className="btn btn-ghost btn-icon btn-xs" title={l.visible ? 'Masquer la couche' : 'Afficher'} onClick={() => updateActiveMap({ layers: activeMap.layers?.map((ly) => (ly.id === l.id ? { ...ly, visible: !ly.visible } : ly)) })}>
+                        {l.visible ? <Eye size={12} color="var(--accent)" /> : <EyeOff size={12} />}
+                      </button>
+                      <button type="button" className="btn btn-ghost btn-icon btn-xs" title="Supprimer la couche" onClick={() => updateActiveMap({ layers: activeMap.layers?.filter((ly) => ly.id !== l.id) })}>
+                        <Trash2 size={12} color="var(--danger)" />
+                      </button>
+                    </div>
                   </div>
                   {(l.features || []).map((f) => (
                     <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', background: 'var(--surface)', padding: '2px 6px', borderRadius: '3px', marginBottom: '2px' }}>
@@ -180,9 +169,7 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
                   <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
                     <input type="text" className="input" placeholder="Nom ou laisser vide…" style={{ height: '22px', fontSize: '11px', flex: 1 }} value={newFeatureName} onChange={(e) => setNewFeatureName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleAddFeature(l.id); }} />
                     <select className="select" style={{ height: '22px', fontSize: '10.5px' }} value={newFeatureType} onChange={(e) => { setNewFeatureType(e.target.value as any); setDraftVertices([]); }}>
-                      <option value="Point">Point</option>
-                      <option value="LineString">Ligne</option>
-                      <option value="Polygon">Polygone</option>
+                      <option value="Point">Point</option><option value="LineString">Ligne</option><option value="Polygon">Polygone</option>
                     </select>
                     <button className="btn btn-primary btn-xs" onClick={() => handleAddFeature(l.id)} title="Créer ce figuré (ou Entrée)"><Plus size={11} /></button>
                   </div>
@@ -190,22 +177,18 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
               ))}
             </div>
           </div>
-
           <div style={{ position: 'relative', width: '100%', height: '100%' }}>
             <div ref={mapContainerRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
             <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(15,23,42,0.88)', color: '#fff', padding: '5px 10px', borderRadius: '4px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 10 }}>
               <Crosshair size={12} color="var(--accent)" />
               <span>{newFeatureType === 'Point' ? `Point [${cursorPos[0].toFixed(3)}, ${cursorPos[1].toFixed(3)}] (cliquez pour déplacer)` : `Sommets : ${draftVertices.length} (cliquez pour tracer)`}</span>
-              {draftVertices.length > 0 && (
-                <button className="btn btn-ghost btn-xs" style={{ color: '#f87171', padding: '0 4px', height: '18px' }} onClick={() => setDraftVertices([])} title="Effacer les sommets"><RotateCcw size={11} /></button>
-              )}
+              {draftVertices.length > 0 && (<button className="btn btn-ghost btn-xs" style={{ color: '#f87171', padding: '0 4px', height: '18px' }} onClick={() => setDraftVertices([])} title="Effacer les sommets"><RotateCcw size={11} /></button>)}
             </div>
             <button className="btn btn-primary btn-xs" style={{ position: 'absolute', bottom: '12px', right: '12px', zIndex: 10 }} onClick={handleCaptureView}>
               <Camera size={13} style={{ marginRight: '4px' }} /> Capturer cette vue
             </button>
           </div>
         </div>
-
         <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', justifyContent: 'flex-end' }}>
           <button className="btn btn-primary btn-sm" onClick={onClose}><Check size={14} style={{ marginRight: '4px' }} /> Enregistrer & Fermer</button>
         </div>

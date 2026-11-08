@@ -65,7 +65,7 @@ Ce document répertorie chaque fichier du projet StoryMap (conservé et nouvelle
 | [`src/components/dialogs/ShareModal.tsx`](file:///src/components/dialogs/ShareModal.tsx) | 107 | Partage & Exports v2/modernes | [Documentation](file:///wiki/dialogs/dialogs-overview.md) |
 | [`src/components/dialogs/NewStoryModal.tsx`](file:///src/components/dialogs/NewStoryModal.tsx) | 149 | Modale 3 modes, charte et format | [Documentation](file:///wiki/dialogs/dialogs-overview.md) |
 | [`src/components/dialogs/SettingsModal.tsx`](file:///src/components/dialogs/SettingsModal.tsx) | 172 | Paramètres & Thème du récit | [Documentation](file:///wiki/dialogs/settings-modal.md) |
-| [`src/components/dialogs/MapStudioModal.tsx`](file:///src/components/dialogs/MapStudioModal.tsx) | 191 | Atelier Carte avec tracé multi-sommets (P3, V02) | [Documentation](file:///wiki/dialogs/map-studio.md) |
+| [`src/components/dialogs/MapStudioModal.tsx`](file:///src/components/dialogs/MapStudioModal.tsx) | 189 | Atelier Carte avec tracé multi-sommets & gestion des couches (P3, V02) | [Documentation](file:///wiki/dialogs/map-studio.md) |
 | [`src/components/dialogs/BindingPickerModal.tsx`](file:///src/components/dialogs/BindingPickerModal.tsx) | 125 | Sélecteur d'association narrative (P3) | [Documentation](file:///wiki/dialogs/binding-picker.md) |
 | [`src/components/dialogs/BrochureModal.tsx`](file:///src/components/dialogs/BrochureModal.tsx) | 142 | Prévol, conversion 2→3 et export Brochure A4 / PDF (P5) | [Documentation](file:///wiki/core/brochure.md) |
 | [`src/components/player/Player.tsx`](file:///src/components/player/Player.tsx) | 188 | Lecteur immersif plein écran | [Documentation](file:///wiki/components/Player.md) |
