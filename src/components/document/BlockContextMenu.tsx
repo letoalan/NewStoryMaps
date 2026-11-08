@@ -9,7 +9,7 @@ import React, { useState, useRef } from 'react';
 import { Block, BlockType, ProjectMode } from '../../types/project';
 import { getAvailableCatalogItems } from '../../core/blockCatalog';
 import { EmptyCellMenu } from './EmptyCellMenu';
-import { ArrowRight, ArrowDown, Minimize2, Copy, Trash2, Link2, Sliders, Edit3, RefreshCw } from 'lucide-react';
+import { ArrowRight, ArrowDown, Minimize2, Copy, Trash2, Link2, Sliders, Edit3, RefreshCw, RotateCcw } from 'lucide-react';
 
 interface BlockContextMenuProps {
   block: Block;
@@ -19,6 +19,7 @@ interface BlockContextMenuProps {
   onShrink: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onReset?: () => void;
   onOpenBinding?: () => void;
   onOpenInspector?: (tab: 'content' | 'replace' | 'style') => void;
 }
@@ -31,6 +32,7 @@ export const BlockContextMenu: React.FC<BlockContextMenuProps> = ({
   onShrink,
   onDuplicate,
   onDelete,
+  onReset,
   onOpenBinding,
   onOpenInspector,
 }) => {
@@ -146,6 +148,11 @@ export const BlockContextMenu: React.FC<BlockContextMenuProps> = ({
       {(block.w > 1 || block.h > 1) && (
         <button type="button" className="btn btn-ghost btn-xs btn-icon" onClick={onShrink} title="Réduire d’une cellule">
           <Minimize2 size={13} />
+        </button>
+      )}
+      {onReset && (
+        <button type="button" className="btn btn-ghost btn-xs" onClick={onReset} title="Remise à zéro de la case (taille 1x1, style par défaut et contenu vierge)" style={{ height: '24px', padding: '0 5px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+          <RotateCcw size={12} /> <span>RÀZ</span>
         </button>
       )}
 

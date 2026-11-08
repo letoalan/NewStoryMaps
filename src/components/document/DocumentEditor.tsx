@@ -187,8 +187,7 @@ export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <MapStudioModal isOpen={isMapStudioOpen} maps={maps} onClose={() => setIsMapStudioOpen(false)} onUpdateMaps={handleUpdateMaps} />
       <BindingPickerModal isOpen={!!bindingBlock} block={bindingBlock} maps={maps} onClose={() => setBindingBlock(null)} onSaveBinding={handleSaveBinding} />
-      <BrochureModal isOpen={isBrochureOpen} onClose={() => setIsBrochureOpen(false)} />
-      <ShareModal isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
+      <BrochureModal isOpen={isBrochureOpen} onClose={() => setIsBrochureOpen(false)} /><ShareModal isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
     </div>
   );
 };

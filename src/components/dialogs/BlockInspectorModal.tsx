@@ -16,12 +16,13 @@ export interface BlockInspectorModalProps {
   onUpdateData: (id: string, patch: Record<string, unknown>) => void;
   onChangeType: (id: string, newType: BlockType) => void;
   onUpdateStyle: (id: string, override?: BlockVisualOverride) => void;
+  onResetBlock?: (id: string) => void;
   onOpenBinding?: () => void;
   onClose: () => void;
 }
 
 const BlockInspectorContent: React.FC<Omit<BlockInspectorModalProps, 'isOpen' | 'block'> & { block: Block }> = ({
-  block, mode, initialTab, onUpdateData, onChangeType, onUpdateStyle, onOpenBinding, onClose,
+  block, mode, initialTab, onUpdateData, onChangeType, onUpdateStyle, onResetBlock, onOpenBinding, onClose,
 }) => {
   const [tab, setTab] = useState<'content' | 'style'>(initialTab === 'style' ? 'style' : 'content');
   const catalog = getAvailableCatalogItems(mode);
@@ -172,7 +173,12 @@ const BlockInspectorContent: React.FC<Omit<BlockInspectorModalProps, 'isOpen' | 
           )}
         </div>
 
-        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {onResetBlock ? (
+            <button type="button" className="btn btn-ghost btn-xs text-danger" onClick={() => { onResetBlock(block.id); onClose(); }} title="Remise à zéro de la case (taille 1x1, style par défaut et contenu vierge)">
+              <RotateCcw size={12} /> <span>Remise à zéro de la case</span>
+            </button>
+          ) : <div />}
           <button type="button" className="btn btn-primary btn-sm" onClick={onClose}><Check size={14} /> Terminé</button>
         </div>
       </div>

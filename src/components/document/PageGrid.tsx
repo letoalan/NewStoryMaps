@@ -93,6 +93,9 @@ export const PageGrid: React.FC<PageGridProps> = ({
     if (selectedBlockId === blockId) setSelectedBlockId(null);
     if (inspectedBlock?.id === blockId) setInspectedBlock(null);
   };
+  const handleReset = (blockId: string) => {
+    onChangeBlocks(blocks.map((b) => (b.id === blockId ? { ...b, w: 1, h: 1, styleOverride: undefined, binding: undefined, data: b.type === 'table' ? { rows: [['-']] } : { text: '' } } : b)));
+  };
 
   const handleAddBlockToCell = (x: number, y: number, type: BlockType) => {
     const seed = convertBlockTypePreservingContent({ id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, type: 'text', x, y, w: 1, h: 1, data: { text: '' } }, type);
@@ -150,6 +153,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
                   block={b} mode={effectiveMode} onChangeType={(t) => handleTypeChange(b.id, t)}
                   onExpand={(d) => handleExpand(b.id, d)} onShrink={() => handleShrink(b.id)}
                   onDuplicate={() => handleDuplicate(b.id)} onDelete={() => handleDelete(b.id)}
+                  onReset={() => handleReset(b.id)}
                   onOpenBinding={onOpenBinding ? () => onOpenBinding(b) : undefined}
                   onOpenInspector={(tab) => setInspectedBlock({ id: b.id, tab })}
                 />
@@ -166,6 +170,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
         isOpen={!!activeInspectedBlock} block={activeInspectedBlock} mode={effectiveMode}
         initialTab={inspectedBlock?.tab || 'content'} onClose={() => setInspectedBlock(null)}
         onUpdateData={handleUpdateBlockData} onChangeType={handleTypeChange} onUpdateStyle={handleStyleChange}
+        onResetBlock={handleReset}
       />
     </div>
   );
