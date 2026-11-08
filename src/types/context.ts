@@ -7,7 +7,20 @@ import type { Step } from './step';
 import type { ProjectBrand, ProjectMode } from './project';
 import type { PageFormat } from './grid';
 
+import type { SharedThemeTokens, HeroConfig, RouteAnimationConfig } from './theme';
+
 export type SaveStatus = 'saved' | 'saving' | 'dirty' | 'error';
+
+export interface CreateStoryOptions {
+  title?: string;
+  mode?: ProjectMode;
+  format?: PageFormat;
+  brand?: ProjectBrand;
+  themeTokens?: Partial<SharedThemeTokens>;
+  hero?: HeroConfig;
+  routeAnimation?: RouteAnimationConfig;
+  templateId?: string;
+}
 
 export interface StoryContextType {
   story: StoryMap | null;
@@ -28,6 +41,6 @@ export interface StoryContextType {
   reorderSteps: (startIndex: number, endIndex: number) => void;
   flushSave: () => Promise<void>;
   loadStory: (id: string) => Promise<void>;
-  newStory: (options?: string | { title?: string; mode?: ProjectMode; format?: PageFormat; brand?: ProjectBrand }) => Promise<void>;
+  newStory: (options?: string | CreateStoryOptions) => Promise<void>;
 }
 

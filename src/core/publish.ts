@@ -43,44 +43,41 @@ export function generateStandaloneHTML(story: StoryMap): string {
         .panel-meta { padding: 6px 16px; font-size: 10.5px; color: #858e9e; border-top: 1px solid #e2e5eb; background: #fafbfc; }
         .btn { padding: 8px 14px; border: 1px solid #ccd2db; border-radius: 6px; background: #fff; cursor: pointer; font-weight: 600; font-size: 13px; }
         .btn:disabled { opacity: 0.4; cursor: default; }
-    </style>
-</head>
-<body>
-    <div id="map"></div>
-    <div id="map-fallback"><div><h3>Mode dégradé hors-ligne</h3><p>Fond cartographique indisponible sans connexion.</p></div></div>
+    </style></head><body>
+    <div id="map"></div><div id="map-fallback"><div><h3>Mode dégradé hors-ligne</h3><p>Fond cartographique indisponible sans connexion.</p></div></div>
     <div class="panel">
         <div class="panel-header"><span class="badge" id="step-badge">Étape 1</span><h2 class="panel-title" id="step-title"></h2></div>
         <div class="panel-body" id="step-body"></div>
-        <div class="panel-footer">
-            <button class="btn" id="btn-prev" onclick="prevStep()">Précédent</button>
-            <span id="step-count" style="font-size:12px;color:#858e9e"></span>
-            <button class="btn" id="btn-next" onclick="nextStep()">Suivant</button>
-        </div>
+        <div class="panel-footer"><button class="btn" id="btn-prev" onclick="prevStep()">Précédent</button><span id="step-count" style="font-size:12px;color:#858e9e"></span><button class="btn" id="btn-next" onclick="nextStep()">Suivant</button></div>
         <div class="panel-meta">StoryMap (MIT) · Cartographie © OpenStreetMap, CARTO, Esri</div>
     </div>
     <div id="hero-template" style="display:none">${heroHtml}</div>
-    <script id="storymap-data" type="application/json">${storyJson}</script>
-    <script id="story-data" type="application/json">${storyJson}</script>
+    <script id="storymap-data" type="application/json">${storyJson}</script><script id="story-data" type="application/json">${storyJson}</script>
     <script>
         const story = JSON.parse(document.getElementById('storymap-data').textContent);
         const steps = (story.steps || []).filter(s => !s.hidden);
         const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        let currentIdx = 0, map, activeMarkers = [], vehicleMarker = null, vehicleTimer = null;
+        let currentIdx = 0, map, activeMarkers = [], vehicleMarker = null, vehicleTimer = null, autoplayTimer = null;
+
+        function buildSegCoords(p1, p2) {
+            const rStyle = (story.appearance && story.appearance.routeStyle) || 'dashed';
+            if (rStyle !== 'curved' && rStyle !== 'airplane' && rStyle !== 'ship') return [p1, p2];
+            const dLng = p2[0] - p1[0], dLat = p2[1] - p1[1];
+            if (Math.hypot(dLng, dLat) < 0.001) return [p1, p2];
+            const cLng = (p1[0] + p2[0]) / 2 - dLat * 0.18, cLat = (p1[1] + p2[1]) / 2 + dLng * 0.18, pts = [];
+            for (let i = 0; i <= 16; i++) { const t = i / 16, u = 1 - t; pts.push([u * u * p1[0] + 2 * u * t * cLng + t * t * p2[0], u * u * p1[1] + 2 * u * t * cLat + t * t * p2[1]]); }
+            return pts;
+        }
 
         function getStyle() {
             const s = story.mapStyle || 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
             if (s === 'esri-satellite' || s === 'satellite') return { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }] };
             if (s === 'esri-hybrid' || s === 'hybrid') return { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 }, labels: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }, { id: 'labels', type: 'raster', source: 'labels' }] };
-            if (s === 'positron') return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
-            if (s === 'voyager') return 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+            if (s === 'positron' || s === 'voyager') return 'https://basemaps.cartocdn.com/gl/' + s + '-gl-style/style.json';
             if (s === 'dark-matter' || s === 'dark') return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-            if (s === 'liberty') return 'https://tiles.openfreemap.org/styles/liberty';
-            if (s === 'bright') return 'https://tiles.openfreemap.org/styles/bright';
-            if (s === 'fiord') return 'https://tiles.openfreemap.org/styles/fiord';
-            if (s === 'ofm-positron') return 'https://tiles.openfreemap.org/styles/positron';
-            if (s === 'ofm-dark') return 'https://tiles.openfreemap.org/styles/dark';
-            if (/^(https?:|data:|\\/)/.test(s)) return s;
-            return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+            if (s === 'liberty' || s === 'bright' || s === 'fiord') return 'https://tiles.openfreemap.org/styles/' + s;
+            if (s === 'ofm-positron' || s === 'ofm-dark') return 'https://tiles.openfreemap.org/styles/' + s.slice(4);
+            return /^(https?:|data:|\\/)/.test(s) ? s : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
         }
 
         function initMap() {
@@ -95,10 +92,12 @@ export function generateStandaloneHTML(story: StoryMap): string {
 
         function addRoute() {
             if (!map) return;
-            const coords = steps.map(s => s.camera.center);
-            if (coords.length < 2) return;
+            const base = steps.map(s => s.camera.center);
+            if (base.length < 2) return;
             const rStyle = (story.appearance && story.appearance.routeStyle) || 'dashed';
             if (rStyle === 'none') return;
+            const coords = [];
+            for (let i = 0; i < base.length - 1; i++) { const seg = buildSegCoords(base[i], base[i + 1]); if (i > 0) seg.shift(); coords.push(...seg); }
             let dash = rStyle === 'solid' ? undefined : rStyle === 'dotted' ? [1, 2] : rStyle === 'ship' ? [5, 3] : [4, 2];
             const paint = { 'line-color': '${safeAccent}', 'line-width': 3 };
             if (dash) paint['line-dasharray'] = dash;
@@ -106,58 +105,66 @@ export function generateStandaloneHTML(story: StoryMap): string {
             map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: paint });
         }
 
-        function animateSegmentVehicle(fromCoord, toCoord, animCfg) {
+        function animateSegmentVehicle(fromCam, toCam, animCfg) {
             if (vehicleTimer) { clearInterval(vehicleTimer); vehicleTimer = null; }
             if (vehicleMarker) { vehicleMarker.remove(); vehicleMarker = null; }
-            if (!map || !animCfg || !animCfg.enabled || animCfg.vehicle === 'none' || !fromCoord || !toCoord) return;
-            const wrap = document.createElement('div'); wrap.className = 'vehicle-marker-wrap';
-            wrap.style.cssText = 'width:28px;height:28px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:25;';
+            if (!map || !toCam) return false;
+            const fromCoord = fromCam && fromCam.center ? fromCam.center : null, toCoord = toCam.center;
+            const hasV = animCfg && animCfg.enabled && animCfg.vehicle !== 'none';
+            if (!hasV || !toCoord) {
+                map.flyTo({ center: toCoord, zoom: toCam.zoom, pitch: toCam.pitch, bearing: toCam.bearing, essential: true, duration: reducedMotion ? 0 : 1800 });
+                return false;
+            }
+            const nextCam = steps[currentIdx + 1] && steps[currentIdx + 1].camera ? steps[currentIdx + 1].camera : null;
+            const pts = fromCoord ? buildSegCoords(fromCoord, toCoord) : (nextCam ? buildSegCoords(toCoord, nextCam.center) : [toCoord, toCoord]);
+            const calcBrg = (a, b) => (Math.atan2((b[0] - a[0]) * Math.cos(((a[1] + b[1]) / 2) * Math.PI / 180), b[1] - a[1]) * 180 / Math.PI + 360) % 360;
+            const wrap = document.createElement('div'); wrap.className = 'vehicle-marker-wrap'; wrap.style.cssText = 'width:28px;height:28px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:25;';
             const icon = document.createElement('div'); icon.className = 'vehicle-marker-icon';
-            const ang = (Math.atan2(toCoord[0] - fromCoord[0], toCoord[1] - fromCoord[1]) * 180 / Math.PI + 360) % 360;
-            icon.style.cssText = 'width:100%;height:100%;transform:rotate(' + ang.toFixed(1) + 'deg);';
+            icon.style.cssText = 'width:100%;height:100%;transform:rotate(' + calcBrg(pts[0], pts[1] || pts[0]).toFixed(1) + 'deg);';
             icon.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="${safeAccent}" stroke="#fff" stroke-width="1.5"><path d="M12 2L16 10H14V18H10V10H8L12 2Z"/></svg>';
             wrap.appendChild(icon);
-            vehicleMarker = new maplibregl.Marker({ element: wrap }).setLngLat(reducedMotion ? toCoord : fromCoord).addTo(map);
-            if (reducedMotion) return;
-            let elapsed = 0; const dur = Math.max(800, (animCfg.durationSec || 3) * 1000);
+            if (!fromCoord || reducedMotion) {
+                vehicleMarker = new maplibregl.Marker({ element: wrap }).setLngLat(toCoord).addTo(map);
+                map.jumpTo({ center: toCoord, zoom: toCam.zoom, pitch: toCam.pitch, bearing: toCam.bearing });
+                return 0;
+            }
+            vehicleMarker = new maplibregl.Marker({ element: wrap }).setLngLat(pts[0]).addTo(map);
+            const fZoom = fromCam.zoom || toCam.zoom, fPitch = fromCam.pitch || 0, fBearing = fromCam.bearing || 0;
+            map.jumpTo({ center: pts[0], zoom: fZoom, pitch: fPitch, bearing: fBearing });
+            const distDeg = Math.hypot((toCoord[0] - fromCoord[0]) * Math.cos(((fromCoord[1] + toCoord[1]) / 2) * Math.PI / 180), toCoord[1] - fromCoord[1]);
+            const baseMs = Math.max(800, (animCfg.durationSec || 4) * 1000), dur = Math.round(Math.min(12000, Math.max(1200, baseMs * Math.min(2.6, Math.max(0.55, 0.55 + Math.log1p(distDeg) * 0.42)))));
+            const idealMidZoom = Math.max(2.2, Math.min(13.5, 8.8 - Math.log2(distDeg + 0.15) * 1.35)), targetMidZoom = Math.min(Math.min(fZoom, toCam.zoom), idealMidZoom);
+            let elapsed = 0; const nSeg = pts.length - 1;
             vehicleTimer = setInterval(() => {
                 if (document.hidden) return;
-                elapsed += 50;
-                const t = Math.min(1, elapsed / dur);
-                vehicleMarker.setLngLat([fromCoord[0] + (toCoord[0] - fromCoord[0]) * t, fromCoord[1] + (toCoord[1] - fromCoord[1]) * t]);
+                elapsed += 35; const t = Math.min(1, elapsed / dur), idx = Math.min(nSeg - 1, Math.floor(t * nSeg)), lt = t * nSeg - idx;
+                const a = pts[idx], b = pts[idx + 1], curPos = [a[0] + (b[0] - a[0]) * lt, a[1] + (b[1] - a[1]) * lt];
+                const linZ = fZoom + (toCam.zoom - fZoom) * t, curZ = distDeg > 0.05 ? linZ - Math.max(0, linZ - targetMidZoom) * Math.sin(t * Math.PI) : linZ;
+                vehicleMarker.setLngLat(curPos); icon.style.transform = 'rotate(' + calcBrg(a, b).toFixed(1) + 'deg)';
+                if (animCfg.cameraFollow !== false) map.jumpTo({ center: curPos, zoom: curZ, pitch: fPitch + ((toCam.pitch || 0) - fPitch) * t, bearing: fBearing + ((toCam.bearing || 0) - fBearing) * t });
                 if (t >= 1) { clearInterval(vehicleTimer); vehicleTimer = null; }
-            }, 50);
+            }, 35);
+            return dur;
         }
 
         function renderStep() {
             const step = steps[currentIdx] || { title: '', description: '' };
             document.getElementById('step-badge').textContent = 'Étape ' + (currentIdx + 1);
             document.getElementById('step-title').textContent = step.title;
-            const body = document.getElementById('step-body');
-            body.textContent = '';
-            if (currentIdx === 0) {
-                const tpl = document.getElementById('hero-template');
-                if (tpl && tpl.innerHTML) { const h = document.createElement('div'); h.innerHTML = tpl.innerHTML; body.appendChild(h); }
-            }
-            if (step.media && step.media.url) {
-                const img = document.createElement('img');
-                img.src = step.media.url; img.alt = step.media.alt || step.title || '';
-                body.appendChild(img);
-            }
+            const body = document.getElementById('step-body'); body.textContent = '';
+            if (currentIdx === 0) { const tpl = document.getElementById('hero-template'); if (tpl && tpl.innerHTML) { const h = document.createElement('div'); h.innerHTML = tpl.innerHTML; body.appendChild(h); } }
+            if (step.media && step.media.url) { const img = document.createElement('img'); img.src = step.media.url; img.alt = step.media.alt || step.title || ''; body.appendChild(img); }
             const desc = document.createElement('div'); desc.innerHTML = step.description || ''; body.appendChild(desc);
             const total = steps.length || 1;
             document.getElementById('step-count').textContent = (currentIdx + 1) + ' / ' + total;
-            document.getElementById('btn-prev').disabled = currentIdx === 0;
-            document.getElementById('btn-next').disabled = currentIdx === total - 1;
-
+            document.getElementById('btn-prev').disabled = currentIdx === 0; document.getElementById('btn-next').disabled = currentIdx === total - 1;
             if (map && step.camera) {
-                map.flyTo({ center: step.camera.center, zoom: step.camera.zoom, pitch: step.camera.pitch, bearing: step.camera.bearing, essential: true, duration: reducedMotion ? 0 : 1800 });
                 activeMarkers.forEach(m => m.remove()); activeMarkers = [];
-                (step.markers || [{ coordinates: step.camera.center }]).forEach(m => {
-                    activeMarkers.push(new maplibregl.Marker({ color: '${safeAccent}' }).setLngLat(m.coordinates).addTo(map));
-                });
+                (step.markers || [{ coordinates: step.camera.center }]).forEach(m => activeMarkers.push(new maplibregl.Marker({ color: '${safeAccent}' }).setLngLat(m.coordinates).addTo(map)));
                 const prevS = currentIdx > 0 ? steps[currentIdx - 1] : null;
-                animateSegmentVehicle(prevS && prevS.camera ? prevS.camera.center : null, step.camera.center, step.routeAnimation || story.routeAnimation);
+                const fDur = animateSegmentVehicle(prevS && prevS.camera ? prevS.camera : null, step.camera, step.routeAnimation || story.routeAnimation) || 0;
+                if (autoplayTimer) clearTimeout(autoplayTimer);
+                if (currentIdx < steps.length - 1) autoplayTimer = setTimeout(() => { nextStep(); }, ((story.appearance && story.appearance.autoplayInterval) || 5000) + fDur);
             }
         }
 
@@ -183,6 +190,4 @@ export function extractStoryFromHTML(html: string): StoryMap {
   return convertLegacyToModern(JSON.parse(content));
 }
 
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-}
+function escapeHtml(text: string): string { return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }

@@ -6,23 +6,30 @@ import React, { useEffect, useRef } from 'react';
 import { Map as MLMap, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Block, ProjectMap } from '../../../types/project';
+import { ResolvedVisualStyle } from '../../../types/theme';
 import { useStory } from '../../../context/StoryContext';
 import { resolveMapStyle } from '../../../types/map';
 import { createDefaultProjectMap, findFeatureInMap } from '../../../core/mapScene';
 import { renderSceneLayersOnMap, getFeatureCenter } from '../../../core/mapSceneRender';
+import { expandRouteCoordsByStyle } from '../../../core/route';
+import { computeSegmentBearing, computePathMetrics, computeAdaptiveFlightDurationMs, computeReadableCruiseZoom } from '../../../core/routeInterpolation';
+import { createVehicleController, createTwoLevelVehicleDomElement, VehicleController } from '../../../core/vehicleController';
 import { Link2 } from 'lucide-react';
 
 interface MapBlockPreviewProps {
   block: Block;
   onChange: (patch: Record<string, unknown>) => void;
   isEditable?: boolean;
+  visualStyle?: ResolvedVisualStyle;
 }
 
-export const MapBlockPreview: React.FC<MapBlockPreviewProps> = ({ block, onChange, isEditable = true }) => {
+export const MapBlockPreview: React.FC<MapBlockPreviewProps> = ({ block, onChange, isEditable = true, visualStyle }) => {
   const { story } = useStory();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const markersRef = useRef<Marker[]>([]);
+  const vehicleCtrlRef = useRef<VehicleController | null>(null);
+  const vehicleMarkerRef = useRef<Marker | null>(null);
   const currentStyleRef = useRef<string>(story?.mapStyle || '');
 
   const mapTitle = (block.data.title as string) || 'Carte interactive';
@@ -50,9 +57,13 @@ export const MapBlockPreview: React.FC<MapBlockPreviewProps> = ({ block, onChang
       attributionControl: false,
     });
     currentStyleRef.current = targetMap.mapStyle;
+    map.on('dragstart', () => vehicleCtrlRef.current?.notifyUserMapInteraction());
+    map.on('zoomstart', () => vehicleCtrlRef.current?.notifyUserMapInteraction());
     mapRef.current = map;
 
     return () => {
+      vehicleCtrlRef.current?.destroy();
+      vehicleMarkerRef.current?.remove();
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       map.remove();
@@ -69,7 +80,7 @@ export const MapBlockPreview: React.FC<MapBlockPreviewProps> = ({ block, onChang
     map.setStyle(resolveMapStyle(targetMap.mapStyle));
     const handleStyleLoad = () => {
       markersRef.current.forEach((m) => m.remove());
-      markersRef.current = renderSceneLayersOnMap(map, targetMap, binding?.targetFeatureId);
+      markersRef.current = renderSceneLayersOnMap(map, targetMap, binding?.targetFeatureId, undefined, story?.appearance?.routeStyle);
     };
     if (map.isStyleLoaded()) handleStyleLoad();
     else map.once('style.load', handleStyleLoad);
@@ -89,24 +100,52 @@ export const MapBlockPreview: React.FC<MapBlockPreviewProps> = ({ block, onChang
     });
   }, [targetMap.view?.center?.[0], targetMap.view?.center?.[1], targetMap.view?.zoom, targetMap.view?.pitch, targetMap.view?.bearing]);
 
-  // V02 : Rendu des Points, LineStrings, Polygons et focus de liaison narrative
+  // V02 & N4 : Rendu des Points, LineStrings, Polygons, véhicule centré et focus de liaison narrative
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    const rStyle = story?.appearance?.routeStyle;
     markersRef.current.forEach((m) => m.remove());
-    markersRef.current = renderSceneLayersOnMap(map, targetMap, binding?.targetFeatureId);
+    markersRef.current = renderSceneLayersOnMap(map, targetMap, binding?.targetFeatureId, undefined, rStyle);
 
-    if (binding?.targetFeatureId && binding?.action === 'zoom') {
+    vehicleCtrlRef.current?.destroy();
+    vehicleMarkerRef.current?.remove();
+    vehicleMarkerRef.current = null;
+
+    const lineFeat = targetMap.layers?.flatMap((l) => (l.visible ? l.features : [])).find((f) => f.geometryType === 'LineString' && Array.isArray(f.coordinates) && f.coordinates.length >= 2);
+    const animCfg = lineFeat?.routeAnimation || targetMap.routeAnimation || story?.routeAnimation;
+    if (!isEditable && lineFeat && animCfg && animCfg.enabled && animCfg.vehicle !== 'none') {
+      const coords = expandRouteCoordsByStyle(lineFeat.coordinates as Array<[number, number]>, rStyle);
+      const totalDeg = computePathMetrics(coords).totalLength;
+      const adaptiveSec = computeAdaptiveFlightDurationMs(totalDeg, animCfg.durationSec || 4) / 1000;
+      const baseZoom = targetMap.view?.zoom || 11;
+      const initBrg = coords.length >= 2 ? computeSegmentBearing(coords[0], coords[1]) : 0;
+      const { wrapper, innerIcon } = createTwoLevelVehicleDomElement(document, animCfg, lineFeat.color || story?.appearance?.accentColor || '#0b7fb0', initBrg);
+      const mk = new Marker({ element: wrapper }).setLngLat(coords[0]).addTo(map);
+      vehicleMarkerRef.current = mk;
+      if (animCfg.cameraFollow !== false) map.jumpTo({ center: coords[0], zoom: baseZoom });
+      const ctrl = createVehicleController({
+        coords,
+        config: { ...animCfg, durationSec: adaptiveSec, cameraFollow: animCfg.cameraFollow !== false },
+        onSample: (sample) => {
+          mk.setLngLat(sample.coordinates);
+          if (animCfg.orientToRoute !== false) innerIcon.style.transform = `rotate(${sample.bearing}deg)`;
+          if (ctrl.isCameraFollowActive()) map.jumpTo({ center: sample.coordinates, zoom: computeReadableCruiseZoom(baseZoom, baseZoom, totalDeg, ctrl.getProgress()) });
+        },
+      });
+      vehicleCtrlRef.current = ctrl;
+      ctrl.play();
+    } else if (binding?.targetFeatureId && binding?.action === 'zoom') {
       const feat = findFeatureInMap(targetMap, binding.targetFeatureId);
       const center = feat ? getFeatureCenter(feat) : null;
       if (center) {
         map.flyTo({ center, zoom: 14, pitch: targetMap.view?.pitch || 0, bearing: targetMap.view?.bearing || 0, essential: true });
       }
     }
-  }, [targetMap, binding?.targetFeatureId, binding?.action]);
+  }, [targetMap, binding?.targetFeatureId, binding?.action, isEditable, story?.routeAnimation, story?.appearance?.routeStyle]);
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', borderRadius: 'var(--r)' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', borderRadius: visualStyle?.radiusCss ?? 'var(--r)' }}>
       <div style={{ flex: 1, position: 'relative', minHeight: '120px' }}>
         {isMapMissing ? (
           <div style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e293b', color: '#f87171', fontSize: '12px', padding: '12px', textAlign: 'center' }}>
@@ -126,16 +165,16 @@ export const MapBlockPreview: React.FC<MapBlockPreviewProps> = ({ block, onChang
       </div>
 
       {isEditable && (
-        <div style={{ padding: '6px 8px', background: 'var(--surface-2)', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px' }}>
+        <div style={{ padding: '4px 6px', background: 'rgba(15, 23, 42, 0.08)', borderTop: '1px solid rgba(148, 163, 184, 0.25)', display: 'flex', gap: '6px' }}>
           <input
-            type="text" className="input" value={mapTitle} placeholder="Titre de la carte…"
+            type="text" value={mapTitle} placeholder="Titre de la carte…"
             onChange={(e) => onChange({ title: e.target.value })}
-            style={{ width: '45%', fontSize: '11px', height: '24px' }}
+            style={{ width: '45%', fontSize: '11px', height: '22px', background: 'rgba(255,255,255,0.2)', color: visualStyle?.textColor || 'inherit', border: '1px solid rgba(148,163,184,0.35)', borderRadius: '4px', padding: '0 6px', outline: 'none' }}
           />
           <input
-            type="text" className="input" value={caption} placeholder="Légende / crédit cartographique…"
+            type="text" value={caption} placeholder="Légende / crédit cartographique…"
             onChange={(e) => onChange({ caption: e.target.value })}
-            style={{ flex: 1, fontSize: '11px', height: '24px' }}
+            style={{ flex: 1, fontSize: '11px', height: '22px', background: 'rgba(255,255,255,0.2)', color: visualStyle?.textColor || 'inherit', border: '1px solid rgba(148,163,184,0.35)', borderRadius: '4px', padding: '0 6px', outline: 'none' }}
           />
         </div>
       )}

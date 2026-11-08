@@ -140,14 +140,18 @@ const BlockInspectorContent: React.FC<Omit<BlockInspectorModalProps, 'isOpen' | 
                     </div>
                   </div>
 
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: 600 }}>Forme des bords du bloc</label>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button type="button" className={`btn btn-xs ${(ov.radiusPx ?? 6) > 0 ? 'btn-primary' : 'btn-ghost'}`} style={{ border: '1px solid var(--border)' }} onClick={() => patchStyle({ radiusPx: (ov.radiusPx ?? 6) > 0 ? (ov.radiusPx ?? 6) : 8 })}>Bords arrondis</button>
+                      <button type="button" className={`btn btn-xs ${ov.radiusPx === 0 ? 'btn-primary' : 'btn-ghost'}`} style={{ border: '1px solid var(--border)' }} onClick={() => patchStyle({ radiusPx: 0 })}>Bords carrés (0px)</button>
+                    </div>
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px' }}>
                     <div>
                       <label style={{ fontSize: '11px', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Bordure</label>
-                      <select className="input" style={{ width: '100%' }} value={ov.borderStyle || 'solid'} onChange={(e) => patchStyle({ borderStyle: e.target.value as any })}>
-                        <option value="none">Aucune</option>
-                        <option value="solid">Pleine</option>
-                        <option value="dashed">Pointillée</option>
-                      </select>
+                      <select className="input" style={{ width: '100%' }} value={ov.borderStyle || 'solid'} onChange={(e) => patchStyle({ borderStyle: e.target.value as any })}><option value="none">Aucune</option><option value="solid">Pleine</option><option value="dashed">Pointillée</option></select>
                     </div>
                     <div>
                       <label style={{ fontSize: '11px', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Rayon (px)</label>
@@ -159,12 +163,7 @@ const BlockInspectorContent: React.FC<Omit<BlockInspectorModalProps, 'isOpen' | 
                     </div>
                     <div>
                       <label style={{ fontSize: '11px', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Ombre</label>
-                      <select className="input" style={{ width: '100%' }} value={ov.shadowPreset || 'sm'} onChange={(e) => patchStyle({ shadowPreset: e.target.value as any })}>
-                        <option value="none">Aucune</option>
-                        <option value="sm">Légère</option>
-                        <option value="md">Moyenne</option>
-                        <option value="lg">Forte</option>
-                      </select>
+                      <select className="input" style={{ width: '100%' }} value={ov.shadowPreset || 'sm'} onChange={(e) => patchStyle({ shadowPreset: e.target.value as any })}><option value="none">Aucune</option><option value="sm">Légère</option><option value="md">Moyenne</option><option value="lg">Forte</option></select>
                     </div>
                   </div>
                 </>

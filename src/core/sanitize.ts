@@ -13,7 +13,7 @@ function isSafeUrl(val: string, attr: string, tag: string): boolean {
   const v = val.replace(/[\u0000-\u0020\u007F-\u009F]/g, '').toLowerCase();
   if (/^(javascript|vbscript|livescript|data:text\/html):/.test(v)) return false;
   if (v.startsWith('data:')) {
-    if (attr === 'src' && tag === 'img' && /^data:image\/(png|jpe?g|gif|webp|svg\+xml|bmp)/i.test(v)) return true;
+    if ((attr === 'src' || attr === 'poster') && (tag === 'img' || tag === 'video') && /^data:(image\/(png|jpe?g|gif|webp|svg\+xml|bmp)|video\/(mp4|webm|ogg|quicktime|x-m4v))/i.test(v)) return true;
     return false;
   }
   return true;
@@ -38,9 +38,9 @@ export function sanitizeSafeUrl(rawUrl: unknown): string {
   const normalized = trimmed.replace(/[\u0000-\u0020\u007F-\u009F]/g, '').toLowerCase();
   if (/^(javascript|vbscript|livescript|file):/.test(normalized)) return '';
   if (normalized.startsWith('data:')) {
-    return /^data:image\/(png|jpe?g|gif|webp|bmp)/i.test(normalized) ? trimmed : '';
+    return /^data:(image\/(png|jpe?g|gif|webp|bmp|svg\+xml)|video\/(mp4|webm|ogg|quicktime|x-m4v))/i.test(normalized) ? trimmed : '';
   }
-  if (/^(https?:\/\/|blob:|\/|\.\.?\/|[a-z0-9_-]+\/|[a-z0-9_.-]+\.(png|jpe?g|gif|webp|svg))/i.test(normalized)) {
+  if (/^(https?:\/\/|blob:|\/|\.\.?\/|[a-z0-9_-]+\/|[a-z0-9_.-]+\.(png|jpe?g|gif|webp|svg|mp4|webm|ogg|mov|m4v))/i.test(normalized)) {
     return trimmed;
   }
   return '';

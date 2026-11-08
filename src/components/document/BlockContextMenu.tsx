@@ -43,9 +43,9 @@ export const BlockContextMenu: React.FC<BlockContextMenuProps> = ({
       className="block-context-menu"
       style={{
         position: 'absolute',
-        top: '-42px',
+        top: '-38px',
         left: 0,
-        zIndex: 50,
+        zIndex: 100,
         display: 'flex',
         alignItems: 'center',
         gap: '4px',
@@ -58,6 +58,9 @@ export const BlockContextMenu: React.FC<BlockContextMenuProps> = ({
       }}
       onClick={(e) => e.stopPropagation()}
     >
+      <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-3)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+        <RefreshCw size={11} /> Transformer :
+      </span>
       <select
         className="input"
         aria-label="Changer le type de bloc"
@@ -151,8 +154,8 @@ export const BlockContextMenu: React.FC<BlockContextMenuProps> = ({
       <button type="button" className="btn btn-ghost btn-xs btn-icon" onClick={onDuplicate} title="Dupliquer le bloc">
         <Copy size={13} />
       </button>
-      <button type="button" className="btn btn-ghost btn-xs btn-icon" onClick={onDelete} title="Supprimer le bloc">
-        <Trash2 size={13} color="var(--danger)" />
+      <button type="button" className="btn btn-ghost btn-xs" onClick={onDelete} title="Vider la case (supprimer le bloc et restaurer la cellule vide)" style={{ color: 'var(--danger)', height: '24px', padding: '0 6px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+        <Trash2 size={12} /> <span>Vider</span>
       </button>
 
       <span style={{ fontSize: '10px', color: 'var(--text-3)', marginLeft: '4px' }}>

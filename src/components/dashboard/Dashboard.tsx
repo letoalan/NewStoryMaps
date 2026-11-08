@@ -12,13 +12,13 @@ import { parseStoryFile, exportAllStoriesBackupZip } from '../../core/io';
 import { EXAMPLE_STORY } from '../../data/exampleStory';
 import { NewStoryModal } from '../dialogs/NewStoryModal';
 
-import { ProjectBrand, ProjectMode } from '../../types/project';
-import { PageFormat } from '../../types/grid';
+import { ProjectMode } from '../../types/project';
+import { CreateStoryOptions } from '../../types/context';
 
 interface DashboardProps {
   onOpenStory: (id: string) => void;
   onPlayStory: (id: string) => void;
-  onNewStory: (opts?: string | { title?: string; mode?: ProjectMode; format?: PageFormat; brand?: ProjectBrand }) => void;
+  onNewStory: (opts?: string | CreateStoryOptions) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, onNewStory }) => {
@@ -84,7 +84,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
 
   return (
     <div className="dash">
-      <Header onNewStory={onNewStory} />
+      <Header onNewStory={() => setIsNewModalOpen(true)} />
       <main className="dash-main">
         <div className="dash-head">
           <div>

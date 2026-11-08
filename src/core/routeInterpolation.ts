@@ -156,3 +156,36 @@ export function slicePathByProgress(metrics: PathMetrics, progress: number): Arr
   return coords;
 }
 
+/**
+ * Calcule une durée de vol adaptative (en ms) proportionnelle à la distance géographique parcourue,
+ * tout en préservant la lisibilité cartographique sur les longues distances.
+ */
+export function computeAdaptiveFlightDurationMs(totalLengthDeg: number, baseDurationSec = 4): number {
+  const baseMs = Math.max(800, (baseDurationSec || 4) * 1000);
+  if (totalLengthDeg <= 0) return baseMs;
+  const distFactor = Math.min(2.6, Math.max(0.55, 0.55 + Math.log1p(totalLengthDeg) * 0.42));
+  return Math.round(Math.min(12000, Math.max(1200, baseMs * distFactor)));
+}
+
+/**
+ * Calcule le niveau de zoom dynamique en vol (courbe parabolique de croisière) afin que la carte
+ * dézoome progressivement sur les grandes distances et reste parfaitement lisible sans flou de tuiles.
+ */
+export function computeReadableCruiseZoom(
+  startZoom: number,
+  endZoom: number,
+  totalLengthDeg: number,
+  progress: number
+): number {
+  const t = Math.max(0, Math.min(1, progress));
+  const linearZoom = startZoom + (endZoom - startZoom) * t;
+  if (totalLengthDeg <= 0.05) return Number(linearZoom.toFixed(2));
+  const idealMidZoom = Math.max(2.2, Math.min(13.5, 8.8 - Math.log2(totalLengthDeg + 0.15) * 1.35));
+  const minEndpointZoom = Math.min(startZoom, endZoom);
+  const targetMidZoom = Math.min(minEndpointZoom, idealMidZoom);
+  const dipDepth = Math.max(0, linearZoom - targetMidZoom);
+  const arch = Math.sin(t * Math.PI);
+  return Number((linearZoom - dipDepth * arch).toFixed(2));
+}
+
+

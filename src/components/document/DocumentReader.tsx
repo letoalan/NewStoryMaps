@@ -5,7 +5,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { PageGrid } from './PageGrid';
-import { HeroSection } from './HeroSection';
 import { PageFormat } from '../../types/grid';
 import { Page } from '../../types/project';
 import { ReaderProfile, shouldIgnoreReaderKeyEvent, computeNextPageIndex } from '../../core/readerNavigation';
@@ -98,8 +97,7 @@ export const DocumentReader: React.FC<{ onExit: () => void }> = ({ onExit }) => 
       <main style={{ flex: 1, overflow: 'auto', display: 'flex', justifyContent: 'center', alignItems: profile === 'slide' ? 'center' : 'flex-start', padding: '24px' }}>
         {profile === 'slide' && (
           <div style={{ transform: 'scale(0.92)', transformOrigin: 'center center', transition: reducedMotion ? 'none' : 'transform 0.2s ease', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {currentHero && <div style={{ width: '100%', maxWidth: '794px' }}><HeroSection hero={currentHero} fallbackTitle={currentPage?.title || story?.title} fallbackSubtitle={story?.subtitle} fallbackLogo={story?.brand?.logo} outputProfile="slide" /></div>}
-            <PageGrid format={currentFormat} blocks={currentPage?.blocks || []} onChangeBlocks={() => {}} isEditable={false} story={story} page={currentPage} mode={story?.mode} outputProfile="slide" />
+            <PageGrid format={currentFormat} blocks={currentPage?.blocks || []} onChangeBlocks={() => {}} isEditable={false} story={story} page={currentPage} hero={currentHero} mode={story?.mode} outputProfile="slide" />
           </div>
         )}
         {(profile === 'vertical' || profile === 'horizontal') && (
@@ -109,8 +107,7 @@ export const DocumentReader: React.FC<{ onExit: () => void }> = ({ onExit }) => 
               return (
                 <div key={p.id} id={`reader-page-${idx}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '11px', color: '#94a3b8' }}>Page {idx + 1} — {p.title}</span>
-                  {pHero && <div style={{ width: '100%', maxWidth: '794px' }}><HeroSection hero={pHero} fallbackTitle={p.title || story?.title} fallbackSubtitle={story?.subtitle} fallbackLogo={story?.brand?.logo} outputProfile="web-interactive" /></div>}
-                  <PageGrid format={p.layout.format || currentFormat} blocks={p.blocks || []} onChangeBlocks={() => {}} isEditable={false} story={story} page={p} mode={story?.mode} outputProfile="web-interactive" />
+                  <PageGrid format={p.layout.format || currentFormat} blocks={p.blocks || []} onChangeBlocks={() => {}} isEditable={false} story={story} page={p} hero={pHero} mode={story?.mode} outputProfile="web-interactive" />
                 </div>
               );
             })}

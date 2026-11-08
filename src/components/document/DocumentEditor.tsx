@@ -5,21 +5,21 @@
 import React, { useState } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { PageGrid } from './PageGrid';
-import { HeroSection } from './HeroSection';
 import { PageFormat } from '../../types/grid';
 import { getGridDimensions, refitBlocksDetailed } from '../../core/grid';
 import { PAGE_STRUCTURAL_TEMPLATES, previewStructuralTemplate } from '../../core/layoutTemplates';
 import { Page, Block, NarrativeBinding, ProjectMap } from '../../types/project';
 import { createDefaultProjectMap, validateNarrativeBindings } from '../../core/mapScene';
+import { DEFAULT_THEME_TOKENS, extractProjectThemeTokens } from '../../core/themeResolver';
 import { MapStudioModal } from '../dialogs/MapStudioModal';
 import { BindingPickerModal } from '../dialogs/BindingPickerModal';
 import { ShareModal } from '../dialogs/ShareModal';
 import { BrochureModal } from '../dialogs/BrochureModal';
 import { SettingsModal } from '../dialogs/SettingsModal';
-import { ArrowLeft, Save, Plus, Trash2, ChevronLeft, ChevronRight, FileText, Check, AlertCircle, Map, Play, Share2, Printer, Palette, LayoutTemplate } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, ChevronLeft, ChevronRight, FileText, Check, AlertCircle, Map, Play, Share2, Printer, Palette, LayoutTemplate, Undo2, Redo2 } from 'lucide-react';
 
 export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void }> = ({ onBack, onPlay }) => {
-  const { story, updateStory, saveStatus, flushSave } = useStory();
+  const { story, updateStory, saveStatus, flushSave, undo, redo, canUndo, canRedo } = useStory();
   const [currentPageIndex, setCurrentPageIndex] = useState<number>(0);
   const [isMapStudioOpen, setIsMapStudioOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
@@ -34,7 +34,7 @@ export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void 
   const pages: Page[] = story.pages && story.pages.length > 0 ? story.pages : [{
     id: 'page-1', title: 'Page 1',
     layout: { format: story.format || 'a4-portrait', gridColumns: 6, gridRows: 8, marginMm: 15 },
-    blocks: [{ id: 'b1', type: 'title', x: 0, y: 0, w: 4, h: 1, data: { text: story.title, level: 1 } }],
+    blocks: [{ id: 'b1', type: 'title', x: 0, y: 0, w: story.hero?.enabled ? getGridDimensions(story.format || 'a4-portrait').cols : 4, h: 1, data: { text: story.title, level: 1 } }],
   }];
 
   const safeIndex = Math.min(Math.max(0, currentPageIndex), pages.length - 1);
@@ -118,6 +118,12 @@ export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void 
   };
 
   const activeHero = displayedPage.hero?.enabled ? displayedPage.hero : safeIndex === 0 && story.hero?.enabled ? story.hero : undefined;
+  const handleUpdateHero = (patch: Partial<NonNullable<typeof story.hero>>) => {
+    if (displayedPage.hero?.enabled) updateStory({ pages: pages.map((p, idx) => (idx === safeIndex ? { ...p, hero: { ...p.hero!, ...patch } } : p)) });
+    else if (story.hero) updateStory({ hero: { ...story.hero, ...patch } });
+  };
+  const tok = extractProjectThemeTokens(story);
+  const handleCornerStyleChange = (cornerStyle: 'rounded' | 'square') => updateStory({ themeTokens: { ...DEFAULT_THEME_TOKENS, ...tok, radiusPx: cornerStyle === 'square' ? 0 : 8 } });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--surface-2)' }}>
@@ -135,17 +141,20 @@ export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void 
             <span style={{ fontSize: '12px', fontWeight: 600, padding: '0 6px' }}>Page {safeIndex + 1} / {pages.length}</span>
             <button className="btn btn-ghost btn-icon" disabled={safeIndex >= pages.length - 1} onClick={() => setCurrentPageIndex((p) => Math.min(pages.length - 1, p + 1))}><ChevronRight size={16} /></button>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-3)', borderRadius: 'var(--r)', padding: '2px 4px', gap: '2px' }}>
+            <button type="button" className="btn btn-ghost btn-icon btn-xs" disabled={!canUndo} onClick={undo} title="Annuler le choix de case ou action (Ctrl+Z)"><Undo2 size={14} /></button>
+            <button type="button" className="btn btn-ghost btn-icon btn-xs" disabled={!canRedo} onClick={redo} title="Rétablir (Ctrl+Y)"><Redo2 size={14} /></button>
+          </div>
           <button className="btn btn-ghost" onClick={handleAddPage}><Plus size={14} /> <span>Page</span></button>
           {pages.length > 1 && <button className="btn btn-ghost btn-danger" onClick={handleDeletePage}><Trash2 size={14} /></button>}
           <select className="input" value={currentFormat} onChange={(e) => handleFormatChange(e.target.value as PageFormat)} style={{ height: '30px', fontSize: '12px', padding: '0 6px' }}>
-            <option value="a4-portrait">A4 Portrait</option>
-            <option value="a4-landscape">A4 Paysage</option>
-            <option value="screen-16-9">Écran 16:9</option>
-            <option value="responsive">Responsive</option>
+            <option value="a4-portrait">A4 Portrait</option><option value="a4-landscape">A4 Paysage</option><option value="screen-16-9">Écran 16:9</option><option value="responsive">Responsive</option>
           </select>
           <select className="input" value={pendingTemplateId || ''} onChange={(e) => setPendingTemplateId(e.target.value || null)} title="Prévisualiser un modèle de structure" style={{ height: '30px', fontSize: '12px', padding: '0 6px' }}>
-            <option value="">Structure libre</option>
-            {PAGE_STRUCTURAL_TEMPLATES.map((t) => <option key={t.id} value={t.id}>Modèle : {t.label}</option>)}
+            <option value="">Structure libre</option>{PAGE_STRUCTURAL_TEMPLATES.map((t) => <option key={t.id} value={t.id}>Modèle : {t.label}</option>)}
+          </select>
+          <select className="input" aria-label="Style des bords" value={tok.radiusPx === 0 ? 'square' : 'rounded'} onChange={(e) => handleCornerStyleChange(e.target.value as 'rounded' | 'square')} title="Choisir entre bords arrondis et bords carrés" style={{ height: '30px', fontSize: '12px', padding: '0 6px' }}>
+            <option value="rounded">Bords arrondis</option><option value="square">Bords carrés</option>
           </select>
           <button className="btn btn-ghost" onClick={() => setIsSettingsOpen(true)} title="Charte, Hero et Véhicules"><Palette size={14} color="var(--accent)" /> <span>Thème</span></button>
           <button className="btn btn-ghost" onClick={() => setIsMapStudioOpen(true)} title="Gérer les scènes cartographiques"><Map size={14} color="var(--accent)" /> <span>Cartes ({maps.length})</span></button>
@@ -163,10 +172,7 @@ export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void 
 
       {activePreview && (
         <div style={{ background: '#eff6ff', borderBottom: '1px solid #bfdbfe', padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: '#1e3a8a' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <LayoutTemplate size={15} />
-            Aperçu du modèle structurel ({activePreview.displacedCount} bloc(s) repositionné(s), {activePreview.preservedCount} bloc(s) conservé(s), 0 supprimé).
-          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><LayoutTemplate size={15} /> Aperçu du modèle structurel ({activePreview.displacedCount} bloc(s) repositionné(s), {activePreview.preservedCount} bloc(s) conservé(s), 0 supprimé).</span>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button type="button" className="btn btn-ghost btn-xs" onClick={() => setPendingTemplateId(null)}>Annuler l’aperçu</button>
             <button type="button" className="btn btn-primary btn-xs" onClick={applyPendingTemplate}>Appliquer la structure</button>
@@ -175,12 +181,7 @@ export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void 
       )}
 
       <main style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 16px' }}>
-        {activeHero && (
-          <div style={{ width: '100%', maxWidth: '794px' }}>
-            <HeroSection hero={activeHero} fallbackTitle={displayedPage.title || story.title} fallbackSubtitle={story.subtitle} fallbackLogo={story.brand?.logo} outputProfile="editor" />
-          </div>
-        )}
-        <PageGrid format={currentFormat} blocks={displayedPage.blocks || []} onChangeBlocks={handleUpdateCurrentBlocks} onOpenBinding={(b) => setBindingBlock(b)} story={story} page={displayedPage} mode={story.mode} outputProfile="editor" />
+        <PageGrid format={currentFormat} blocks={displayedPage.blocks || []} onChangeBlocks={handleUpdateCurrentBlocks} onOpenBinding={(b) => setBindingBlock(b)} story={story} page={displayedPage} hero={activeHero} onUpdateHero={handleUpdateHero} mode={story.mode} outputProfile="editor" />
       </main>
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />

@@ -7,11 +7,14 @@
 
 import assert from 'node:assert/strict';
 import { VEHICLE_CATALOG, getVehicleItem, renderSafeVehicleSvg, sanitizeCustomVehicleSvg } from '../src/core/vehicleCatalog.ts';
+import { buildSegmentPathCoords, expandRouteCoordsByStyle } from '../src/core/route.ts';
 import {
   computePathMetrics,
   interpolateAlongPath,
   slicePathByProgress,
   shortestDeltaLng,
+  computeAdaptiveFlightDurationMs,
+  computeReadableCruiseZoom,
 } from '../src/core/routeInterpolation.ts';
 import { createVehicleController, createTwoLevelVehicleDomElement } from '../src/core/vehicleController.ts';
 import { createCanonicalMode1Tour, createCanonicalMode2TerritorialDoc } from '../src/core/canonicalFixtures.ts';
@@ -74,18 +77,32 @@ assert.equal(shortestDeltaLng(179, -179), 2);
 const antiMetrics = computePathMetrics([[179, 0], [-179, 0]]);
 const antiMid = interpolateAlongPath(antiMetrics, 0.5);
 assert.ok(Math.abs(Math.abs(antiMid.coordinates[0]) - 180) < 1e-4, 'Milieu sur l’antiméridien ±180°');
-console.log('   -> Interpolation distance, doublons, longueur nulle et antiméridien : OK.');
+
+// Suivi fidèle des lignes droites vs incurvées (curved, airplane, ship)
+const straightSeg = buildSegmentPathCoords([2.35, 48.85], [5.37, 43.30], 'dashed');
+assert.equal(straightSeg.length, 2, 'Style droit : segment direct à 2 points');
+const curvedSeg = buildSegmentPathCoords([2.35, 48.85], [5.37, 43.30], 'curved');
+assert.ok(curvedSeg.length > 10, 'Style incurvé : arc subdivisé suivi par le véhicule');
+const expandedCurved = expandRouteCoordsByStyle([[2.35, 48.85], [4.83, 45.76], [5.37, 43.30]], 'airplane');
+const curvedMetrics = computePathMetrics(expandedCurved);
+const midCurvedSample = interpolateAlongPath(curvedMetrics, 0.5);
+assert.notEqual(midCurvedSample.bearing, interpolateAlongPath(curvedMetrics, 0.1).bearing, 'Le cap du véhicule évolue le long de la courbe');
+assert.ok(computeAdaptiveFlightDurationMs(35, 4) > computeAdaptiveFlightDurationMs(0.5, 4), 'La durée de vol s’adapte à la distance parcourue');
+assert.ok(computeReadableCruiseZoom(12, 12, 30, 0.5) < 7 && computeReadableCruiseZoom(12, 12, 30, 1) === 12, 'Le zoom de croisière dézoome à grande échelle pour garder la carte lisible');
+console.log('   -> Interpolation distance, vitesse/zoom adaptatifs, lignes droites/incurvées et antiméridien : OK.');
 
 // 3. Contrôleur de cycle de vie, pause d'onglet, interaction carte et prefers-reduced-motion (N4.07 -> N4.14)
 console.log('3. Test du contrôleur d’animation (play/pause/seek/visibilitychange/cameraFollow/reduced-motion)...');
 let cameraCalls = 0;
+let lastFollowedCenter = null;
 const ctrl = createVehicleController({
   coords: [[0, 0], [0, 4]],
-  config: { enabled: true, vehicle: 'train', durationSec: 2, loop: false, cameraFollow: true },
+  config: { enabled: true, vehicle: 'train', durationSec: 2, loop: false },
   prefersReducedMotion: false,
-  onCameraFollow: () => { cameraCalls++; },
+  onCameraFollow: (center) => { cameraCalls++; lastFollowedCenter = center; },
 });
 
+assert.equal(ctrl.isCameraFollowActive(), true, 'Suivi caméra centré sur le véhicule actif par défaut');
 assert.equal(ctrl.getState(), 'idle');
 ctrl.play();
 assert.equal(ctrl.getState(), 'playing');
@@ -94,6 +111,7 @@ const halfSample = ctrl.stepClock(1200);
 assert.ok(Math.abs(ctrl.getProgress() - 0.1) < 1e-3, 'Avancement temporel précis');
 assert.ok(halfSample.coordinates[1] > 0);
 assert.ok(cameraCalls > 0, 'Suivi caméra actif pendant la lecture');
+assert.deepEqual(lastFollowedCenter, halfSample.coordinates, 'La caméra est centrée exactement sur le véhicule à chaque pas');
 
 ctrl.notifyVisibilityChange(true);
 assert.equal(ctrl.getState(), 'paused', 'Mis en pause quand l’onglet devient caché');
@@ -152,7 +170,8 @@ console.log('5. Test des publications Mode 1, Mode 2 et représentation statique
 const m1 = createCanonicalMode1Tour();
 m1.routeAnimation = { enabled: true, vehicle: 'airplane', durationSec: 3 };
 const htmlM1 = generateStandaloneHTML(m1);
-assert.ok(htmlM1.includes('animateSegmentVehicle'), 'Mode 1 publié inclut l’animation du véhicule entre étapes');
+assert.ok(htmlM1.includes('animateSegmentVehicle') && htmlM1.includes('buildSegCoords'), 'Mode 1 publié inclut l’animation du véhicule sur tracés droits et incurvés');
+assert.ok(htmlM1.includes('autoplayTimer'), 'Mode 1 publié déclenche le départ du véhicule à la fin du temps imparti');
 assert.ok(htmlM1.includes('vehicle-marker-wrap') && htmlM1.includes('vehicle-marker-icon'));
 
 const m2 = createCanonicalMode2TerritorialDoc();

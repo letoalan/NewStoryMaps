@@ -8,6 +8,7 @@ import { StoryFont, RouteLineStyle, MarkerShape } from '../../types/story';
 import { VehicleType } from '../../types/theme';
 import { DEFAULT_THEME_TOKENS, extractProjectThemeTokens, measureColorContrast } from '../../core/themeResolver';
 import { VEHICLE_CATALOG } from '../../core/vehicleCatalog';
+import { parseVideoEmbedUrl, cleanGoogleRedirectUrl } from '../../core/videoEmbed';
 import { X, Settings, Palette, Image, Navigation, RotateCcw, AlertTriangle } from 'lucide-react';
 
 const FONTS: StoryFont[] = ['Inter', 'Lora', 'Merriweather', 'Roboto', 'Cinzel'];
@@ -21,19 +22,25 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
   const app = story.appearance;
   const tok = extractProjectThemeTokens(story);
   const hero = story.hero || {
-    enabled: false, mediaType: 'photo', backgroundColor: '#0f172a', veilColor: '#0f172a', veilOpacity: 0.45,
+    enabled: false, mediaType: 'photo', backgroundColor: tok.primaryColor || '#0f172a', veilColor: tok.primaryColor || '#0f172a', veilOpacity: 0.45,
     veilStyle: 'gradient', fit: 'cover', focalPoint: { x: 50, y: 50 }, contentAlign: 'center', heightPreset: 'medium',
   };
   const routeAnim = story.routeAnimation || {
-    enabled: false, vehicle: 'none', durationSec: 4, loop: true, orientToRoute: true, progressiveTrail: true,
+    enabled: false, vehicle: 'none', durationSec: 4, loop: true, orientToRoute: true, progressiveTrail: true, cameraFollow: true,
   };
   const contrastRatio = measureColorContrast(tok.textColor, tok.surfaceBackground);
 
   const updateTheme = (patch: Partial<typeof tok>, logoUrl?: string) => {
     const nextTok = { ...tok, ...patch };
     const nextAccent = nextTok.accentColor || nextTok.primaryColor;
+    const nextHero = story.hero ? {
+      ...story.hero,
+      veilColor: (!story.hero.veilColor || story.hero.veilColor === '#0f172a' || story.hero.veilColor === tok.primaryColor) ? nextTok.primaryColor : story.hero.veilColor,
+      backgroundColor: nextTok.primaryColor,
+    } : undefined;
     updateStory({
       themeTokens: nextTok,
+      ...(nextHero ? { hero: nextHero } : {}),
       brand: { primaryColor: nextTok.primaryColor, secondaryColor: nextTok.secondaryColor, fontTitle: nextTok.headingFont, fontBody: nextTok.bodyFont, logo: logoUrl !== undefined ? logoUrl : story.brand?.logo },
       appearance: { ...app, accentColor: nextAccent, font: (nextTok.bodyFont as StoryFont) || app.font, headingFont: nextTok.headingFont, bodyFont: nextTok.bodyFont, panelBackground: nextTok.surfaceBackground, textColor: nextTok.textColor },
     });
@@ -92,6 +99,13 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
                 <div><label style={{ fontWeight: 600 }}>Bordure ({tok.borderWidthPx}px)</label><input type="range" min={0} max={6} step={1} value={tok.borderWidthPx} onChange={(e) => updateTheme({ borderWidthPx: Number(e.target.value) })} style={{ width: '100%' }} /></div>
                 <div><label style={{ fontWeight: 600 }}>Rayon ({tok.radiusPx}px)</label><input type="range" min={0} max={24} step={2} value={tok.radiusPx} onChange={(e) => updateTheme({ radiusPx: Number(e.target.value) })} style={{ width: '100%' }} /></div>
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                <span style={{ fontWeight: 600 }}>Forme des bords des blocs (Page web & Brochure) :</span>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button type="button" className={`btn btn-xs ${tok.radiusPx > 0 ? 'btn-primary' : 'btn-ghost'}`} style={{ border: '1px solid var(--border)' }} onClick={() => updateTheme({ radiusPx: tok.radiusPx > 0 ? tok.radiusPx : 8 })}>Bords arrondis ({tok.radiusPx > 0 ? tok.radiusPx : 8}px)</button>
+                  <button type="button" className={`btn btn-xs ${tok.radiusPx === 0 ? 'btn-primary' : 'btn-ghost'}`} style={{ border: '1px solid var(--border)' }} onClick={() => updateTheme({ radiusPx: 0 })}>Bords carrés (0px)</button>
+                </div>
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: '6px', background: contrastRatio < 4.5 ? '#fef3c7' : '#f0fdf4', color: contrastRatio < 4.5 ? '#92400e' : '#166534' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>{contrastRatio < 4.5 && <AlertTriangle size={14} />} Contraste : <strong>{contrastRatio}:1</strong> {contrastRatio < 4.5 ? '(Avertissement WCAG < 4.5)' : '(Conforme WCAG AA)'}</span>
                 <button type="button" className="btn btn-ghost btn-xs" onClick={() => updateTheme(DEFAULT_THEME_TOKENS, '')}><RotateCcw size={12} /> <span>Réinitialiser</span></button>
@@ -119,13 +133,23 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
                   </select>
                 </div>
               </div>
-              <div><label style={{ fontWeight: 600 }}>URL du média (Photo ou Vidéo MP4/WebM)</label><input type="text" className="input" value={hero.mediaUrl || ''} onChange={(e) => updateStory({ hero: { ...hero, mediaUrl: e.target.value } })} placeholder="https://..." /></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '8px', alignItems: 'end' }}>
+                <div><label style={{ fontWeight: 600 }}>URL du média (YouTube, Vimeo ou vidéo MP4)</label><input type="text" className="input" value={hero.mediaUrl || ''} onChange={(e) => { const c = cleanGoogleRedirectUrl(e.target.value); const p = parseVideoEmbedUrl(c); updateStory({ hero: { ...hero, mediaUrl: c, mediaType: p.isEmbed || /\.(mp4|webm|ogg|mov)$/i.test(c) ? 'video' : hero.mediaType } }); }} placeholder="https://youtu.be/... ou https://..." /></div>
+                <div><label style={{ fontWeight: 600 }}>Ou importer un fichier</label><input type="file" accept="image/*,video/mp4,video/webm,video/ogg" onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const isVid = (f.type && f.type.startsWith('video/')) || /\.(mp4|webm|ogg|mov|m4v)$/i.test(f.name); const r = new FileReader(); r.onload = () => updateStory({ hero: { ...hero, enabled: true, mediaType: isVid ? 'video' : 'photo', mediaUrl: String(r.result || '') } }); r.readAsDataURL(f); }} style={{ fontSize: '10.5px' }} /></div>
+              </div>
               {hero.mediaType === 'video' && (
-                <div><label style={{ fontWeight: 600 }}>Image de repli obligatoire pour l’impression (posterUrl)</label><input type="text" className="input" value={hero.posterUrl || ''} onChange={(e) => updateStory({ hero: { ...hero, posterUrl: e.target.value } })} placeholder="URL poster pour brochure A4" /></div>
+                <div><label style={{ fontWeight: 600 }}>Image de repli obligatoire pour l’impression (posterUrl)</label><input type="text" className="input" value={hero.posterUrl || ''} onChange={(e) => updateStory({ hero: { ...hero, posterUrl: cleanGoogleRedirectUrl(e.target.value) } })} placeholder="URL image poster pour brochure A4" /></div>
               )}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div><label style={{ fontWeight: 600 }}>Opacité du voile ({Math.round((hero.veilOpacity ?? 0.45) * 100)}%)</label><input type="range" min={0} max={0.9} step={0.05} value={hero.veilOpacity ?? 0.45} onChange={(e) => updateStory({ hero: { ...hero, veilOpacity: Number(e.target.value) } })} style={{ width: '100%' }} /></div>
-                <div><label style={{ fontWeight: 600 }}>Crédit / Source du média</label><input type="text" className="input" value={hero.credit || ''} onChange={(e) => updateStory({ hero: { ...hero, credit: e.target.value } })} placeholder="© Source" /></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '8px', alignItems: 'end' }}>
+                <div>
+                  <label style={{ fontWeight: 600 }}>Voile (Charte)</label>
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                    <input type="color" value={hero.veilColor || tok.primaryColor} onChange={(e) => updateStory({ hero: { ...hero, veilColor: e.target.value } })} style={{ height: '28px', width: '38px', padding: 0 }} />
+                    <button type="button" className="btn btn-ghost btn-xs" onClick={() => updateStory({ hero: { ...hero, veilColor: tok.primaryColor } })}>Charte</button>
+                  </div>
+                </div>
+                <div><label style={{ fontWeight: 600 }}>Opacité ({Math.round((hero.veilOpacity ?? 0.45) * 100)}%)</label><input type="range" min={0} max={0.9} step={0.05} value={hero.veilOpacity ?? 0.45} onChange={(e) => updateStory({ hero: { ...hero, veilOpacity: Number(e.target.value) } })} style={{ width: '100%' }} /></div>
+                <div><label style={{ fontWeight: 600 }}>Crédit / Source</label><input type="text" className="input" value={hero.credit || ''} onChange={(e) => updateStory({ hero: { ...hero, credit: e.target.value } })} placeholder="© Source" /></div>
               </div>
             </>
           )}
@@ -147,27 +171,12 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div>
-                  <label style={{ fontWeight: 600 }}>Véhicule animé sur les parcours</label>
-                  <select className="select" style={{ width: '100%' }} value={routeAnim.vehicle} onChange={(e) => { const v = e.target.value as VehicleType; updateStory({ routeAnimation: { ...routeAnim, vehicle: v, enabled: v !== 'none' } }); }}>
-                    {VEHICLE_CATALOG.map((v) => <option key={v.id} value={v.id}>{v.emoji} {v.label}</option>)}
-                  </select>
-                </div>
+                <div><label style={{ fontWeight: 600 }}>Véhicule animé sur les parcours</label><select className="select" style={{ width: '100%' }} value={routeAnim.vehicle} onChange={(e) => { const v = e.target.value as VehicleType; updateStory({ routeAnimation: { ...routeAnim, vehicle: v, enabled: v !== 'none', cameraFollow: routeAnim.cameraFollow !== false } }); }}>{VEHICLE_CATALOG.map((v) => <option key={v.id} value={v.id}>{v.emoji} {v.label}</option>)}</select></div>
                 <div><label style={{ fontWeight: 600 }}>Durée ({routeAnim.durationSec || 4} s)</label><input type="range" min={1} max={15} step={0.5} value={routeAnim.durationSec || 4} onChange={(e) => updateStory({ routeAnimation: { ...routeAnim, durationSec: Number(e.target.value) } })} style={{ width: '100%' }} /></div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div>
-                  <label style={{ fontWeight: 600 }}>Disposition du volet (Mode 1)</label>
-                  <select className="select" style={{ width: '100%' }} value={app.panelPosition} onChange={(e) => updateStory({ appearance: { ...app, panelPosition: e.target.value as 'left' | 'right' | 'center' } })}>
-                    <option value="left">Volet à gauche</option><option value="right">Volet à droite</option><option value="center">Carte centrée basse</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontWeight: 600 }}>Intervalle lecture auto</label>
-                  <select className="select" style={{ width: '100%' }} value={app.autoplayInterval || 5000} onChange={(e) => updateStory({ appearance: { ...app, autoplayInterval: Number(e.target.value) } })}>
-                    <option value={3000}>3 s</option><option value={5000}>5 s</option><option value={8000}>8 s</option>
-                  </select>
-                </div>
+                <div><label style={{ fontWeight: 600 }}>Disposition volet (Mode 1)</label><select className="select" style={{ width: '100%' }} value={app.panelPosition} onChange={(e) => updateStory({ appearance: { ...app, panelPosition: e.target.value as 'left' | 'right' | 'center' } })}><option value="left">Volet gauche</option><option value="right">Volet droite</option><option value="center">Carte basse</option></select></div>
+                <div><label style={{ fontWeight: 600 }}>Intervalle lecture auto</label><select className="select" style={{ width: '100%' }} value={app.autoplayInterval || 5000} onChange={(e) => updateStory({ appearance: { ...app, autoplayInterval: Number(e.target.value) } })}><option value={3000}>3 s</option><option value={5000}>5 s</option><option value={8000}>8 s</option></select></div>
               </div>
             </>
           )}

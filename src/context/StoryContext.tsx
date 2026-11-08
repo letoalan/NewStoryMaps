@@ -5,11 +5,12 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { StoryMap } from '../types/story';
 import { Step } from '../types/step';
-import { ProjectBrand, ProjectMode } from '../types/project';
 import { PageFormat } from '../types/grid';
-import { SaveStatus, StoryContextType } from '../types/context';
+import { SaveStatus, StoryContextType, CreateStoryOptions } from '../types/context';
 import { db } from '../core/db';
 import { createDefaultStory } from '../core/defaults';
+import { PAGE_STRUCTURAL_TEMPLATES } from '../core/layoutTemplates';
+import { getGridDimensions } from '../core/grid';
 import { useStoryShortcuts } from './useStoryShortcuts';
 import { performAddStep, performDeleteStep, performUpdateStep, performReorderSteps } from './stepOperations';
 
@@ -111,7 +112,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSaveStatus('saved'); setLastSaveError(null);
   };
 
-  const newStory = async (opts?: string | { title?: string; mode?: ProjectMode; format?: PageFormat; brand?: ProjectBrand }) => {
+  const newStory = async (opts?: string | CreateStoryOptions) => {
     await flushSave();
     const created = createDefaultStory();
     if (typeof opts === 'string') {
@@ -120,9 +121,21 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (opts.title) created.title = opts.title;
       if (opts.mode) created.mode = opts.mode;
       if (opts.brand) created.brand = opts.brand;
-      if (opts.format) {
-        created.format = opts.format;
-        if (created.pages?.[0]?.layout) created.pages[0].layout.format = opts.format;
+      if (opts.themeTokens) created.themeTokens = opts.themeTokens;
+      if (opts.hero) created.hero = opts.hero;
+      if (opts.routeAnimation) created.routeAnimation = opts.routeAnimation;
+      const fmt: PageFormat = opts.format || 'a4-portrait';
+      created.format = fmt;
+      if (opts.mode === 'rich-document' || opts.mode === 'brochure') {
+        const dims = getGridDimensions(fmt);
+        const tpl = opts.templateId ? PAGE_STRUCTURAL_TEMPLATES.find((t) => t.id === opts.templateId) : undefined;
+        const blocks = tpl
+          ? tpl.slots.map((s, idx) => {
+              const bType = (s.preferredTypes[0] || 'text') as any;
+              return { id: `b-${idx + 1}`, type: bType, x: s.x, y: s.y, w: s.w, h: s.h, data: bType === 'title' ? { text: created.title, level: 1 } : { text: '' } };
+            })
+          : [{ id: 'b1', type: 'title' as const, x: 0, y: 0, w: opts.hero?.enabled ? dims.cols : Math.min(dims.cols, 4), h: 1, data: { text: created.title, level: 1 } }];
+        created.pages = [{ id: 'page-1', title: 'Page 1', hero: opts.hero?.enabled ? opts.hero : undefined, layout: { format: fmt, gridColumns: dims.cols, gridRows: dims.rows, marginMm: dims.marginMm }, blocks }];
       }
     }
     historyRef.current = []; futureRef.current = [];

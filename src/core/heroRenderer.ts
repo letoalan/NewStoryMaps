@@ -11,6 +11,7 @@
 import type { HeroConfig, OutputProfile } from '../types/theme';
 import { escapeAttr, sanitizeHTML, sanitizeSafeUrl } from './sanitize';
 import { hexToRgba } from './themeResolver';
+import { parseVideoEmbedUrl } from './videoEmbed';
 
 export interface ResolvedHeroRenderState {
   enabled: boolean;
@@ -32,6 +33,8 @@ export interface ResolvedHeroRenderState {
   muted: boolean;
 }
 
+export const DEFAULT_HERO_PHOTO = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="450" viewBox="0 0 1200 450"><defs><linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0f172a"/><stop offset="55%" stop-color="#0369a1"/><stop offset="100%" stop-color="#0284c7"/></linearGradient></defs><rect width="1200" height="450" fill="url(#sky)"/><circle cx="960" cy="120" r="56" fill="#fde047" fill-opacity="0.88"/><path d="M0 340 L260 190 L510 310 L790 155 L1050 285 L1200 220 L1200 450 L0 450 Z" fill="#1e293b" fill-opacity="0.65"/><path d="M0 375 L340 240 L640 355 L930 215 L1200 330 L1200 450 L0 450 Z" fill="#0f172a" fill-opacity="0.85"/></svg>');
+
 const HEIGHT_CSS: Record<string, string> = {
   compact: '220px',
   medium: '340px',
@@ -48,7 +51,8 @@ export function resolveHeroRenderState(
   fallbackSubtitle = '',
   fallbackLogo = '',
   outputProfile: OutputProfile = 'web-interactive',
-  prefersReducedMotion = false
+  prefersReducedMotion = false,
+  charterColor?: string
 ): ResolvedHeroRenderState {
   if (!hero || !hero.enabled || hero.mediaType === 'none') {
     return {
@@ -83,7 +87,7 @@ export function resolveHeroRenderState(
   const fy = Math.max(0, Math.min(100, rawFy));
   const objectPositionCss = `${fx}% ${fy}%`;
 
-  const vColor = hero.veilColor || '#0f172a';
+  const vColor = (hero.veilColor && hero.veilColor !== '#0f172a' ? hero.veilColor : charterColor) || hero.veilColor || '#0f172a';
   const vOpacity = Math.max(0, Math.min(1, hero.veilOpacity ?? 0.45));
   let veilCss = 'none';
   if (hero.veilStyle === 'solid') {
@@ -134,9 +138,10 @@ export function renderPublishedHeroHTML(
   fallbackSubtitle = '',
   fallbackLogo = '',
   outputProfile: OutputProfile = 'web-interactive',
-  idSuffix = 'project'
+  idSuffix = 'project',
+  charterColor?: string
 ): string {
-  const state = resolveHeroRenderState(hero, fallbackTitle, fallbackSubtitle, fallbackLogo, outputProfile, false);
+  const state = resolveHeroRenderState(hero, fallbackTitle, fallbackSubtitle, fallbackLogo, outputProfile, false, charterColor);
   if (!state.enabled) return '';
 
   const safeId = escapeAttr(idSuffix);
@@ -144,8 +149,13 @@ export function renderPublishedHeroHTML(
 
   let mediaMarkup = '';
   if (state.renderMode === 'video' && state.mediaUrl) {
-    mediaMarkup = `<video class="hero-video" id="hero-video-${safeId}" src="${escapeAttr(state.mediaUrl)}" ${state.posterUrl ? `poster="${escapeAttr(state.posterUrl)}"` : ''} ${state.autoplay ? 'autoplay' : ''} ${state.loop ? 'loop' : ''} muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:${state.fit};object-position:${state.objectPositionCss};z-index:1;"></video>
+    const parsed = parseVideoEmbedUrl(state.mediaUrl);
+    if (parsed.isEmbed) {
+      mediaMarkup = `<iframe class="hero-video hero-iframe" src="${escapeAttr(parsed.embedUrl)}" allow="autoplay; fullscreen; picture-in-picture" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:max(100%,178vh);height:max(100%,56.25vw,540px);min-width:100%;min-height:100%;border:none;pointer-events:none;z-index:1;"></iframe>`;
+    } else {
+      mediaMarkup = `<video class="hero-video" id="hero-video-${safeId}" src="${escapeAttr(state.mediaUrl)}" ${state.posterUrl ? `poster="${escapeAttr(state.posterUrl)}"` : ''} ${state.autoplay ? 'autoplay' : ''} ${state.loop ? 'loop' : ''} muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:${state.fit};object-position:${state.objectPositionCss};z-index:1;"></video>
     <button type="button" class="hero-video-toggle no-print" data-action="toggle-hero-video" data-video-id="hero-video-${safeId}" aria-label="Lecture ou pause de la vidéo de couverture" style="position:absolute;bottom:10px;left:12px;z-index:4;background:rgba(15,23,42,0.78);color:#fff;border:1px solid rgba(255,255,255,0.25);border-radius:999px;padding:4px 10px;font-size:11px;cursor:pointer;">Pause vidéo</button>`;
+    }
   } else {
     const imgSrc = state.renderMode === 'static-poster' ? state.posterUrl || state.mediaUrl : state.mediaUrl || state.posterUrl;
     if (imgSrc) {

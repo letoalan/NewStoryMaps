@@ -4,15 +4,17 @@
 
 import React, { useState } from 'react';
 import { Block } from '../../../types/project';
+import { ResolvedVisualStyle } from '../../../types/theme';
 import { Image as ImageIcon, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 
 interface MediaBlockProps {
   block: Block;
   onChange: (patch: Record<string, unknown>) => void;
   isEditable?: boolean;
+  visualStyle?: ResolvedVisualStyle;
 }
 
-export const MediaBlock: React.FC<MediaBlockProps> = ({ block, onChange, isEditable = true }) => {
+export const MediaBlock: React.FC<MediaBlockProps> = ({ block, onChange, isEditable = true, visualStyle }) => {
   const [activeIdx, setActiveIdx] = useState(0);
   const rawItems = Array.isArray(block.data.items) ? (block.data.items as Array<{ url: string; caption?: string }>) : [];
   const rawImages = Array.isArray(block.data.images) ? (block.data.images as string[]) : [];
@@ -44,12 +46,14 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({ block, onChange, isEdita
 
   const currentImg = images[activeIdx] || images[0];
 
+  const radiusCss = visualStyle?.radiusCss ?? 'var(--r)';
+
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', borderRadius: 'var(--r)' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', borderRadius: radiusCss }}>
       {isContactSheet ? (
         <div style={{ flex: 1, display: 'grid', gridTemplateColumns: `repeat(${Math.min(3, Math.max(1, contactItems.length))}, 1fr)`, gap: '6px', padding: '6px', overflow: 'auto', background: 'var(--surface-2)' }}>
           {contactItems.map((item, idx) => (
-            <figure key={idx} style={{ margin: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface)', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+            <figure key={idx} style={{ margin: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface)', borderRadius: radiusCss, overflow: 'hidden', border: '1px solid var(--border)' }}>
               <img src={item.url} alt={item.caption || `Vue ${idx + 1}`} style={{ width: '100%', height: '84px', objectFit: 'cover', display: 'block' }} />
               <figcaption style={{ fontSize: '10px', padding: '3px 6px', color: 'var(--text-2)' }}>
                 {item.caption || `Photo ${idx + 1}`}
@@ -94,7 +98,7 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({ block, onChange, isEdita
           )}
         </div>
       ) : (
-        <div style={{ flex: 1, display: 'grid', placeItems: 'center', background: 'var(--surface-3)', border: '1px dashed var(--border)', borderRadius: 'var(--r)' }}>
+        <div style={{ flex: 1, display: 'grid', placeItems: 'center', background: 'var(--surface-3)', border: '1px dashed var(--border)', borderRadius: radiusCss }}>
           <div style={{ textAlign: 'center', color: 'var(--text-3)' }}>
             <ImageIcon size={32} opacity={0.5} style={{ margin: '0 auto 6px' }} />
             <div style={{ fontSize: '12px' }}>{block.type === 'gallery' ? 'Galerie vide' : 'Image vide'}</div>
@@ -103,19 +107,18 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({ block, onChange, isEdita
       )}
 
       {isEditable && (
-        <div style={{ padding: '6px 8px', background: 'var(--surface-2)', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <label className="btn btn-ghost btn-xs" style={{ cursor: 'pointer' }}>
+        <div style={{ padding: '4px 6px', background: 'rgba(15, 23, 42, 0.08)', borderTop: '1px solid rgba(148, 163, 184, 0.25)', display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <label className="btn btn-ghost btn-xs" style={{ cursor: 'pointer', color: visualStyle?.textColor || 'inherit' }}>
             <Upload size={12} />
             <span>{images.length > 0 ? (block.type === 'gallery' ? 'Ajouter photo' : 'Remplacer') : 'Choisir image'}</span>
             <input type="file" accept="image/*" onChange={handleAddImage} style={{ display: 'none' }} />
           </label>
           <input
             type="text"
-            className="input"
             value={caption}
             placeholder="Légende de la photo…"
             onChange={(e) => onChange({ caption: e.target.value })}
-            style={{ flex: 1, fontSize: '11px', height: '24px' }}
+            style={{ flex: 1, fontSize: '11px', height: '22px', background: 'rgba(255,255,255,0.2)', color: visualStyle?.textColor || 'inherit', border: '1px solid rgba(148,163,184,0.35)', borderRadius: '4px', padding: '0 6px', outline: 'none' }}
           />
         </div>
       )}

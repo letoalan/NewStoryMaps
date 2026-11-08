@@ -37,6 +37,7 @@ export function createVehicleController(options: VehicleControllerOptions): Vehi
   const metrics: PathMetrics = computePathMetrics(options.coords);
   const durationMs = Math.max(200, (options.config.durationSec || 4) * 1000);
   const staticOnly = Boolean(options.prefersReducedMotion || options.isStaticPrint);
+  const shouldFollow = options.config.cameraFollow !== false && options.config.followCamera !== false;
 
   let state: VehiclePlaybackState = 'idle';
   let progress = staticOnly ? 1 : 0;
@@ -48,7 +49,7 @@ export function createVehicleController(options: VehicleControllerOptions): Vehi
   const emitSample = (): PathSamplePoint => {
     const sample = interpolateAlongPath(metrics, progress);
     options.onSample?.(sample, state);
-    if (state === 'playing' && options.config.cameraFollow && !cameraFollowSuspended && !staticOnly) {
+    if (state === 'playing' && shouldFollow && !cameraFollowSuspended && !staticOnly) {
       options.onCameraFollow?.(sample.coordinates, sample.bearing);
     }
     return sample;
@@ -130,7 +131,7 @@ export function createVehicleController(options: VehicleControllerOptions): Vehi
     getState: () => state,
     getProgress: () => progress,
     getCurrentSample: () => interpolateAlongPath(metrics, progress),
-    isCameraFollowActive: () => Boolean(options.config.cameraFollow && !cameraFollowSuspended && !staticOnly),
+    isCameraFollowActive: () => Boolean(shouldFollow && !cameraFollowSuspended && !staticOnly),
     play, pause, replay, seek, stop, notifyUserMapInteraction, notifyVisibilityChange, stepClock, destroy,
   };
 }

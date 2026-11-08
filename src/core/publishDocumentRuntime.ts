@@ -10,40 +10,53 @@ const mapInstances = {}, vehicleTimers = {};
 const RAST_SAT = { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }] };
 const RAST_HYB = { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 }, labels: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }, { id: 'labels', type: 'raster', source: 'labels' }] };
 function resolveStyle(s) {
-    if (!s || s === 'positron') return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
-    if (s === 'voyager') return 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+    if (!s || s === 'positron' || s === 'voyager') return 'https://basemaps.cartocdn.com/gl/' + (s || 'positron') + '-gl-style/style.json';
     if (s === 'dark-matter' || s === 'dark') return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
     if (s === 'liberty' || s === 'bright' || s === 'fiord') return 'https://tiles.openfreemap.org/styles/' + s;
     if (s === 'ofm-positron' || s === 'ofm-dark') return 'https://tiles.openfreemap.org/styles/' + s.slice(4);
-    if (s === 'satellite' || s === 'esri-satellite') return RAST_SAT;
-    if (s === 'hybrid' || s === 'esri-hybrid') return RAST_HYB;
-    return /^(https?:|data:|\\/)/.test(s) ? s : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+    return (s === 'satellite' || s === 'esri-satellite') ? RAST_SAT : (s === 'hybrid' || s === 'esri-hybrid') ? RAST_HYB : /^(https?:|data:|\\/)/.test(s) ? s : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 }
 function featCenter(f) {
     const c = f && f.coordinates;
     if (!Array.isArray(c) || !c.length) return null;
     return f.geometryType === 'Point' ? [c[0], c[1]] : f.geometryType === 'LineString' ? c[Math.floor(c.length / 2)] : (f.geometryType === 'Polygon' && Array.isArray(c[0]) && c[0].length) ? c[0][0] : null;
 }
-function attachLineVehicle(map, elId, coords, animCfg, col) {
+function expandLineCoords(base) {
+    const rStyle = (storyData.appearance && storyData.appearance.routeStyle) || 'dashed';
+    if (!Array.isArray(base) || base.length < 2 || (rStyle !== 'curved' && rStyle !== 'airplane' && rStyle !== 'ship')) return base || [];
+    const out = [];
+    for (let k = 0; k < base.length - 1; k++) {
+        const p1 = base[k], p2 = base[k + 1], dLng = p2[0] - p1[0], dLat = p2[1] - p1[1];
+        if (Math.hypot(dLng, dLat) < 0.001) { if (k === 0) out.push(p1); out.push(p2); continue; }
+        const cLng = (p1[0] + p2[0]) / 2 - dLat * 0.18, cLat = (p1[1] + p2[1]) / 2 + dLng * 0.18;
+        for (let i = (k === 0 ? 0 : 1); i <= 16; i++) { const t = i / 16, u = 1 - t; out.push([u * u * p1[0] + 2 * u * t * cLng + t * t * p2[0], u * u * p1[1] + 2 * u * t * cLat + t * t * p2[1]]); }
+    }
+    return out;
+}
+function attachLineVehicle(map, elId, rawCoords, animCfg, col) {
+    const coords = expandLineCoords(rawCoords);
     if (!animCfg || !animCfg.enabled || animCfg.vehicle === 'none' || !Array.isArray(coords) || coords.length < 2) return;
-    const wrap = document.createElement('div'); wrap.className = 'vehicle-marker-wrap';
-    wrap.style.cssText = 'width:26px;height:26px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:20;';
-    const icon = document.createElement('div'); icon.className = 'vehicle-marker-icon';
-    icon.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;transform-origin:center center;';
+    const wrap = document.createElement('div'); wrap.className = 'vehicle-marker-wrap'; wrap.style.cssText = 'width:26px;height:26px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:20;';
+    const icon = document.createElement('div'); icon.className = 'vehicle-marker-icon'; icon.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;transform-origin:center center;';
+    const initBrg = (Math.atan2(coords[1][0] - coords[0][0], coords[1][1] - coords[0][1]) * 180 / Math.PI + 360) % 360;
+    icon.style.transform = 'rotate(' + initBrg.toFixed(1) + 'deg)';
     icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="' + col + '" stroke="#fff" stroke-width="1.5"><path d="M12 2L16 10H14V18H10V10H8L12 2Z"/></svg>';
     wrap.appendChild(icon);
     const mk = new maplibregl.Marker({ element: wrap }).setLngLat(reducedMotion ? coords[coords.length - 1] : coords[0]).addTo(map);
     if (reducedMotion) return;
-    let t = 0; const dur = Math.max(1000, (animCfg.durationSec || 4) * 1000);
+    let userPausedFollow = false; map.on('dragstart', () => { userPausedFollow = true; }); map.on('zoomstart', () => { userPausedFollow = true; });
+    const baseZ = (map.getZoom && map.getZoom()) || 11, first = coords[0], last = coords[coords.length - 1];
+    const distDeg = Math.hypot(last[0] - first[0], last[1] - first[1]), idealMidZ = Math.max(2.2, Math.min(13.5, 8.8 - Math.log2(distDeg + 0.15) * 1.35)), midZ = Math.min(baseZ, idealMidZ);
+    if (animCfg.cameraFollow !== false && map.jumpTo) map.jumpTo({ center: coords[0], zoom: baseZ });
+    let t = 0; const baseMs = Math.max(1000, (animCfg.durationSec || 4) * 1000), dur = Math.round(Math.min(12000, Math.max(1200, baseMs * Math.min(2.6, Math.max(0.55, 0.55 + Math.log1p(distDeg) * 0.42)))));
     vehicleTimers[elId] = setInterval(() => {
         if (document.hidden) return;
-        t = (t + 50) % dur;
-        const p = t / dur, idx = Math.min(coords.length - 2, Math.floor(p * (coords.length - 1))), lt = (p * (coords.length - 1)) - idx;
-        const a = coords[idx], b = coords[idx + 1];
-        const ang = (Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI + 360) % 360;
-        mk.setLngLat([a[0] + (b[0] - a[0]) * lt, a[1] + (b[1] - a[1]) * lt]);
-        icon.style.transform = 'rotate(' + ang.toFixed(1) + 'deg)';
-    }, 50);
+        t = (t + 40) % dur; const p = t / dur, idx = Math.min(coords.length - 2, Math.floor(p * (coords.length - 1))), lt = (p * (coords.length - 1)) - idx;
+        const a = coords[idx], b = coords[idx + 1], ang = (Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI + 360) % 360;
+        const curPos = [a[0] + (b[0] - a[0]) * lt, a[1] + (b[1] - a[1]) * lt], curZ = distDeg > 0.05 ? baseZ - Math.max(0, baseZ - midZ) * Math.sin(p * Math.PI) : baseZ;
+        mk.setLngLat(curPos); icon.style.transform = 'rotate(' + ang.toFixed(1) + 'deg)';
+        if (animCfg.cameraFollow !== false && !userPausedFollow && map.jumpTo) map.jumpTo({ center: curPos, zoom: curZ });
+    }, 40);
 }
 function initDocMaps() {
     const maps = storyData.maps || [];
@@ -53,10 +66,7 @@ function initDocMaps() {
         const scene = mapId ? maps.find(m => m.id === mapId) : maps[0];
         if (typeof maplibregl === 'undefined' || !scene) {
             const fb = document.getElementById(el.id.replace('doc-map-', 'doc-map-fb-'));
-            if (fb) {
-                fb.style.display = 'flex';
-                if (!scene && mapId) { const p = fb.querySelector('p'); if (p) p.textContent = 'Scène cartographique "' + mapId + '" introuvable'; }
-            }
+            if (fb) { fb.style.display = 'flex'; if (!scene && mapId) { const p = fb.querySelector('p'); if (p) p.textContent = 'Scène cartographique "' + mapId + '" introuvable'; } }
             return;
         }
         const v = scene.view || { center: [2.3522, 48.8566], zoom: 11, pitch: 0, bearing: 0 };
@@ -68,7 +78,8 @@ function initDocMaps() {
                 if (!l.visible) return;
                 (l.features || []).forEach(f => {
                     const col = (targetFeatId && f.id === targetFeatId) ? '#e11d48' : (f.color || l.color || '${safeAccent}');
-                    feats.push({ type: 'Feature', id: f.id, geometry: { type: f.geometryType, coordinates: f.coordinates }, properties: { id: f.id, color: col } });
+                    const fCoords = f.geometryType === 'LineString' ? expandLineCoords(f.coordinates) : f.coordinates;
+                    feats.push({ type: 'Feature', id: f.id, geometry: { type: f.geometryType, coordinates: fCoords }, properties: { id: f.id, color: col } });
                     const pt = featCenter(f);
                     if (pt) {
                         const wrap = document.createElement('div'); wrap.className = 'doc-map-marker-wrap'; wrap.setAttribute('data-feat-id', f.id);
@@ -117,12 +128,10 @@ function triggerNarrativeBinding(mapId, featId, action) {
             try {
                 const isReset = (el.getAttribute('data-active-filter') === featId);
                 if (isReset || !targetFeat) {
-                    el.removeAttribute('data-active-filter');
-                    m.setFilter('scene-lines-layer', ['!=', ['geometry-type'], 'Point']); m.setFilter('scene-polygons-fill', ['==', ['geometry-type'], 'Polygon']);
+                    el.removeAttribute('data-active-filter'); m.setFilter('scene-lines-layer', ['!=', ['geometry-type'], 'Point']); m.setFilter('scene-polygons-fill', ['==', ['geometry-type'], 'Polygon']);
                     el.querySelectorAll('.doc-map-marker-wrap').forEach(w => { w.style.display = 'flex'; });
                 } else {
-                    el.setAttribute('data-active-filter', featId);
-                    m.setFilter('scene-lines-layer', ['==', ['get', 'id'], featId]); m.setFilter('scene-polygons-fill', ['==', ['get', 'id'], featId]);
+                    el.setAttribute('data-active-filter', featId); m.setFilter('scene-lines-layer', ['==', ['get', 'id'], featId]); m.setFilter('scene-polygons-fill', ['==', ['get', 'id'], featId]);
                     el.querySelectorAll('.doc-map-marker-wrap').forEach(w => { w.style.display = (w.getAttribute('data-feat-id') === featId) ? 'flex' : 'none'; });
                 }
             } catch (_) {}
@@ -159,27 +168,20 @@ function updateUI() {
         d.setAttribute('data-action', 'goto-page'); d.setAttribute('data-page-idx', String(i));
         if (i === curPage) d.setAttribute('aria-current', 'page'); dc.appendChild(d);
     }
-    setTimeout(initDocMaps, 30);
+    setTimeout(() => { initDocMaps(); document.querySelectorAll('video').forEach((v) => { v.defaultMuted = true; v.muted = true; v.playsInline = true; v.play().catch(()=>{}); }); }, 30);
 }
-function setPage(n) {
-    if (n >= 0 && n < total) { curPage = n; updateUI(); if (curProfile !== 'slide') { const el = document.getElementById('page-' + n); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' }); } }
-}
+function setPage(n) { if (n >= 0 && n < total) { curPage = n; updateUI(); if (curProfile !== 'slide') { const el = document.getElementById('page-' + n); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' }); } } }
 function toggleFs() { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); else document.exitFullscreen().catch(() => {}); }
 document.addEventListener('fullscreenchange', () => { document.getElementById('fs-btn').textContent = document.fullscreenElement ? 'Quitter plein écran' : 'Plein écran'; });
 document.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-action]');
-    if (!btn) return;
+    const btn = e.target.closest('[data-action]'); if (!btn) return;
     const act = btn.getAttribute('data-action');
     if (act === 'narrative-binding') triggerNarrativeBinding(btn.getAttribute('data-map-id'), btn.getAttribute('data-feature-id'), btn.getAttribute('data-binding-action'));
     else if (act === 'toggle-hero-video') { const v = document.getElementById(btn.getAttribute('data-video-id')); if (v) { if (v.paused) { v.play().catch(()=>{}); btn.textContent = 'Pause vidéo'; } else { v.pause(); btn.textContent = 'Lire vidéo'; } } }
-    else if (act === 'gallery-prev') stepGallery(btn.getAttribute('data-gallery-id'), -1);
-    else if (act === 'gallery-next') stepGallery(btn.getAttribute('data-gallery-id'), 1);
+    else if (act === 'gallery-prev' || act === 'gallery-next') stepGallery(btn.getAttribute('data-gallery-id'), act === 'gallery-prev' ? -1 : 1);
     else if (act === 'goto-page') { setPage(Number(btn.getAttribute('data-page-idx'))); toggleToc(false); }
-    else if (act === 'toggle-toc') toggleToc();
-    else if (act === 'set-profile') setProfile(btn.getAttribute('data-profile'));
-    else if (act === 'toggle-fs') toggleFs();
-    else if (act === 'prev-page') setPage(curPage - 1);
-    else if (act === 'next-page') setPage(curPage + 1);
+    else if (act === 'toggle-toc') toggleToc(); else if (act === 'set-profile') setProfile(btn.getAttribute('data-profile'));
+    else if (act === 'toggle-fs') toggleFs(); else if (act === 'prev-page') setPage(curPage - 1); else if (act === 'next-page') setPage(curPage + 1);
 });
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { toggleToc(false); return; }

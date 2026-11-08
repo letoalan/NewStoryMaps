@@ -36,7 +36,8 @@ export function generateBrochurePrintHTML(story: StoryMap): string {
     .map((page, pIdx) => {
       const pageStyle = resolveVisualStyle(cleanStory, page, null, 'print');
       const heroConfig = page.hero?.enabled ? page.hero : pIdx === 0 && cleanStory.hero?.enabled ? cleanStory.hero : undefined;
-      const heroHtml = heroConfig
+      const hasTitle = (page.blocks || []).some((b) => b.type === 'title');
+      const heroHtml = heroConfig && !hasTitle
         ? renderPublishedHeroHTML(heroConfig, page.title || cleanStory.title || '', cleanStory.subtitle || '', cleanStory.brand?.logo || '', 'print', `sheet${pIdx}`)
         : '';
       const blocksHtml = (page.blocks || []).map((b) => renderPublishedBlockHTML(b, safeAccent, cleanStory, page, 'print')).join('\n');

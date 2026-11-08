@@ -9,8 +9,7 @@ import { Editor } from './components/editor/Editor';
 import { DocumentEditor } from './components/document/DocumentEditor';
 import { DocumentReader } from './components/document/DocumentReader';
 import { Player } from './components/player/Player';
-import { ProjectBrand, ProjectMode } from './types/project';
-import { PageFormat } from './types/grid';
+import { CreateStoryOptions } from './types/context';
 
 type AppView = 'dashboard' | 'editor' | 'player';
 
@@ -28,7 +27,7 @@ const AppContent: React.FC = () => {
     setView('player');
   };
 
-  const handleNewStory = async (opts?: string | { title?: string; mode?: ProjectMode; format?: PageFormat; brand?: ProjectBrand }) => {
+  const handleNewStory = async (opts?: string | CreateStoryOptions) => {
     await newStory(opts);
     setView('editor');
   };

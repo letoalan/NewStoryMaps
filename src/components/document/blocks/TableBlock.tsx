@@ -4,15 +4,17 @@
 
 import React from 'react';
 import { Block } from '../../../types/project';
+import { ResolvedVisualStyle } from '../../../types/theme';
 import { Plus, Trash2 } from 'lucide-react';
 
 interface TableBlockProps {
   block: Block;
   onChange: (patch: Record<string, unknown>) => void;
   isEditable?: boolean;
+  visualStyle?: ResolvedVisualStyle;
 }
 
-export const TableBlock: React.FC<TableBlockProps> = ({ block, onChange, isEditable = true }) => {
+export const TableBlock: React.FC<TableBlockProps> = ({ block, onChange, isEditable = true, visualStyle }) => {
   const headers = (block.data.headers as string[]) || ['Colonne 1', 'Colonne 2'];
   const rows = (block.data.rows as string[][]) || [['Donnée 1', 'Donnée 2']];
 
@@ -45,7 +47,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({ block, onChange, isEdita
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '8px' }}>
-      <div style={{ flex: 1, overflow: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--r)' }}>
+      <div style={{ flex: 1, overflow: 'auto', border: '1px solid var(--border)', borderRadius: visualStyle?.radiusCss ?? 'var(--r)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
           <thead>
             <tr style={{ background: 'var(--surface-3)', borderBottom: '1px solid var(--border)' }}>
@@ -54,10 +56,9 @@ export const TableBlock: React.FC<TableBlockProps> = ({ block, onChange, isEdita
                   {isEditable ? (
                     <input
                       type="text"
-                      className="input"
                       value={h}
                       onChange={(e) => updateHeader(ci, e.target.value)}
-                      style={{ width: '100%', height: '22px', fontSize: '11px', fontWeight: 600 }}
+                      style={{ width: '100%', height: '22px', fontSize: '11px', fontWeight: 600, background: 'transparent', color: visualStyle?.textColor || 'inherit', border: '1px solid transparent', outline: 'none' }}
                     />
                   ) : (
                     h
@@ -75,10 +76,9 @@ export const TableBlock: React.FC<TableBlockProps> = ({ block, onChange, isEdita
                     {isEditable ? (
                       <input
                         type="text"
-                        className="input"
                         value={cell}
                         onChange={(e) => updateCell(ri, ci, e.target.value)}
-                        style={{ width: '100%', height: '22px', fontSize: '11px' }}
+                        style={{ width: '100%', height: '22px', fontSize: '11px', background: 'transparent', color: visualStyle?.textColor || 'inherit', border: '1px solid transparent', outline: 'none' }}
                       />
                     ) : (
                       cell

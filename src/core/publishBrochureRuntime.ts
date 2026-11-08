@@ -30,6 +30,18 @@ function featCenter(f) {
     if (f.geometryType === 'LineString') return c[Math.floor(c.length / 2)];
     return (f.geometryType === 'Polygon' && Array.isArray(c[0]) && c[0].length) ? c[0][0] : null;
 }
+function expandLineCoords(base) {
+    const rStyle = (storyData.appearance && storyData.appearance.routeStyle) || 'dashed';
+    if (!Array.isArray(base) || base.length < 2 || (rStyle !== 'curved' && rStyle !== 'airplane' && rStyle !== 'ship')) return base || [];
+    const out = [];
+    for (let k = 0; k < base.length - 1; k++) {
+        const p1 = base[k], p2 = base[k + 1], dLng = p2[0] - p1[0], dLat = p2[1] - p1[1];
+        if (Math.hypot(dLng, dLat) < 0.001) { if (k === 0) out.push(p1); out.push(p2); continue; }
+        const cLng = (p1[0] + p2[0]) / 2 - dLat * 0.18, cLat = (p1[1] + p2[1]) / 2 + dLng * 0.18;
+        for (let i = (k === 0 ? 0 : 1); i <= 16; i++) { const t = i / 16, u = 1 - t; out.push([u * u * p1[0] + 2 * u * t * cLng + t * t * p2[0], u * u * p1[1] + 2 * u * t * cLat + t * t * p2[1]]); }
+    }
+    return out;
+}
 function checkReadiness(totalCount) {
     const statusEl = document.getElementById('print-status');
     const printBtn = document.getElementById('btn-print');
@@ -100,7 +112,8 @@ function initBrochureMaps() {
                     if (!l.visible) return;
                     (l.features || []).forEach(f => {
                         const col = (targetFeatId && f.id === targetFeatId) ? '#e11d48' : (f.color || l.color || '${safeAccent}');
-                        feats.push({ type: 'Feature', id: f.id, geometry: { type: f.geometryType, coordinates: f.coordinates }, properties: { id: f.id, color: col } });
+                        const fCoords = f.geometryType === 'LineString' ? expandLineCoords(f.coordinates) : f.coordinates;
+                        feats.push({ type: 'Feature', id: f.id, geometry: { type: f.geometryType, coordinates: fCoords }, properties: { id: f.id, color: col } });
                         const pt = featCenter(f);
                         if (pt) {
                             const mEl = document.createElement('div');
@@ -109,8 +122,8 @@ function initBrochureMaps() {
                             new maplibregl.Marker({ element: mEl }).setLngLat(pt).addTo(map);
                         }
                         const animCfg = f.routeAnimation || scene.routeAnimation || storyData.routeAnimation;
-                        if (f.geometryType === 'LineString' && Array.isArray(f.coordinates) && f.coordinates.length >= 2 && animCfg && animCfg.enabled && animCfg.vehicle !== 'none') {
-                            const a = f.coordinates[f.coordinates.length - 2], b = f.coordinates[f.coordinates.length - 1];
+                        if (f.geometryType === 'LineString' && Array.isArray(fCoords) && fCoords.length >= 2 && animCfg && animCfg.enabled && animCfg.vehicle !== 'none') {
+                            const a = fCoords[fCoords.length - 2], b = fCoords[fCoords.length - 1];
                             const ang = (Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI + 360) % 360;
                             const vw = document.createElement('div'); vw.className = 'vehicle-marker-wrap static-print-vehicle';
                             vw.style.cssText = 'width:24px;height:24px;display:flex;align-items:center;justify-content:center;';

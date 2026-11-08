@@ -4,6 +4,8 @@
 
 import { Map as MLMap, Marker, GeoJSONSource } from 'maplibre-gl';
 import type { MapFeature, ProjectMap } from '../types/project';
+import type { RouteLineStyle } from '../types/story';
+import { expandRouteCoordsByStyle } from './route';
 
 export interface SceneGeoJSONFeature {
   type: 'Feature';
@@ -63,7 +65,8 @@ export function getFeatureCenter(f: MapFeature): [number, number] | null {
 /** Construit la FeatureCollection GeoJSON des lignes et polygones visibles d'une scène */
 export function buildSceneGeoJSON(
   projectMap: ProjectMap,
-  highlightedFeatureId?: string
+  highlightedFeatureId?: string,
+  routeStyle?: RouteLineStyle
 ): SceneFeatureCollection {
   const features: SceneGeoJSONFeature[] = [];
 
@@ -72,11 +75,14 @@ export function buildSceneGeoJSON(
     for (const f of layer.features || []) {
       const isHighlighted = Boolean(highlightedFeatureId && f.id === highlightedFeatureId);
       const color = isHighlighted ? '#e11d48' : f.color || layer.color || '#0b7fb0';
+      const coords = f.geometryType === 'LineString' && Array.isArray(f.coordinates)
+        ? expandRouteCoordsByStyle(f.coordinates as Array<[number, number]>, routeStyle)
+        : f.coordinates;
       features.push({
         type: 'Feature',
         geometry: {
           type: f.geometryType,
-          coordinates: f.coordinates,
+          coordinates: coords,
         },
         properties: {
           id: f.id,
@@ -97,10 +103,11 @@ export function renderSceneLayersOnMap(
   map: MLMap,
   projectMap: ProjectMap,
   highlightedFeatureId?: string,
-  draftVertices?: [number, number][]
+  draftVertices?: [number, number][],
+  routeStyle?: RouteLineStyle
 ): Marker[] {
   const markers: Marker[] = [];
-  const geojson = buildSceneGeoJSON(projectMap, highlightedFeatureId);
+  const geojson = buildSceneGeoJSON(projectMap, highlightedFeatureId, routeStyle);
 
   if (draftVertices && draftVertices.length >= 2) {
     geojson.features.push({

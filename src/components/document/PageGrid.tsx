@@ -6,10 +6,11 @@ import React, { useState, useEffect } from 'react';
 import { Block, BlockType, Page, ProjectMode } from '../../types/project';
 import { Story } from '../../types/story';
 import { PageFormat } from '../../types/grid';
-import { BlockVisualOverride, OutputProfile } from '../../types/theme';
+import { BlockVisualOverride, HeroConfig, OutputProfile } from '../../types/theme';
 import { getGridDimensions, expandBlock, shrinkBlock, duplicateBlock, deleteBlock, addBlock } from '../../core/grid';
 import { convertBlockTypePreservingContent } from '../../core/blockCatalog';
 import { resolveVisualStyle } from '../../core/themeResolver';
+import { HeroSection } from './HeroSection';
 import { BlockContextMenu } from './BlockContextMenu';
 import { EmptyCellMenu } from './EmptyCellMenu';
 import { BlockRenderer } from './BlockRenderer';
@@ -24,12 +25,14 @@ interface PageGridProps {
   isEditable?: boolean;
   story?: Partial<Story> | null;
   page?: Partial<Page> | null;
+  hero?: HeroConfig | null;
+  onUpdateHero?: (patch: Partial<HeroConfig>) => void;
   mode?: ProjectMode;
   outputProfile?: OutputProfile;
 }
 
 export const PageGrid: React.FC<PageGridProps> = ({
-  format, blocks, onChangeBlocks, onOpenBinding, isEditable = true, story, page, mode, outputProfile,
+  format, blocks, onChangeBlocks, onOpenBinding, isEditable = true, story, page, hero, onUpdateHero, mode, outputProfile,
 }) => {
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [activeEmptyCell, setActiveEmptyCell] = useState<{ x: number; y: number; anchorEl: HTMLElement | null } | null>(null);
@@ -38,7 +41,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
   const effectiveMode: ProjectMode = mode || story?.mode || 'rich-document';
   const effectiveProfile: OutputProfile = outputProfile || (isEditable ? 'editor' : 'web-interactive');
   const pageStyle = resolveVisualStyle(story, page, null, effectiveProfile);
-  const { cols, rows, cellWidthPx, cellHeightPx, gapPx, marginMm, aspectRatio } = getGridDimensions(format);
+  const { cols, rows, gapPx, marginMm, aspectRatio } = getGridDimensions(format);
 
   useEffect(() => { setActiveEmptyCell(null); }, [format, page?.id]);
 
@@ -103,16 +106,21 @@ export const PageGrid: React.FC<PageGridProps> = ({
   return (
     <div
       className="page-grid-container"
-      style={{ display: 'inline-block', padding: `${marginMm}mm`, background: pageStyle.pageBackground, color: pageStyle.textColor, fontFamily: pageStyle.bodyFont, boxShadow: 'var(--shadow-lg)', borderRadius: 'var(--r)', position: 'relative', userSelect: 'none', aspectRatio }}
+      style={{ display: 'inline-block', padding: `${marginMm}mm`, background: pageStyle.pageBackground, color: pageStyle.textColor, fontFamily: pageStyle.bodyFont, boxShadow: 'var(--shadow-lg)', borderRadius: pageStyle.radiusCss, position: 'relative', userSelect: 'none', aspectRatio, width: format === 'screen-16-9' ? '1240px' : format === 'a4-landscape' ? '1180px' : format === 'a4-portrait' ? '740px' : '100%', maxWidth: '100%', boxSizing: 'border-box' }}
       onClick={() => { setSelectedBlockId(null); setActiveEmptyCell(null); }}
     >
-      <div className="page-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${cellWidthPx}px)`, gridTemplateRows: `repeat(${rows}, ${cellHeightPx}px)`, gap: `${gapPx}px`, position: 'relative' }}>
+      {hero?.enabled && !blocks.some((b) => b.type === 'title') && (
+        <div style={{ width: '100%', marginBottom: `${gapPx}px` }}>
+          <HeroSection hero={hero} fallbackTitle={page?.title || story?.title} fallbackSubtitle={story?.subtitle} fallbackLogo={story?.brand?.logo} outputProfile={effectiveProfile} isEditable={isEditable} onUpdateHero={onUpdateHero} charterColor={pageStyle.primaryColor} />
+        </div>
+      )}
+      <div className="page-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)`, gap: `${gapPx}px`, position: 'relative', width: '100%', height: '100%', boxSizing: 'border-box' }}>
         {Array.from({ length: rows }).map((_, y) =>
           Array.from({ length: cols }).map((__, x) => {
             const isOccupied = !!occupiedMatrix[y][x];
             const isCurrentActive = activeEmptyCell?.x === x && activeEmptyCell?.y === y;
             return (
-              <div key={`cell-${x}-${y}`} style={{ gridColumn: x + 1, gridRow: y + 1, border: isOccupied || !isEditable ? 'none' : '1px dashed var(--border)', borderRadius: 'var(--r)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div key={`cell-${x}-${y}`} style={{ gridColumn: x + 1, gridRow: y + 1, border: isOccupied || !isEditable ? 'none' : '1px dashed var(--border)', borderRadius: pageStyle.radiusCss, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {!isOccupied && isEditable && (
                   <>
                     <button type="button" className="btn btn-ghost btn-icon" style={{ opacity: isCurrentActive ? 0.9 : 0.35, borderRadius: '50%', width: '28px', height: '28px' }} title={`Ajouter un bloc en (${x + 1}, ${y + 1})`} onClick={(e) => { e.stopPropagation(); setActiveEmptyCell({ x, y, anchorEl: e.currentTarget }); }}>
@@ -127,14 +135,14 @@ export const PageGrid: React.FC<PageGridProps> = ({
         )}
 
         {blocks.map((b) => {
-          const isSelected = selectedBlockId === b.id;
+          const isSelected = selectedBlockId === b.id, isHero = b.type === 'title' && Boolean(hero?.enabled);
           const bStyle = resolveVisualStyle(story, page, b, effectiveProfile);
           const editorOutline = isEditable ? (isSelected ? '2px solid var(--accent)' : bStyle.showEditorGuide ? '1px dashed rgba(148, 163, 184, 0.55)' : 'none') : 'none';
 
           return (
             <div
               key={b.id} data-block-id={b.id} data-style-mode={b.styleOverride?.styleMode || 'inherit'}
-              style={{ gridColumn: `${b.x + 1} / span ${b.w}`, gridRow: `${b.y + 1} / span ${b.h}`, position: 'relative', zIndex: isSelected ? 30 : 10, outline: editorOutline, outlineOffset: '2px', borderRadius: bStyle.radiusCss, background: bStyle.surfaceCssBackground, border: bStyle.borderCss, boxShadow: bStyle.shadowCss, color: bStyle.textColor, overflow: 'visible' }}
+              style={{ gridColumn: `${b.x + 1} / span ${b.w}`, gridRow: `${b.y + 1} / span ${b.h}`, position: 'relative', zIndex: isSelected ? 30 : 10, outline: editorOutline, outlineOffset: '2px', borderRadius: bStyle.radiusCss, background: isHero ? 'transparent' : bStyle.surfaceCssBackground, border: isHero ? 'none' : bStyle.borderCss, boxShadow: bStyle.shadowCss, color: bStyle.textColor, overflow: 'visible' }}
               onClick={(e) => { e.stopPropagation(); if (isEditable) setSelectedBlockId(b.id); }}
             >
               {isSelected && isEditable && (
@@ -146,8 +154,8 @@ export const PageGrid: React.FC<PageGridProps> = ({
                   onOpenInspector={(tab) => setInspectedBlock({ id: b.id, tab })}
                 />
               )}
-              <div style={{ width: '100%', height: '100%', overflow: 'auto', padding: bStyle.paddingCss }}>
-                <BlockRenderer block={b} onChange={(p) => handleUpdateBlockData(b.id, p)} isEditable={isEditable} />
+              <div style={{ width: '100%', height: '100%', overflow: isHero ? 'hidden' : 'auto', borderRadius: bStyle.radiusCss, padding: isHero ? 0 : bStyle.paddingCss, color: bStyle.textColor, fontFamily: bStyle.bodyFont }}>
+                <BlockRenderer block={b} onChange={(p) => handleUpdateBlockData(b.id, p)} isEditable={isEditable} visualStyle={bStyle} hero={hero} onUpdateHero={onUpdateHero} subtitle={story?.subtitle} />
               </div>
             </div>
           );

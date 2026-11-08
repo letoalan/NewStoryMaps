@@ -2,16 +2,20 @@
  * StoryMap — Tracé de parcours multi-styles, courbes géodésiques et animations (Indiana Jones / Navire)
  */
 
-import { Step } from '../types/step';
-import { RouteLineStyle } from '../types/story';
+import type { Step } from '../types/step';
+import type { RouteLineStyle } from '../types/story';
 
 export interface RouteOptions {
   style?: RouteLineStyle;
   color?: string;
 }
 
+export function isCurvedRouteStyle(style?: RouteLineStyle): boolean {
+  return style === 'curved' || style === 'airplane' || style === 'ship';
+}
+
 // Calcul de points intermédiaires incurvés (arc de cercle / Bézier)
-function interpolateCurvedPoints(p1: [number, number], p2: [number, number], segments = 16): [number, number][] {
+export function interpolateCurvedPoints(p1: [number, number], p2: [number, number], segments = 16): [number, number][] {
   const [lng1, lat1] = p1;
   const [lng2, lat2] = p2;
   const midLng = (lng1 + lng2) / 2;
@@ -38,6 +42,21 @@ function interpolateCurvedPoints(p1: [number, number], p2: [number, number], seg
   return points;
 }
 
+export function buildSegmentPathCoords(p1: [number, number], p2: [number, number], style?: RouteLineStyle, segments = 16): [number, number][] {
+  return isCurvedRouteStyle(style) ? interpolateCurvedPoints(p1, p2, segments) : [p1, p2];
+}
+
+export function expandRouteCoordsByStyle(baseCoords: Array<[number, number]>, style?: RouteLineStyle, segments = 16): [number, number][] {
+  if (!Array.isArray(baseCoords) || baseCoords.length < 2 || !isCurvedRouteStyle(style)) return baseCoords || [];
+  const coordinates: [number, number][] = [];
+  for (let i = 0; i < baseCoords.length - 1; i++) {
+    const arc = interpolateCurvedPoints(baseCoords[i], baseCoords[i + 1], segments);
+    if (i > 0) arc.shift();
+    coordinates.push(...arc);
+  }
+  return coordinates;
+}
+
 export function createRouteGeoJSON(steps: Step[], options?: RouteOptions): GeoJSON.FeatureCollection {
   const style = options?.style || 'dashed';
   if (style === 'none') {
@@ -52,18 +71,7 @@ export function createRouteGeoJSON(steps: Step[], options?: RouteOptions): GeoJS
     return { type: 'FeatureCollection', features: [] };
   }
 
-  const isCurved = style === 'curved' || style === 'airplane' || style === 'ship';
-  let coordinates: [number, number][] = [];
-
-  if (isCurved) {
-    for (let i = 0; i < baseCoords.length - 1; i++) {
-      const arc = interpolateCurvedPoints(baseCoords[i], baseCoords[i + 1]);
-      if (i > 0) arc.shift(); // éviter les doublons au raccordement
-      coordinates.push(...arc);
-    }
-  } else {
-    coordinates = baseCoords;
-  }
+  const coordinates = expandRouteCoordsByStyle(baseCoords, style);
 
   return {
     type: 'FeatureCollection',

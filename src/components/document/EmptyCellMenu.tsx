@@ -128,14 +128,14 @@ export const EmptyCellMenu: React.FC<EmptyCellMenuProps> = ({
           <button type="button" className="btn btn-ghost btn-xs btn-icon" aria-label="Fermer la palette d’insertion" onClick={closeAndRestoreFocus}><X size={15} /></button>
         </div>
 
-        <div style={{ padding: '10px 12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ padding: '10px 12px', overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {CATALOG_CATEGORIES.map((category) => {
             const catItems = items.filter((i) => i.category === category);
             if (catItems.length === 0) return null;
             return (
               <div key={category}>
                 <div style={{ fontSize: '10.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-3, #64748b)', marginBottom: '4px' }}>{category}</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {catItems.map((item) => {
                     const Icon = ICONS_BY_TYPE[item.type] || Type;
                     const idx = flatIdx++;
@@ -143,11 +143,11 @@ export const EmptyCellMenu: React.FC<EmptyCellMenuProps> = ({
                       <button
                         key={item.type} ref={(el) => { btnRefs.current[idx] = el; }} type="button" className="btn btn-ghost"
                         aria-label={`${item.label} — ${item.description}`}
-                        style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '8px', height: 'auto', textAlign: 'left', border: '1px solid var(--border, #e2e8f0)', borderRadius: '8px', background: 'var(--surface, #fff)' }}
+                        style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', width: '100%', padding: '8px 10px', height: 'auto', textAlign: 'left', whiteSpace: 'normal', border: '1px solid var(--border, #e2e8f0)', borderRadius: '8px', background: 'var(--surface, #fff)' }}
                         onClick={() => onSelectType(item.type)}
                       >
                         <Icon size={16} color="var(--accent, #0b7fb0)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0, flex: 1 }}>
                           <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text, #0f172a)' }}>{item.label}</span>
                           <span style={{ fontSize: '10px', color: 'var(--text-3, #64748b)', lineHeight: 1.25 }}>{item.description}</span>
                         </div>

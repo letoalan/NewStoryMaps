@@ -9,6 +9,8 @@ import { useStory } from '../../context/StoryContext';
 import { resolveMapStyle } from '../../types/map';
 import { attachMapDiagnostics } from '../../core/mapDiagnostics';
 import { syncRouteLayer, syncCanvasMarkers } from '../../core/canvasLayers';
+import { buildSegmentPathCoords } from '../../core/route';
+import { computeSegmentBearing, computePathMetrics, computeAdaptiveFlightDurationMs, computeReadableCruiseZoom } from '../../core/routeInterpolation';
 import { createVehicleController, createTwoLevelVehicleDomElement, VehicleController } from '../../core/vehicleController';
 import { PlayerNarrative } from './PlayerNarrative';
 import { RefreshCw, X } from 'lucide-react';
@@ -16,7 +18,7 @@ import { RefreshCw, X } from 'lucide-react';
 export const Player: React.FC<{ onExit?: () => void }> = ({ onExit }) => {
   const { story } = useStory();
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [webglLost, setWebglLost] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -52,15 +54,8 @@ export const Player: React.FC<{ onExit?: () => void }> = ({ onExit }) => {
     const detachDiagnostics = attachMapDiagnostics(map, container, 'Player', resolvedStyle);
     let isUnmounting = false;
     const canvas = map.getCanvas();
-    const handleContextLost = (e: Event) => {
-      if (isUnmounting) return;
-      e.preventDefault();
-      setWebglLost(true);
-    };
-    const handleContextRestored = () => {
-      setWebglLost(false);
-      setReloadKey((k) => k + 1);
-    };
+    const handleContextLost = (e: Event) => { if (!isUnmounting) { e.preventDefault(); setWebglLost(true); } };
+    const handleContextRestored = () => { setWebglLost(false); setReloadKey((k) => k + 1); };
     canvas?.addEventListener('webglcontextlost', handleContextLost);
     canvas?.addEventListener('webglcontextrestored', handleContextRestored);
 
@@ -95,10 +90,6 @@ export const Player: React.FC<{ onExit?: () => void }> = ({ onExit }) => {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !story || !currentStep || (map as any)._removed) return;
-    map.flyTo({
-      center: currentStep.camera.center, zoom: currentStep.camera.zoom,
-      pitch: currentStep.camera.pitch, bearing: currentStep.camera.bearing, essential: true, duration: 1600,
-    });
     rebuildPlayerContents(map);
 
     vehicleCtrlRef.current?.destroy();
@@ -106,44 +97,74 @@ export const Player: React.FC<{ onExit?: () => void }> = ({ onExit }) => {
     vehicleMarkerRef.current = null;
 
     const animCfg = currentStep.routeAnimation || story.routeAnimation;
-    if (animCfg && animCfg.enabled && animCfg.vehicle !== 'none' && currentIdx > 0) {
-      const prevStep = steps[currentIdx - 1];
-      const coords: Array<[number, number]> = [prevStep.camera.center, currentStep.camera.center];
-      const { wrapper, innerIcon } = createTwoLevelVehicleDomElement(
-        document,
-        animCfg,
-        story.appearance?.accentColor || '#d97706',
-        0
-      );
+    const rStyle = story.appearance?.routeStyle || 'dashed';
+    const vColor = story.appearance?.accentColor || '#d97706';
+    const reduced = typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+    const hasVehicle = Boolean(animCfg && animCfg.enabled && animCfg.vehicle !== 'none');
+
+    if (hasVehicle && animCfg && currentIdx > 0 && !reduced) {
+      const prevCam = steps[currentIdx - 1].camera;
+      const nextCam = currentStep.camera;
+      const coords = buildSegmentPathCoords(prevCam.center, nextCam.center, rStyle);
+      const totalDeg = computePathMetrics(coords).totalLength;
+      const adaptiveSec = computeAdaptiveFlightDurationMs(totalDeg, animCfg.durationSec || 4) / 1000;
+      const initBrg = coords.length >= 2 ? computeSegmentBearing(coords[0], coords[1]) : 0;
+      const { wrapper, innerIcon } = createTwoLevelVehicleDomElement(document, animCfg, vColor, initBrg);
       const mk = new Marker({ element: wrapper }).setLngLat(coords[0]).addTo(map);
       vehicleMarkerRef.current = mk;
-      const reduced = typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+      map.jumpTo({ center: coords[0], zoom: prevCam.zoom, pitch: prevCam.pitch, bearing: prevCam.bearing });
+
       const ctrl = createVehicleController({
         coords,
-        config: animCfg,
+        config: { ...animCfg, durationSec: adaptiveSec, cameraFollow: animCfg.cameraFollow !== false },
         prefersReducedMotion: reduced,
-        onSample: (sample) => {
+        onSample: (sample, state) => {
+          const p = ctrl.getProgress();
           mk.setLngLat(sample.coordinates);
-          if (animCfg.orientToRoute !== false) {
-            innerIcon.style.transform = `rotate(${sample.bearing}deg)`;
+          if (animCfg.orientToRoute !== false) innerIcon.style.transform = `rotate(${sample.bearing}deg)`;
+          if (ctrl.isCameraFollowActive()) {
+            map.jumpTo({
+              center: sample.coordinates,
+              zoom: computeReadableCruiseZoom(prevCam.zoom, nextCam.zoom, totalDeg, p),
+              pitch: prevCam.pitch + (nextCam.pitch - prevCam.pitch) * p,
+              bearing: prevCam.bearing + (nextCam.bearing - prevCam.bearing) * p,
+            });
+          }
+          if (state === 'completed' && ctrl.isCameraFollowActive()) {
+            map.easeTo({ center: nextCam.center, zoom: nextCam.zoom, pitch: nextCam.pitch, bearing: nextCam.bearing, duration: 220 });
           }
         },
       });
       vehicleCtrlRef.current = ctrl;
       ctrl.play();
+    } else {
+      map.flyTo({
+        center: currentStep.camera.center, zoom: currentStep.camera.zoom,
+        pitch: currentStep.camera.pitch, bearing: currentStep.camera.bearing, essential: true, duration: reduced ? 0 : 1600,
+      });
+      if (hasVehicle && animCfg) {
+        const nextCam = steps[currentIdx + 1]?.camera;
+        const seg = nextCam ? buildSegmentPathCoords(currentStep.camera.center, nextCam.center, rStyle) : [currentStep.camera.center];
+        const initBrg = seg.length >= 2 ? computeSegmentBearing(seg[0], seg[1]) : 0;
+        const { wrapper } = createTwoLevelVehicleDomElement(document, animCfg, vColor, initBrg);
+        vehicleMarkerRef.current = new Marker({ element: wrapper }).setLngLat(currentStep.camera.center).addTo(map);
+      }
     }
-  }, [currentIdx, currentStep?.camera, story?.appearance, rebuildPlayerContents]);
+  }, [currentIdx, currentStep?.camera, story?.appearance, story?.routeAnimation, rebuildPlayerContents]);
 
   useEffect(() => {
     if (!isPlaying) return;
-    const timer = setInterval(() => {
+    const baseWait = story?.appearance?.autoplayInterval || 5000;
+    const prevCam = currentIdx > 0 ? steps[currentIdx - 1]?.camera : null;
+    const flightMs = prevCam && currentStep?.camera ? computeAdaptiveFlightDurationMs(Math.hypot(currentStep.camera.center[0] - prevCam.center[0], currentStep.camera.center[1] - prevCam.center[1]), (currentStep.routeAnimation || story?.routeAnimation)?.durationSec || 4) : 0;
+    const timer = setTimeout(() => {
       setCurrentIdx((prev) => {
         if (prev >= steps.length - 1) { setIsPlaying(false); return prev; }
         return prev + 1;
       });
-    }, story?.appearance?.autoplayInterval || 5000);
-    return () => clearInterval(timer);
-  }, [isPlaying, steps.length, story?.appearance?.autoplayInterval]);
+    }, baseWait + flightMs);
+    return () => clearTimeout(timer);
+  }, [isPlaying, currentIdx, steps.length, story?.appearance?.autoplayInterval]);
 
   return (
     <div className="player">
