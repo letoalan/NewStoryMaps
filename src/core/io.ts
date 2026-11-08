@@ -5,8 +5,15 @@
 import type { StoryMap } from '../types/story';
 import { generateStandaloneHTML, extractStoryFromHTML } from './publish';
 import { generateDocumentHTML } from './publishDocument';
+import { generateBrochurePrintHTML } from './publishBrochure';
 import { convertLegacyToModern, convertModernToLegacyV2 } from './adapter';
 import { createZip, readZip, type ZipReadEntry } from './zip';
+
+export function exportStoryToBrochureHTML(story: StoryMap): void {
+  const html = generateBrochurePrintHTML(story);
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  downloadBlob(blob, getFilename(story, 'brochure.html'));
+}
 
 export function exportStoryToJSON(story: StoryMap): void {
   const blob = new Blob([JSON.stringify(story, null, 2)], { type: 'application/json;charset=utf-8' });

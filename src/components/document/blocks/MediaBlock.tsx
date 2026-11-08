@@ -1,5 +1,5 @@
 /**
- * StoryMap — Blocs médias (Image simple et Galerie / Carrousel)
+ * StoryMap — Blocs médias (Image, Galerie/Carrousel et Planche contact Brochure — V09)
  */
 
 import React, { useState } from 'react';
@@ -14,8 +14,21 @@ interface MediaBlockProps {
 
 export const MediaBlock: React.FC<MediaBlockProps> = ({ block, onChange, isEditable = true }) => {
   const [activeIdx, setActiveIdx] = useState(0);
-  const images = (block.data.images as string[]) || (block.data.url ? [block.data.url as string] : []);
+  const rawItems = Array.isArray(block.data.items) ? (block.data.items as Array<{ url: string; caption?: string }>) : [];
+  const rawImages = Array.isArray(block.data.images) ? (block.data.images as string[]) : [];
+  const contactItems = Array.isArray(block.data.contactSheetItems)
+    ? (block.data.contactSheetItems as Array<{ url: string; caption?: string }>)
+    : [];
+
+  const images: string[] = rawImages.length > 0
+    ? rawImages
+    : rawItems.length > 0
+      ? rawItems.map((it) => it.url)
+      : block.data.url
+        ? [block.data.url as string]
+        : [];
   const caption = (block.data.caption as string) || '';
+  const isContactSheet = Boolean(block.data.isContactSheet && contactItems.length > 0);
 
   const handleAddImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -24,7 +37,7 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({ block, onChange, isEdita
     reader.onload = (evt) => {
       const url = evt.target?.result as string;
       const updated = block.type === 'gallery' ? [...images, url] : [url];
-      onChange({ images: updated, url: updated[0] });
+      onChange({ images: updated, items: updated.map((u) => ({ url: u })), url: updated[0] });
     };
     reader.readAsDataURL(file);
   };
@@ -33,7 +46,18 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({ block, onChange, isEdita
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', borderRadius: 'var(--r)' }}>
-      {currentImg ? (
+      {isContactSheet ? (
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: `repeat(${Math.min(3, Math.max(1, contactItems.length))}, 1fr)`, gap: '6px', padding: '6px', overflow: 'auto', background: 'var(--surface-2)' }}>
+          {contactItems.map((item, idx) => (
+            <figure key={idx} style={{ margin: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface)', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+              <img src={item.url} alt={item.caption || `Vue ${idx + 1}`} style={{ width: '100%', height: '84px', objectFit: 'cover', display: 'block' }} />
+              <figcaption style={{ fontSize: '10px', padding: '3px 6px', color: 'var(--text-2)' }}>
+                {item.caption || `Photo ${idx + 1}`}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      ) : currentImg ? (
         <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
           <img
             src={currentImg}
@@ -42,9 +66,11 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({ block, onChange, isEdita
           />
 
           {block.type === 'gallery' && images.length > 1 && (
-            <div style={{ position: 'absolute', bottom: '8px', right: '8px', display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.6)', padding: '2px 6px', borderRadius: '999px', alignItems: 'center' }}>
+            <div style={{ position: 'absolute', bottom: '8px', right: '8px', display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.65)', padding: '2px 6px', borderRadius: '999px', alignItems: 'center' }}>
               <button
                 type="button"
+                data-carousel-control="true"
+                aria-label="Image précédente de la galerie"
                 className="btn btn-icon btn-xs"
                 style={{ color: '#fff', border: 0, background: 'none' }}
                 onClick={() => setActiveIdx((activeIdx - 1 + images.length) % images.length)}
@@ -56,6 +82,8 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({ block, onChange, isEdita
               </span>
               <button
                 type="button"
+                data-carousel-control="true"
+                aria-label="Image suivante de la galerie"
                 className="btn btn-icon btn-xs"
                 style={{ color: '#fff', border: 0, background: 'none' }}
                 onClick={() => setActiveIdx((activeIdx + 1) % images.length)}
@@ -94,4 +122,3 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({ block, onChange, isEdita
     </div>
   );
 };
-

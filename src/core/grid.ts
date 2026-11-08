@@ -1,5 +1,5 @@
 /**
- * StoryMap — Moteur mathématique de grille et manipulation de blocs (P2)
+ * StoryMap — Moteur mathématique de grille, formats physiques et anti-collision (P2 — V06/V07)
  */
 
 import type { Block } from '../types/project';
@@ -8,14 +8,26 @@ import type { BlockRect, GridDimensions, GridOperationResult, PageFormat } from 
 export function getGridDimensions(format: PageFormat): GridDimensions {
   switch (format) {
     case 'a4-landscape':
-      return { cols: 8, rows: 6, cellWidthPx: 120, cellHeightPx: 120, marginMm: 15, gapPx: 12 };
+      return {
+        cols: 8, rows: 6, cellWidthPx: 112, cellHeightPx: 112, marginMm: 15, gapPx: 10,
+        physicalWidthMm: 297, physicalHeightMm: 210, aspectRatio: '297 / 210',
+      };
     case 'screen-16-9':
-      return { cols: 8, rows: 5, cellWidthPx: 130, cellHeightPx: 130, marginMm: 10, gapPx: 12 };
+      return {
+        cols: 8, rows: 5, cellWidthPx: 120, cellHeightPx: 120, marginMm: 10, gapPx: 10,
+        physicalWidthMm: 338.7, physicalHeightMm: 190.5, aspectRatio: '16 / 9',
+      };
     case 'responsive':
-      return { cols: 4, rows: 8, cellWidthPx: 140, cellHeightPx: 140, marginMm: 10, gapPx: 10 };
+      return {
+        cols: 4, rows: 8, cellWidthPx: 130, cellHeightPx: 130, marginMm: 10, gapPx: 10,
+        physicalWidthMm: 180, physicalHeightMm: 320, aspectRatio: 'auto',
+      };
     case 'a4-portrait':
     default:
-      return { cols: 6, rows: 8, cellWidthPx: 110, cellHeightPx: 110, marginMm: 15, gapPx: 12 };
+      return {
+        cols: 6, rows: 8, cellWidthPx: 108, cellHeightPx: 108, marginMm: 15, gapPx: 10,
+        physicalWidthMm: 210, physicalHeightMm: 297, aspectRatio: '210 / 297',
+      };
   }
 }
 
@@ -24,7 +36,6 @@ export function isRectValid(rect: BlockRect, cols: number, rows: number): boolea
   if (rect.x < 0 || rect.y < 0) return false;
   if (rect.x + rect.w > cols || rect.y + rect.h > rows) return false;
   const area = rect.w * rect.h;
-  // Règle G04 : cellule unique (aire 1) ou aire paire complète (2, 4, 6, 8, etc.) sans L
   return area === 1 || area % 2 === 0;
 }
 
@@ -57,7 +68,6 @@ export function expandBlock(blocks: Block[], blockId: string, dir: 'right' | 'do
   const target = blocks.find((b) => b.id === blockId);
   if (!target) return { success: false, blocks, error: 'Bloc introuvable.' };
 
-  // Pas de 1 ou saut automatique à 2 si l'aire intermédiaire est interdite (ex. 2x1 -> 4x1)
   let step = 1;
   let newW = dir === 'right' ? target.w + step : target.w;
   let newH = dir === 'down' ? target.h + step : target.h;
@@ -142,11 +152,32 @@ export function deleteBlock(blocks: Block[], blockId: string): Block[] {
   return blocks.filter((b) => b.id !== blockId);
 }
 
+/** V06 : Replace les blocs dans une nouvelle grille sans collision ni chevauchement */
 export function refitBlocksToGrid(blocks: Block[], cols: number, rows: number): Block[] {
-  return blocks.map((b) => {
-    let w = Math.min(b.w, cols);
-    let h = Math.min(b.h, rows);
+  const placed: Block[] = [];
+  for (const b of blocks) {
+    let w = Math.max(1, Math.min(b.w, cols));
+    let h = Math.max(1, Math.min(b.h, rows));
     while (w * h > 1 && (w * h) % 2 !== 0 && w > 1) w--;
-    return { ...b, w, h, x: Math.min(b.x, cols - w), y: Math.min(b.y, rows - h) };
-  });
+    while (w * h > 1 && (w * h) % 2 !== 0 && h > 1) h--;
+
+    let x = Math.max(0, Math.min(b.x, cols - w));
+    let y = Math.max(0, Math.min(b.y, rows - h));
+
+    if (hasCollision({ x, y, w, h }, placed)) {
+      let free = findFirstFreeCell(placed, cols, rows, w, h);
+      while (!free && (w > 1 || h > 1)) {
+        if (w >= h && w > 1) w--;
+        else if (h > 1) h--;
+        if (w * h > 1 && (w * h) % 2 !== 0) continue;
+        free = findFirstFreeCell(placed, cols, rows, w, h);
+      }
+      if (free) {
+        x = free.x;
+        y = free.y;
+      }
+    }
+    placed.push({ ...b, x, y, w, h });
+  }
+  return placed;
 }

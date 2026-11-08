@@ -1,5 +1,5 @@
 /**
- * StoryMap — Types du moteur de grille et de mise en page (P2)
+ * StoryMap — Types du moteur de grille et de mise en page physique (P2 — V06/V07)
  */
 
 import type { Block } from './project';
@@ -17,6 +17,9 @@ export interface GridDimensions {
   cellHeightPx: number;
   marginMm: number;
   gapPx: number;
+  physicalWidthMm: number;
+  physicalHeightMm: number;
+  aspectRatio: string;
 }
 
 export type PageFormat = 'a4-portrait' | 'a4-landscape' | 'screen-16-9' | 'responsive';

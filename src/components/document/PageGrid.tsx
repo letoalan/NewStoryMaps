@@ -23,7 +23,7 @@ export const PageGrid: React.FC<PageGridProps> = ({ format, blocks, onChangeBloc
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [activeEmptyCell, setActiveEmptyCell] = useState<{ x: number; y: number } | null>(null);
 
-  const { cols, rows, cellWidthPx, cellHeightPx, gapPx, marginMm } = getGridDimensions(format);
+  const { cols, rows, cellWidthPx, cellHeightPx, gapPx, marginMm, aspectRatio } = getGridDimensions(format);
 
   const occupiedMatrix: Array<Array<Block | null>> = Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => null)
@@ -97,6 +97,7 @@ export const PageGrid: React.FC<PageGridProps> = ({ format, blocks, onChangeBloc
         borderRadius: 'var(--r)',
         position: 'relative',
         userSelect: 'none',
+        aspectRatio,
       }}
       onClick={() => { setSelectedBlockId(null); setActiveEmptyCell(null); }}
     >

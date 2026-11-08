@@ -1,5 +1,5 @@
 /**
- * StoryMap — Moteur Mode 3 Brochure statique : restrictions, conversion 2->3 et prévol (P5 — J01 à J10)
+ * StoryMap — Moteur Mode 3 Brochure statique : restrictions, conversion 2->3 et prévol (P5 — J01 à J10 / V09)
  */
 
 import type { StoryMap } from '../types/story';
@@ -21,7 +21,13 @@ export interface PreflightIssue {
   severity: 'error' | 'warning' | 'info';
   pageIndex: number;
   blockId?: string;
-  code: 'NON_A4_FORMAT' | 'DYNAMIC_GALLERY' | 'TEXT_OVERFLOW' | 'MISSING_MEDIA_URL' | 'MISSING_MAP_ATTRIBUTION' | 'UNNUMBERED_BINDING';
+  code:
+    | 'NON_A4_FORMAT'
+    | 'DYNAMIC_GALLERY'
+    | 'TEXT_OVERFLOW'
+    | 'MISSING_MEDIA_URL'
+    | 'MISSING_MAP_ATTRIBUTION'
+    | 'UNNUMBERED_BINDING';
   message: string;
 }
 
@@ -43,13 +49,29 @@ export function isBlockAllowedInBrochure(type: BlockType): boolean {
   return STATIC_BROCHURE_TYPES.has(type);
 }
 
-/** J02 & J03 : Convertit un projet Mode 2 en copie Mode 3 (Brochure A4) sans perte */
+function extractGalleryItems(data: Record<string, unknown>): Array<{ url: string; caption?: string }> {
+  if (Array.isArray(data.items) && data.items.length > 0) {
+    return data.items.map((it: any) =>
+      typeof it === 'string' ? { url: it, caption: '' } : { url: String(it?.url || ''), caption: String(it?.caption || '') }
+    ).filter((it) => it.url.trim().length > 0);
+  }
+  if (Array.isArray(data.images) && data.images.length > 0) {
+    return data.images.map((it: any) =>
+      typeof it === 'string' ? { url: it, caption: '' } : { url: String(it?.url || ''), caption: String(it?.caption || '') }
+    ).filter((it) => it.url.trim().length > 0);
+  }
+  const singleUrl = typeof data.url === 'string' && data.url.trim() ? data.url.trim() : '';
+  return singleUrl ? [{ url: singleUrl, caption: String(data.caption || '') }] : [];
+}
+
+/** J02 & J03 : Convertit un projet Mode 2 en copie Mode 3 (Brochure A4) sans perte (V09) */
 export function convertRichDocumentToBrochure(source: StoryMap): {
   brochure: StoryMap;
   report: BrochureConversionReport;
 } {
   const targetId = `brochure-${Date.now()}`;
-  const targetFormat: 'a4-portrait' | 'a4-landscape' = source.format === 'a4-landscape' ? 'a4-landscape' : 'a4-portrait';
+  const targetFormat: 'a4-portrait' | 'a4-landscape' =
+    source.format === 'a4-landscape' ? 'a4-landscape' : 'a4-portrait';
   const formatChanged = source.format !== targetFormat;
   const dims = getGridDimensions(targetFormat);
 
@@ -58,9 +80,10 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
   let runningNumber = 1;
   const notes: string[] = [];
 
-  const sourcePages: Page[] = source.pages && source.pages.length > 0 ? source.pages : [
-    { id: 'page-1', title: 'Page 1', layout: { format: targetFormat, gridColumns: dims.cols, gridRows: dims.rows, marginMm: 15 }, blocks: [] },
-  ];
+  const sourcePages: Page[] =
+    source.pages && source.pages.length > 0
+      ? source.pages
+      : [{ id: 'page-1', title: 'Page 1', layout: { format: targetFormat, gridColumns: dims.cols, gridRows: dims.rows, marginMm: 15 }, blocks: [] }];
 
   const convertedPages: Page[] = sourcePages.map((page, pIdx) => {
     const adaptedBlocks: Block[] = (page.blocks || []).map((b) => {
@@ -68,7 +91,7 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
 
       if (cloned.type === 'gallery') {
         adaptedGalleriesCount++;
-        const items = Array.isArray(cloned.data.items) ? cloned.data.items : [];
+        const items = extractGalleryItems(cloned.data);
         cloned = {
           ...cloned,
           type: 'image',
@@ -116,23 +139,38 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
   };
 }
 
-/** J10 : Contrôle prévol (Preflight) avant génération de la brochure A4 / PDF */
+/** J10 / V09 : Contrôle prévol honnête (Preflight) avant génération de la brochure A4 / PDF */
 export function runBrochurePreflight(story: StoryMap): BrochurePreflightReport {
   const issues: PreflightIssue[] = [];
   const pages = story.pages || [];
   let mapCount = 0;
+  let missingAttributionCount = 0;
+  let textBlockCount = 0;
 
   pages.forEach((page, pIdx) => {
     const fmt = page.layout?.format || story.format || 'a4-portrait';
     if (fmt !== 'a4-portrait' && fmt !== 'a4-landscape') {
       issues.push({ severity: 'warning', pageIndex: pIdx, code: 'NON_A4_FORMAT', message: `Page ${pIdx + 1} : format "${fmt}" normalisé en A4.` });
     }
+    const pageHasSourceBlock = (page.blocks || []).some(
+      (blk) => blk.type === 'source' && String(blk.data.text || '').trim().length > 0
+    );
 
     (page.blocks || []).forEach((b) => {
       if (b.type === 'gallery') {
         issues.push({ severity: 'warning', pageIndex: pIdx, blockId: b.id, code: 'DYNAMIC_GALLERY', message: `Page ${pIdx + 1} : carrousel aplati en planche.` });
       }
-      if (b.type === 'map') mapCount++;
+      if (b.type === 'map') {
+        mapCount++;
+        const hasMapCaption = String(b.data.caption || b.data.attribution || '').trim().length > 0;
+        if (!hasMapCaption && !pageHasSourceBlock) {
+          missingAttributionCount++;
+          issues.push({ severity: 'warning', pageIndex: pIdx, blockId: b.id, code: 'MISSING_MAP_ATTRIBUTION', message: `Page ${pIdx + 1} : carte "${b.id}" sans attribution explicite ni bloc source sur la page.` });
+        }
+      }
+      if (b.type === 'title' || b.type === 'text' || b.type === 'callout' || b.type === 'source' || b.type === 'legend') {
+        textBlockCount++;
+      }
       if (b.type === 'text' || b.type === 'callout') {
         const text = ((b.data.text as string) || '').replace(/<[^>]*>/g, '');
         if (text.length > b.w * b.h * 220) {
@@ -152,8 +190,8 @@ export function runBrochurePreflight(story: StoryMap): BrochurePreflightReport {
     ready: !issues.some((i) => i.severity === 'error'),
     pageCount: Math.max(1, pages.length),
     mapCount,
-    selectableTextGuaranteed: true,
-    attributionsPresent: true,
+    selectableTextGuaranteed: pages.length > 0 && (textBlockCount > 0 || Boolean(story.title)),
+    attributionsPresent: mapCount === 0 || missingAttributionCount === 0,
     issues,
   };
 }

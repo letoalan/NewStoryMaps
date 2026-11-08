@@ -1,9 +1,11 @@
 /**
- * StoryMap — Menu d'insertion de bloc sur cellule vide (+ central, G03)
+ * StoryMap — Menu d'insertion de bloc sur cellule vide (+ central, G03 & J01 restriction Mode 3)
  */
 
 import React from 'react';
 import { BlockType } from '../../types/project';
+import { useStory } from '../../context/StoryContext';
+import { isBlockAllowedInBrochure } from '../../core/brochure';
 import { Type, Heading, Quote, Image, Layers, Table, Map, BookOpen, Bookmark, LucideIcon } from 'lucide-react';
 
 interface EmptyCellMenuProps {
@@ -26,6 +28,12 @@ const INSERT_ITEMS: Array<{ type: BlockType; label: string; icon: LucideIcon }> 
 ];
 
 export const EmptyCellMenu: React.FC<EmptyCellMenuProps> = ({ x, y, onSelectType, onClose }) => {
+  const { story } = useStory();
+  const isBrochure = story?.mode === 'brochure';
+  const visibleItems = isBrochure
+    ? INSERT_ITEMS.filter((item) => isBlockAllowedInBrochure(item.type))
+    : INSERT_ITEMS;
+
   return (
     <div
       style={{
@@ -58,7 +66,7 @@ export const EmptyCellMenu: React.FC<EmptyCellMenuProps> = ({ x, y, onSelectType
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', flex: 1, overflowY: 'auto' }}>
-        {INSERT_ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           return (
             <button

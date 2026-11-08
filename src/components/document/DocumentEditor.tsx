@@ -12,13 +12,15 @@ import { createDefaultProjectMap, validateNarrativeBindings } from '../../core/m
 import { MapStudioModal } from '../dialogs/MapStudioModal';
 import { BindingPickerModal } from '../dialogs/BindingPickerModal';
 import { ShareModal } from '../dialogs/ShareModal';
-import { ArrowLeft, Save, Plus, Trash2, ChevronLeft, ChevronRight, FileText, Check, AlertCircle, Map, Play, Share2 } from 'lucide-react';
+import { BrochureModal } from '../dialogs/BrochureModal';
+import { ArrowLeft, Save, Plus, Trash2, ChevronLeft, ChevronRight, FileText, Check, AlertCircle, Map, Play, Share2, Printer } from 'lucide-react';
 
 export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void }> = ({ onBack, onPlay }) => {
   const { story, updateStory, saveStatus, flushSave } = useStory();
   const [currentPageIndex, setCurrentPageIndex] = useState<number>(0);
   const [isMapStudioOpen, setIsMapStudioOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isBrochureOpen, setIsBrochureOpen] = useState(false);
   const [bindingBlock, setBindingBlock] = useState<Block | null>(null);
 
   if (!story) return null;
@@ -115,6 +117,9 @@ export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void 
               <Play size={14} color="var(--accent)" /> <span>Lire</span>
             </button>
           )}
+          <button className="btn btn-ghost" onClick={() => setIsBrochureOpen(true)} title="Prévol et export Brochure A4 / PDF">
+            <Printer size={14} color="var(--accent)" /> <span>Brochure PDF</span>
+          </button>
           <button className="btn btn-ghost" onClick={() => setIsShareOpen(true)} title="Partager et exporter">
             <Share2 size={14} /> <span>Partager</span>
           </button>
@@ -135,6 +140,7 @@ export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void 
 
       <MapStudioModal isOpen={isMapStudioOpen} maps={maps} onClose={() => setIsMapStudioOpen(false)} onUpdateMaps={handleUpdateMaps} />
       <BindingPickerModal isOpen={!!bindingBlock} block={bindingBlock} maps={maps} onClose={() => setBindingBlock(null)} onSaveBinding={handleSaveBinding} />
+      <BrochureModal isOpen={isBrochureOpen} onClose={() => setIsBrochureOpen(false)} />
       <ShareModal isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
     </div>
   );

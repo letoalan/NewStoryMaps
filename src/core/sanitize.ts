@@ -1,5 +1,5 @@
 /**
- * StoryMap — Assainissement HTML sécurisé (Sanitization)
+ * StoryMap — Assainissement HTML sécurisé, échappement d'attributs et validation d'URL (V08)
  */
 
 const DANGEROUS_TAGS = new Set([
@@ -13,10 +13,44 @@ function isSafeUrl(val: string, attr: string, tag: string): boolean {
   const v = val.replace(/[\u0000-\u0020\u007F-\u009F]/g, '').toLowerCase();
   if (/^(javascript|vbscript|livescript|data:text\/html):/.test(v)) return false;
   if (v.startsWith('data:')) {
-    if (attr === 'src' && tag === 'img' && /^data:image\//.test(v)) return true;
+    if (attr === 'src' && tag === 'img' && /^data:image\/(png|jpe?g|gif|webp|svg\+xml|bmp)/i.test(v)) return true;
     return false;
   }
   return true;
+}
+
+/** Échappe strictement une valeur destinée à un attribut ou texte HTML */
+export function escapeAttr(val: unknown): string {
+  if (val === null || val === undefined) return '';
+  return String(val)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/** Valide et assainit une URL de média ou lien (autorise http/https, data:image/*, blob: ou chemin relatif) */
+export function sanitizeSafeUrl(rawUrl: unknown): string {
+  if (typeof rawUrl !== 'string') return '';
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+  const normalized = trimmed.replace(/[\u0000-\u0020\u007F-\u009F]/g, '').toLowerCase();
+  if (/^(javascript|vbscript|livescript|file):/.test(normalized)) return '';
+  if (normalized.startsWith('data:')) {
+    return /^data:image\/(png|jpe?g|gif|webp|bmp)/i.test(normalized) ? escapeAttr(trimmed) : '';
+  }
+  if (/^(https?:\/\/|blob:|\/|\.\.?\/|[a-z0-9_-]+\/|[a-z0-9_.-]+\.(png|jpe?g|gif|webp|svg))/i.test(normalized)) {
+    return escapeAttr(trimmed);
+  }
+  return '';
+}
+
+/** Borne un entier dans l'intervalle [min, max] avec valeur de repli */
+export function clampInt(val: unknown, min: number, max: number, fallback: number): number {
+  const n = typeof val === 'string' ? parseInt(val, 10) : Number(val);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, Math.floor(n)));
 }
 
 export function sanitizeHTML(dirtyHtml: string): string {
@@ -48,13 +82,7 @@ export function sanitizeHTML(dirtyHtml: string): string {
     for (const attr of attrs) {
       const name = attr.name.toLowerCase();
       const val = attr.value;
-
-      if (name.startsWith('on')) {
-        el.removeAttribute(attr.name);
-        continue;
-      }
-
-      if (URL_ATTRS.has(name) && !isSafeUrl(val, name, tagName)) {
+      if (name.startsWith('on') || (URL_ATTRS.has(name) && !isSafeUrl(val, name, tagName))) {
         el.removeAttribute(attr.name);
       }
     }

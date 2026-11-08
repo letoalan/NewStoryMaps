@@ -1,5 +1,5 @@
 /**
- * StoryMap — Atelier Carte dédié & gestion des scènes cartographiques (P3 — H01 à H04)
+ * StoryMap — Atelier Carte dédié : dessin sommet par sommet & scènes GeoJSON (P3 — V02/V03)
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -7,8 +7,9 @@ import { Map as MLMap, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { ProjectMap, MapFeature } from '../../types/project';
 import { createDefaultProjectMap, addFeatureToLayer, deleteFeatureFromLayer } from '../../core/mapScene';
+import { renderSceneLayersOnMap } from '../../core/mapSceneRender';
 import { resolveMapStyle } from '../../types/map';
-import { X, Map, Plus, Trash2, Layers, Eye, EyeOff, Check, Camera, Crosshair } from 'lucide-react';
+import { X, Map, Plus, Trash2, Layers, Eye, EyeOff, Check, Camera, Crosshair, RotateCcw } from 'lucide-react';
 
 interface MapStudioModalProps {
   isOpen: boolean;
@@ -25,16 +26,18 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
   const [newFeatureName, setNewFeatureName] = useState('');
   const [newFeatureType, setNewFeatureType] = useState<'Point' | 'LineString' | 'Polygon'>('Point');
   const [cursorPos, setCursorPos] = useState<[number, number]>(activeMap.view?.center || [2.3522, 48.8566]);
+  const [draftVertices, setDraftVertices] = useState<[number, number][]>([]);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const markersRef = useRef<Marker[]>([]);
+  const typeRef = useRef(newFeatureType);
+  typeRef.current = newFeatureType;
 
   const updateActiveMap = (patch: Partial<ProjectMap>) => {
     onUpdateMaps(currentMaps.map((m, idx) => (idx === selectedMapIndex ? { ...m, ...patch } : m)));
   };
 
-  // Initialisation carte interactive de travail
   useEffect(() => {
     if (!mapContainerRef.current) return;
     mapContainerRef.current.innerHTML = '';
@@ -49,7 +52,13 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
       bearing: activeMap.view?.bearing || 0,
     });
 
-    map.on('click', (e) => setCursorPos([e.lngLat.lng, e.lngLat.lat]));
+    map.on('click', (e) => {
+      const pt: [number, number] = [Number(e.lngLat.lng.toFixed(5)), Number(e.lngLat.lat.toFixed(5))];
+      setCursorPos(pt);
+      if (typeRef.current !== 'Point') {
+        setDraftVertices((prev) => [...prev, pt]);
+      }
+    });
     mapRef.current = map;
 
     return () => {
@@ -60,32 +69,27 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
     };
   }, [selectedMapIndex, activeMap.mapStyle]);
 
-  // Rendu des repères de la carte active
+  // Rendu réel des Points, Lignes, Polygones et du tracé sommet par sommet en cours
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     markersRef.current.forEach((m) => m.remove());
-    markersRef.current = [];
-
-    (activeMap.layers || []).forEach((layer) => {
-      if (!layer.visible) return;
-      (layer.features || []).forEach((f) => {
-        const coords = Array.isArray(f.coordinates[0]) ? (f.coordinates as any)[0] : f.coordinates;
-        const pt = Array.isArray(coords[0]) ? coords[0] : coords;
-        if (typeof pt[0] === 'number' && typeof pt[1] === 'number') {
-          const m = new Marker({ color: f.color || layer.color || '#0b7fb0' }).setLngLat([pt[0], pt[1]]).addTo(map);
-          markersRef.current.push(m);
-        }
-      });
-    });
-  }, [activeMap.layers, selectedMapIndex]);
+    markersRef.current = renderSceneLayersOnMap(map, activeMap, undefined, draftVertices);
+  }, [activeMap, selectedMapIndex, draftVertices]);
 
   const handleCaptureView = () => {
     const map = mapRef.current;
     if (!map) return;
     const center = map.getCenter();
+    const b = map.getBounds();
     updateActiveMap({
-      view: { center: [center.lng, center.lat], zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() },
+      view: {
+        center: [center.lng, center.lat],
+        zoom: map.getZoom(),
+        pitch: map.getPitch(),
+        bearing: map.getBearing(),
+        bounds: [[b.getWest(), b.getSouth()], [b.getEast(), b.getNorth()]],
+      },
     });
   };
 
@@ -94,9 +98,11 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
     const [lng, lat] = cursorPos;
     let coords: any = [lng, lat];
     if (newFeatureType === 'LineString') {
-      coords = [[lng, lat], [lng + 0.01, lat + 0.005]];
+      coords = draftVertices.length >= 2 ? draftVertices : [[lng, lat], [lng + 0.01, lat + 0.005]];
     } else if (newFeatureType === 'Polygon') {
-      coords = [[[lng, lat], [lng + 0.01, lat], [lng + 0.01, lat + 0.01], [lng, lat + 0.01], [lng, lat]]];
+      coords = draftVertices.length >= 3
+        ? [[...draftVertices, draftVertices[0]]]
+        : [[[lng, lat], [lng + 0.01, lat], [lng + 0.01, lat + 0.01], [lng, lat + 0.01], [lng, lat]]];
     }
 
     const feat: MapFeature = {
@@ -109,11 +115,12 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
     };
     onUpdateMaps(currentMaps.map((m, idx) => (idx === selectedMapIndex ? addFeatureToLayer(m, layerId, feat) : m)));
     setNewFeatureName('');
+    setDraftVertices([]);
   };
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1200, backgroundColor: 'rgba(0,0,0,0.5)', display: 'grid', placeItems: 'center', padding: '16px' }} onClick={onClose}>
-      <div className="dialog-box" style={{ background: 'var(--surface)', borderRadius: 'var(--r-lg)', width: '100%', maxWidth: '880px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+      <div className="dialog-box" style={{ background: 'var(--surface)', borderRadius: 'var(--r-lg)', width: '100%', maxWidth: '900px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Map size={18} color="var(--accent)" />
@@ -123,7 +130,6 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', flex: 1, minHeight: '440px', overflow: 'hidden' }}>
-          {/* Panneau gauche : Gestion des données */}
           <div style={{ padding: '14px', borderRight: '1px solid var(--border)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', gap: '6px' }}>
               <select className="select" style={{ flex: 1, fontSize: '12px' }} value={selectedMapIndex} onChange={(e) => setSelectedMapIndex(Number(e.target.value))}>
@@ -142,7 +148,6 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
               </select>
             </div>
 
-            {/* Couches & Objets */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 600 }}><Layers size={13} /> Couches & Entités</span>
@@ -165,23 +170,28 @@ const MapStudioModalContent: React.FC<Omit<MapStudioModalProps, 'isOpen'>> = ({ 
                   ))}
                   <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
                     <input type="text" className="input" placeholder="Nouvel objet…" style={{ height: '22px', fontSize: '11px', flex: 1 }} value={newFeatureName} onChange={(e) => setNewFeatureName(e.target.value)} />
-                    <select className="select" style={{ height: '22px', fontSize: '10.5px' }} value={newFeatureType} onChange={(e) => setNewFeatureType(e.target.value as any)}>
+                    <select className="select" style={{ height: '22px', fontSize: '10.5px' }} value={newFeatureType} onChange={(e) => { setNewFeatureType(e.target.value as any); setDraftVertices([]); }}>
                       <option value="Point">Point</option>
                       <option value="LineString">Ligne</option>
                       <option value="Polygon">Polygone</option>
                     </select>
-                    <button className="btn btn-primary btn-xs" onClick={() => handleAddFeature(l.id)} title="Ajouter à l'emplacement cliqué"><Plus size={11} /></button>
+                    <button className="btn btn-primary btn-xs" onClick={() => handleAddFeature(l.id)} title="Ajouter l'entité"><Plus size={11} /></button>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Panneau droit : Vraie carte interactive MapLibre */}
           <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-            <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
-            <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(15,23,42,0.85)', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '10.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Crosshair size={12} color="var(--accent)" /> <span>Clic carte : [{cursorPos[0].toFixed(3)}, {cursorPos[1].toFixed(3)}]</span>
+            <div ref={mapContainerRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+            <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(15,23,42,0.88)', color: '#fff', padding: '5px 10px', borderRadius: '4px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 10 }}>
+              <Crosshair size={12} color="var(--accent)" />
+              <span>{newFeatureType === 'Point' ? `Point : [${cursorPos[0].toFixed(3)}, ${cursorPos[1].toFixed(3)}]` : `Sommets tracés : ${draftVertices.length} (cliquez sur la carte)`}</span>
+              {draftVertices.length > 0 && (
+                <button className="btn btn-ghost btn-xs" style={{ color: '#f87171', padding: '0 4px', height: '18px' }} onClick={() => setDraftVertices([])} title="Effacer les sommets">
+                  <RotateCcw size={11} />
+                </button>
+              )}
             </div>
             <button className="btn btn-primary btn-xs" style={{ position: 'absolute', bottom: '12px', right: '12px', zIndex: 10 }} onClick={handleCaptureView}>
               <Camera size={13} style={{ marginRight: '4px' }} /> Capturer cette vue

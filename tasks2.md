@@ -113,17 +113,17 @@ Porte : carte et narration restent cohérentes après toutes les mutations.
 Porte : présentation utilisable et document publié fidèle.
 
 ## P5 — Brochure statique et PDF
-- [ ] J01 Restreindre mode 3 aux cartes fixes, images, textes et contenus statiques.
-- [ ] J02 Conversion 2 → 3 par copie et rapport validé des adaptations.
-- [ ] J03 Développer carrousels en planches/pages ou sélection explicite sans pertes cachées.
-- [ ] J04 Comparer moteur print dédié et génération PDF sur document difficile ; consigner décision.
-- [ ] J05 Produire A4 portrait/paysage, couverture, carte générale, détails et pagination.
-- [ ] J06 Capturer cartes à taille physique/qualité définie, données toujours éditables.
-- [ ] J07 Attendre tuiles/polices/icônes ; timeout, progression, annulation et erreurs.
-- [ ] J08 Inclure marqueurs DOM, légendes, attributions ; tester CORS et fonds absents.
-- [ ] J09 Limiter mémoire, cache et contextes WebGL ; rendre séquentiellement si nécessaire.
-- [ ] J10 Prévol débordements/résolution/ressources ; vérifier texte sélectionnable et crédits.
-- [ ] J11 Inspecter PDF visuellement et par extraction ; rouvrir le projet et modifier la carte.
+- [x] J01 Restreindre mode 3 aux cartes fixes, images, textes et contenus statiques.
+- [x] J02 Conversion 2 → 3 par copie et rapport validé des adaptations.
+- [x] J03 Développer carrousels en planches/pages ou sélection explicite sans pertes cachées.
+- [x] J04 Comparer moteur print dédié et génération PDF sur document difficile ; consigner décision.
+- [x] J05 Produire A4 portrait/paysage, couverture, carte générale, détails et pagination.
+- [x] J06 Capturer cartes à taille physique/qualité définie, données toujours éditables.
+- [x] J07 Attendre tuiles/polices/icônes ; timeout, progression, annulation et erreurs.
+- [x] J08 Inclure marqueurs DOM, légendes, attributions ; tester CORS et fonds absents.
+- [x] J09 Limiter mémoire, cache et contextes WebGL ; rendre séquentiellement si nécessaire.
+- [x] J10 Prévol débordements/résolution/ressources ; vérifier texte sélectionnable et crédits.
+- [x] J11 Inspecter PDF visuellement et par extraction ; rouvrir le projet et modifier la carte.
 Porte : brochure complète sans interactions nécessaires ni promesse de navigation PDF imposée.
 
 ## P6 — Recette finale et documentation
