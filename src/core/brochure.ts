@@ -3,8 +3,8 @@
  */
 
 import type { StoryMap } from '../types/story';
-import type { Block, BlockType, Page } from '../types/project';
-import { refitBlocksToGrid, getGridDimensions } from './grid';
+import type { Block, BlockType, Page, ProjectMap } from '../types/project';
+import { refitBlocksDetailed, getGridDimensions } from './grid';
 export * from './brochurePreflight';
 
 export interface BrochureConversionReport {
@@ -56,11 +56,14 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
   let numberedBindingsCount = 0;
   const notes: string[] = [];
 
+  // Clone défensif des cartes pour préserver l'immutabilité de source
+  const clonedMaps: ProjectMap[] = JSON.parse(JSON.stringify(source.maps || []));
+
   // Table de correspondance stable (mapId, featureId) -> numberIndex
   const featureNumberMap = new Map<string, number>();
   let nextSeq = 1;
 
-  (source.maps || []).forEach((m) => {
+  clonedMaps.forEach((m) => {
     (m.layers || []).forEach((l) => {
       (l.features || []).forEach((f) => {
         const key = `${m.id}::${f.id}`;
@@ -72,7 +75,7 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
     });
   });
 
-  (source.maps || []).forEach((m) => {
+  clonedMaps.forEach((m) => {
     (m.layers || []).forEach((l) => {
       (l.features || []).forEach((f) => {
         const key = `${m.id}::${f.id}`;
@@ -89,7 +92,9 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
       ? source.pages
       : [{ id: 'page-1', title: 'Page 1', layout: { format: targetFormat, gridColumns: dims.cols, gridRows: dims.rows, marginMm: 15 }, blocks: [] }];
 
-  const convertedPages: Page[] = sourcePages.map((page, pIdx) => {
+  const convertedPages: Page[] = [];
+
+  sourcePages.forEach((page, pIdx) => {
     const adaptedBlocks: Block[] = (page.blocks || []).map((b) => {
       let cloned: Block = { ...b, data: { ...b.data }, binding: b.binding ? { ...b.binding } : undefined };
 
@@ -122,12 +127,33 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
       return cloned;
     });
 
-    const refitted = refitBlocksToGrid(adaptedBlocks, dims.cols, dims.rows);
-    return {
+    // Placement avec gestion des débordements sur pages de suite
+    let remaining = adaptedBlocks;
+    let spillIdx = 1;
+    const firstRes = refitBlocksDetailed(remaining, dims.cols, dims.rows);
+    convertedPages.push({
       ...page,
       layout: { ...page.layout, format: targetFormat, gridColumns: dims.cols, gridRows: dims.rows, marginMm: 15 },
-      blocks: refitted,
-    };
+      blocks: firstRes.placed,
+    });
+    remaining = firstRes.unplaced;
+
+    while (remaining.length > 0) {
+      const spillRes = refitBlocksDetailed(remaining, dims.cols, dims.rows);
+      if (spillRes.placed.length === 0) {
+        notes.push(`Attention : ${remaining.length} bloc(s) ne peuvent pas entrer dans la grille A4.`);
+        break;
+      }
+      convertedPages.push({
+        id: `${page.id}-spill-${spillIdx}`,
+        title: `${page.title || 'Page'} (suite ${spillIdx})`,
+        layout: { format: targetFormat, gridColumns: dims.cols, gridRows: dims.rows, marginMm: 15 },
+        blocks: spillRes.placed,
+      });
+      notes.push(`Page ${pIdx + 1} : ${spillRes.placed.length} bloc(s) en débordement déplacés sur page de suite.`);
+      remaining = spillRes.unplaced;
+      spillIdx++;
+    }
   });
 
   if (formatChanged) notes.push(`Format adapté de "${source.format || 'responsive'}" vers "${targetFormat}".`);
@@ -135,7 +161,9 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
 
   const brochure: StoryMap = {
     ...source, id: targetId, title: `${source.title} (Brochure A4)`,
-    mode: 'brochure', format: targetFormat, created: Date.now(), modified: Date.now(), pages: convertedPages,
+    mode: 'brochure', format: targetFormat, created: Date.now(), modified: Date.now(),
+    maps: clonedMaps,
+    pages: convertedPages,
   };
 
   return {

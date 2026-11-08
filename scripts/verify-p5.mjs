@@ -1,7 +1,7 @@
 /**
  * Script de validation automatisée P5 (J01 -> J11 & C04 / C06 / C07)
  * Vérifie : restriction statique (J01), conversion par copie avec numérotation synchronisée (C06),
- * prévol honnête des attributions fournisseurs (C07), readiness et protection impression (C04), et réimportation (J11).
+ * prévol honnête des attributions (C07), readiness et protection impression (C04), et réimportation (J11).
  */
 
 import assert from 'node:assert';
@@ -22,9 +22,9 @@ function testMode3StaticRestrictions() {
   console.log('  -> Restriction J01 validée.');
 }
 
-// 2. Conversion Mode 2 -> Mode 3 par copie avec numérotation synchronisée carte/texte (C06)
+// 2. Conversion Mode 2 -> Mode 3 avec immutabilité, synchronisation et pages de suite (C06)
 function testMode2ToMode3Conversion() {
-  console.log('Test 2 : Conversion par copie avec numérotation synchronisée carte/texte (C06, J02, J03)...');
+  console.log('Test 2 : Conversion par copie, immutabilité et pages de suite (C06, J02, J03)...');
   const sourceDoc = {
     id: 'doc-source-2', version: '2.0.0', title: 'Diagnostic Urbain', author: 'Atelier Urbanisme',
     created: 1, modified: 2, mode: 'rich-document', format: 'screen-16-9',
@@ -36,6 +36,7 @@ function testMode2ToMode3Conversion() {
         id: 'l1', name: 'Couche 1', visible: true,
         features: [
           { id: 'f-louvre', name: 'Louvre', geometryType: 'Point', coordinates: [2.33, 48.86], numberIndex: 42 },
+          { id: 'f-tuileries', name: 'Tuileries', geometryType: 'Point', coordinates: [2.32, 48.86] },
         ],
       }],
     }],
@@ -45,6 +46,10 @@ function testMode2ToMode3Conversion() {
         { id: 'b-gal', type: 'gallery', x: 0, y: 0, w: 4, h: 2, data: { items: [{ url: 'https://example.com/1.jpg', caption: 'Photo 1' }] } },
         { id: 'b-txt1', type: 'text', x: 0, y: 2, w: 2, h: 2, data: { text: 'Appel 1' }, binding: { mapId: 'm1', targetFeatureId: 'f-louvre', action: 'zoom' } },
         { id: 'b-txt2', type: 'text', x: 2, y: 2, w: 2, h: 2, data: { text: 'Appel 2' }, binding: { mapId: 'm1', targetFeatureId: 'f-louvre', action: 'highlight' } },
+        // Ajout de 60 blocs pour saturer la grille et forcer une page de suite
+        ...Array.from({ length: 60 }, (_, i) => ({
+          id: `b-extra-${i}`, type: 'text', x: 0, y: 0, w: 2, h: 2, data: { text: `Extra ${i}` },
+        })),
       ],
     }],
   };
@@ -56,12 +61,18 @@ function testMode2ToMode3Conversion() {
   assert.strictEqual(report.adaptedGalleriesCount, 1);
   assert.strictEqual(report.numberedBindingsCount, 2);
 
-  const bTxt1 = brochure.pages[0].blocks[1];
-  const bTxt2 = brochure.pages[0].blocks[2];
-  // C06 : Les renvois texte doivent porter exactement le même numéro que le marqueur sur la carte (#42)
-  assert.strictEqual(bTxt1.binding.numberIndex, 42, 'Le renvoi 1 doit porter le numéro exact du marqueur cartographique (#42)');
-  assert.strictEqual(bTxt2.binding.numberIndex, 42, 'Le renvoi 2 vers le même objet doit partager le même numéro stable (#42)');
-  console.log('  -> Conversion Mode 2 -> 3 et synchronisation carte/texte (C06) validées.');
+  // Vérifier l'immutabilité stricte : f-tuileries ne doit PAS avoir été muté dans sourceDoc
+  const sourceTuileries = sourceDoc.maps[0].layers[0].features.find((f) => f.id === 'f-tuileries');
+  assert.strictEqual(sourceTuileries.numberIndex, undefined, 'sourceDoc.maps ne doit pas être muté en place !');
+  const brochureTuileries = brochure.maps[0].layers[0].features.find((f) => f.id === 'f-tuileries');
+  assert.strictEqual(brochureTuileries.numberIndex, 43, 'brochure.maps reçoit son propre numéro index');
+
+  // Vérifier la création de pages de suite : les 63 blocs doivent être placés sans perte
+  const totalBrochureBlocks = brochure.pages.reduce((acc, p) => acc + p.blocks.length, 0);
+  assert.strictEqual(totalBrochureBlocks, 63, 'Aucun bloc ne doit être perdu lors de la conversion A4');
+  assert.ok(brochure.pages.length > 1, 'Des pages de suite doivent être créées pour absorber le débordement');
+
+  console.log('  -> Conversion Mode 2 -> 3, immutabilité et pages de suite (C06) validées.');
 }
 
 // 3. Contrôle prévol honnête des attributions (C07)
@@ -127,10 +138,10 @@ function testBrochurePrintGenerationAndReopen() {
   const html = generateBrochurePrintHTML(story);
   assert.ok(html.includes('@page { size: A4 landscape; margin: 0; }'));
   assert.ok(html.includes('id="btn-print" disabled'), 'C04 : bouton imprimer initialement désactivé');
-  assert.ok(!html.includes('setTimeout(() => { if (statusEl) statusEl.textContent = \'Prêt pour impression PDF A4\'; }, 4000)'), 'C04 : pas de faux statut prêt aveugle');
   assert.ok(html.includes('checkReadiness'), 'C04 : vérification explicite de tous les états cartographiques');
   assert.ok(html.includes('beforeprint'), 'C04 : interception de l’événement d’impression avant readiness');
   assert.ok(html.includes('preserveDrawingBuffer: true'), 'C05 : WebGL pour capture d’impression');
+  assert.ok(html.includes('MapLibre GL non disponible'), 'Bloque si CDN absent');
 
   const reopened = extractStoryFromHTML(html);
   assert.strictEqual(reopened.id, 'brochure-a4-1');

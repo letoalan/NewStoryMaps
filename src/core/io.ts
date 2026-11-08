@@ -124,6 +124,25 @@ async function resolveRelativeImages(story: StoryMap, entries: ZipReadEntry[]): 
       }
     }
   }
+  for (const page of story.pages || []) {
+    for (const b of page.blocks || []) {
+      if (!b.data) continue;
+      if (typeof b.data.url === 'string' && !b.data.url.startsWith('http') && !b.data.url.startsWith('data:')) {
+        const target = b.data.url.replace(/^\.?\//, '').toLowerCase();
+        const match = imageEntries.find(e => e.name.toLowerCase().endsWith(target) || target.endsWith(e.name.toLowerCase().split('/').pop() || ''));
+        if (match) b.data.url = uint8ArrayToDataUrl(await match.bytes(), match.name);
+      }
+      if (Array.isArray(b.data.contactSheetItems)) {
+        for (const it of b.data.contactSheetItems) {
+          if (it?.url && !it.url.startsWith('http') && !it.url.startsWith('data:')) {
+            const target = it.url.replace(/^\.?\//, '').toLowerCase();
+            const match = imageEntries.find(e => e.name.toLowerCase().endsWith(target) || target.endsWith(e.name.toLowerCase().split('/').pop() || ''));
+            if (match) it.url = uint8ArrayToDataUrl(await match.bytes(), match.name);
+          }
+        }
+      }
+    }
+  }
   return story;
 }
 

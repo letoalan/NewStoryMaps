@@ -62,10 +62,16 @@ function initBrochureMaps() {
     const maps = storyData.maps || [];
     const els = Array.from(document.querySelectorAll('.doc-map-canvas'));
     const statusEl = document.getElementById('print-status'), printBtn = document.getElementById('btn-print');
-    if (!els.length || typeof maplibregl === 'undefined') {
+    if (!els.length) {
         isReadyForPrint = true;
         if (printBtn) printBtn.disabled = false;
-        if (statusEl) { statusEl.style.background = '#15803d'; statusEl.style.color = '#fff'; statusEl.textContent = 'Prêt pour impression PDF A4'; }
+        if (statusEl) { statusEl.style.background = '#15803d'; statusEl.style.color = '#fff'; statusEl.textContent = 'Prêt pour impression PDF A4 (aucun élément cartographique)'; }
+        return;
+    }
+    if (typeof maplibregl === 'undefined') {
+        isReadyForPrint = false;
+        if (printBtn) printBtn.disabled = true;
+        if (statusEl) { statusEl.style.background = '#dc2626'; statusEl.style.color = '#fff'; statusEl.textContent = 'Erreur : MapLibre GL non disponible — Impression bloquée'; }
         return;
     }
     els.forEach(el => { mapStates[el.id] = { state: 'loading', settled: false }; });
@@ -80,7 +86,7 @@ function initBrochureMaps() {
     els.forEach((el) => {
         const mapId = el.getAttribute('data-map-id'), targetFeatId = el.getAttribute('data-target-feature');
         const scene = maps.find(m => m.id === mapId) || maps[0];
-        if (!scene) { settle(el.id, 'ready'); return; }
+        if (!scene) { settle(el.id, 'error', 'Scène cartographique introuvable'); return; }
         const v = scene.view || { center: [2.3522, 48.8566], zoom: 11, pitch: 0, bearing: 0 };
         try {
             const map = new maplibregl.Map({ container: el, style: resolveStyle(scene.mapStyle), center: v.center, zoom: v.zoom, pitch: v.pitch || 0, bearing: v.bearing || 0, interactive: false, attributionControl: false, preserveDrawingBuffer: true });
@@ -91,7 +97,7 @@ function initBrochureMaps() {
                     if (!l.visible) return;
                     (l.features || []).forEach(f => {
                         const col = (targetFeatId && f.id === targetFeatId) ? '#e11d48' : (f.color || l.color || '${safeAccent}');
-                        feats.push({ type: 'Feature', geometry: { type: f.geometryType, coordinates: f.coordinates }, properties: { color: col } });
+                        feats.push({ type: 'Feature', id: f.id, geometry: { type: f.geometryType, coordinates: f.coordinates }, properties: { id: f.id, color: col } });
                         const pt = featCenter(f);
                         if (pt) {
                             const mEl = document.createElement('div');

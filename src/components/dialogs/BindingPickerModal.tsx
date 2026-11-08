@@ -6,23 +6,14 @@ import React, { useState } from 'react';
 import { Block, NarrativeBinding, ProjectMap } from '../../types/project';
 import { X, Link2, Unlink, Check } from 'lucide-react';
 
-interface BindingPickerModalProps {
-  isOpen: boolean;
-  block: Block | null;
+interface ContentProps {
+  block: Block;
   maps: ProjectMap[];
   onClose: () => void;
   onSaveBinding: (blockId: string, binding?: NarrativeBinding) => void;
 }
 
-export const BindingPickerModal: React.FC<BindingPickerModalProps> = ({
-  isOpen,
-  block,
-  maps,
-  onClose,
-  onSaveBinding,
-}) => {
-  if (!isOpen || !block) return null;
-
+const BindingPickerContent: React.FC<ContentProps> = ({ block, maps, onClose, onSaveBinding }) => {
   const currentBinding = block.binding;
   const initialMapId = currentBinding?.mapId || maps[0]?.id || '';
   const [selectedMapId, setSelectedMapId] = useState<string>(initialMapId);
@@ -42,11 +33,6 @@ export const BindingPickerModal: React.FC<BindingPickerModalProps> = ({
       numberIndex: numberIndex > 0 ? numberIndex : undefined,
     };
     onSaveBinding(block.id, binding);
-    onClose();
-  };
-
-  const handleUnbind = () => {
-    onSaveBinding(block.id, undefined);
     onClose();
   };
 
@@ -114,7 +100,7 @@ export const BindingPickerModal: React.FC<BindingPickerModalProps> = ({
 
         <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {currentBinding ? (
-            <button className="btn btn-ghost btn-danger" onClick={handleUnbind} style={{ fontSize: '12px' }}>
+            <button className="btn btn-ghost btn-danger" onClick={() => { onSaveBinding(block.id, undefined); onClose(); }} style={{ fontSize: '12px' }}>
               <Unlink size={14} /> Supprimer la liaison
             </button>
           ) : <div />}
@@ -129,4 +115,15 @@ export const BindingPickerModal: React.FC<BindingPickerModalProps> = ({
       </div>
     </div>
   );
+};
+
+export const BindingPickerModal: React.FC<{
+  isOpen: boolean;
+  block: Block | null;
+  maps: ProjectMap[];
+  onClose: () => void;
+  onSaveBinding: (blockId: string, binding?: NarrativeBinding) => void;
+}> = (props) => {
+  if (!props.isOpen || !props.block) return null;
+  return <BindingPickerContent block={props.block} maps={props.maps} onClose={props.onClose} onSaveBinding={props.onSaveBinding} />;
 };

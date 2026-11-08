@@ -49,17 +49,21 @@ export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void 
       if (res.unplaced.length > 0) overflowBlocks = res.unplaced;
       return { ...p, layout: { ...p.layout, format: fmt }, blocks: res.placed };
     });
-    if (overflowBlocks.length > 0) {
-      const overflowPage: Page = {
-        id: `page-${Date.now()}-spill`,
-        title: `Page ${pages.length + 1} (Débordement)`,
+    const spillPages: Page[] = [];
+    let spillIdx = 1;
+    while (overflowBlocks.length > 0) {
+      const spillRes = refitBlocksDetailed(overflowBlocks, dims.cols, dims.rows);
+      if (spillRes.placed.length === 0) break;
+      spillPages.push({
+        id: `page-${Date.now()}-spill-${spillIdx}`,
+        title: `Page ${pages.length + spillIdx} (Débordement)`,
         layout: { format: fmt, gridColumns: dims.cols, gridRows: dims.rows, marginMm: dims.marginMm },
-        blocks: refitBlocksDetailed(overflowBlocks, dims.cols, dims.rows).placed,
-      };
-      updateStory({ format: fmt, pages: [...updated, overflowPage] });
-    } else {
-      updateStory({ format: fmt, pages: updated });
+        blocks: spillRes.placed,
+      });
+      overflowBlocks = spillRes.unplaced;
+      spillIdx++;
     }
+    updateStory({ format: fmt, pages: [...updated, ...spillPages] });
   };
 
   const handleBack = async () => {

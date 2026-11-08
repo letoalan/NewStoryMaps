@@ -50,7 +50,7 @@ function initDocMaps() {
                 if (!l.visible) return;
                 (l.features || []).forEach(f => {
                     const col = (targetFeatId && f.id === targetFeatId) ? '#e11d48' : (f.color || l.color || '${safeAccent}');
-                    feats.push({ type: 'Feature', geometry: { type: f.geometryType, coordinates: f.coordinates }, properties: { color: col } });
+                    feats.push({ type: 'Feature', id: f.id, geometry: { type: f.geometryType, coordinates: f.coordinates }, properties: { id: f.id, color: col } });
                     const pt = featCenter(f);
                     if (pt) {
                         const mEl = document.createElement('div');
@@ -83,12 +83,17 @@ function triggerNarrativeBinding(mapId, featId, action) {
             try {
                 if (m.getLayer('feat-hl')) m.removeLayer('feat-hl');
                 if (targetFeat && targetFeat.geometryType !== 'Point') {
-                    m.addLayer({ id: 'feat-hl', type: 'line', source: 'scene-shapes', paint: { 'line-color': '#e11d48', 'line-width': 6 } });
+                    m.addLayer({ id: 'feat-hl', type: 'line', source: 'scene-shapes', filter: ['==', ['get', 'id'], featId], paint: { 'line-color': '#e11d48', 'line-width': 6 } });
                     setTimeout(() => { try { if (m.getLayer('feat-hl')) m.removeLayer('feat-hl'); } catch (_) {} }, 2500);
                 }
             } catch (_) {}
         } else if (action === 'filter') {
-            try { if (targetFeat) m.setFilter('scene-lines-layer', ['==', ['geometry-type'], targetFeat.geometryType]); } catch (_) {}
+            try {
+                if (targetFeat) {
+                    m.setFilter('scene-lines-layer', ['==', ['get', 'id'], featId]);
+                    m.setFilter('scene-polygons-fill', ['==', ['get', 'id'], featId]);
+                }
+            } catch (_) {}
         }
     });
 }

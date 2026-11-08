@@ -1,4 +1,4 @@
-# Rapport de Réception Finale P6 (K01 à K07)
+# Rapport de Réception Finale P6 (K01 à K07 & Consolidation Bêta)
 
 Ce document consigne la recette finale et les preuves d'exécution du jalon **P6**, conformément à [`impl2.md`](file:///impl2.md) et [`tasks2.md`](file:///tasks2.md).
 
@@ -14,7 +14,7 @@ Ce document consigne la recette finale et les preuves d'exécution du jalon **P6
 - **Commande de compilation de production** :
   ```bash
   npm run build
-  # Résultat : tsc && vite build -> ✓ built in 1.51s, 0 erreurs, 0 avertissements TS
+  # Résultat : tsc && vite build -> ✓ built in 0.93s, 0 erreurs, 0 avertissements TS
   ```
 
 ---
@@ -29,10 +29,10 @@ Ce document consigne la recette finale et les preuves d'exécution du jalon **P6
   - Export/import v2 historique vérifié sans dégradation.
 - **Mode 2 (Document enrichi)** :
   - Génération HTML autonome multi-profils via [`generateDocumentHTML`](file:///src/core/publishDocument.ts).
-  - Vérification des liaisons narratives `data-action="narrative-binding"` vers l'étape #1.
+  - Vérification des liaisons narratives `data-action="narrative-binding"` avec filtrage strict par ID de figuré `['==', ['get', 'id'], featId]`.
   - Réimportation et intégrité de la scène cartographique prouvées.
 - **Mode 3 (Brochure statique A4)** :
-  - Conversion via [`convertRichDocumentToBrochure`](file:///src/core/brochure.ts).
+  - Conversion via [`convertRichDocumentToBrochure`](file:///src/core/brochure.ts) avec clone défensif et pages de suite.
   - Prévol [`runBrochurePreflight`](file:///src/core/brochurePreflight.ts) validé (`ready: true`).
   - Sortie imprimable A4 [`generateBrochurePrintHTML`](file:///src/core/publishBrochure.ts) avec blocage d'impression avant stabilisation cartographique (`readiness`).
 
@@ -58,3 +58,12 @@ Ce document consigne la recette finale et les preuves d'exécution du jalon **P6
 - **Pilote d'impression PDF** : La sélection vectorielle finale dépend du moteur d'impression PDF du navigateur client ; le prévol certifie la présence du flux textuel sans fausse promesse vectorielle.
 - **WebGL multi-cartes** : La brochure borne les contextes actifs et libère la mémoire à la fermeture (`unload`).
 
+---
+
+## 3. Consolidations Critiques Bêta Effectuées
+1. **Intégrité React Hooks** : Correction de l'appel conditionnel prématuré dans [`BindingPickerModal.tsx`](file:///src/components/dialogs/BindingPickerModal.tsx) via séparation wrapper/contenu.
+2. **Immutabilité Mode 2 -> 3** : [`convertRichDocumentToBrochure`](file:///src/core/brochure.ts) effectue un clone défensif des cartes, prévenant toute mutation collatérale du document source.
+3. **Zéro perte de blocs lors des conversions et changements de format** : Implémentation d'une boucle de création de pages de suite pour absorber l'intégralité des blocs débordants (`unplaced`).
+4. **Précision narrative** : Filtrage et surbrillance ciblant strictement l'identifiant exact de l'entité (`['==', ['get', 'id'], featId]`) dans [`publishDocumentRuntime.ts`](file:///src/core/publishDocumentRuntime.ts).
+5. **Fiabilité readiness brochure** : Blocage formel de l'impression avec affichage d'erreur explicite en cas d'absence de MapLibre GL ou de scène cartographique introuvable.
+6. **Réimportation de médias Mode 2 / 3** : Prise en charge des images relatives et planches contact dans [`parseStoryFile`](file:///src/core/io.ts).

@@ -36,7 +36,9 @@ export interface LegacyV2Exchange {
 export function isModernStoryMap(data: unknown): data is StoryMap {
   if (!data || typeof data !== 'object') return false;
   const d = data as Record<string, unknown>;
-  return typeof d.title === 'string' && Array.isArray(d.steps) && typeof d.id === 'string';
+  const hasValidMode2Or3 = (d.mode === 'rich-document' || d.mode === 'brochure') && Array.isArray(d.pages);
+  const hasValidMode1 = Array.isArray(d.steps);
+  return typeof d.title === 'string' && typeof d.id === 'string' && (hasValidMode1 || hasValidMode2Or3);
 }
 
 export function isLegacyV2Story(data: unknown): data is LegacyV2Exchange {
@@ -52,7 +54,14 @@ export function isLegacyV1Story(data: unknown): boolean {
 }
 
 export function convertLegacyToModern(legacy: unknown): StoryMap {
-  if (isModernStoryMap(legacy)) return legacy;
+  if (isModernStoryMap(legacy)) {
+    return {
+      ...legacy,
+      steps: legacy.steps || [],
+      pages: legacy.pages || [],
+      maps: legacy.maps || [],
+    };
+  }
   if (!isLegacyV2Story(legacy) && !isLegacyV1Story(legacy)) {
     throw new Error('Ce document n’est pas un format StoryMap reconnu.');
   }
