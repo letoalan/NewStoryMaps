@@ -15,7 +15,7 @@ import { BlockContextMenu } from './BlockContextMenu';
 import { EmptyCellMenu } from './EmptyCellMenu';
 import { BlockRenderer } from './BlockRenderer';
 import { BlockInspectorModal } from '../dialogs/BlockInspectorModal';
-import { Plus, ArrowRight, ArrowLeft, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface PageGridProps {
   format: PageFormat;
@@ -35,7 +35,6 @@ export const PageGrid: React.FC<PageGridProps> = ({
   format, blocks, onChangeBlocks, onOpenBinding, isEditable = true, story, page, hero, onUpdateHero, mode, outputProfile,
 }) => {
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-  const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null);
   const [activeEmptyCell, setActiveEmptyCell] = useState<{ x: number; y: number; anchorEl: HTMLElement | null } | null>(null);
   const [inspectedBlock, setInspectedBlock] = useState<{ id: string; tab: 'content' | 'replace' | 'style' } | null>(null);
 
@@ -142,8 +141,6 @@ export const PageGrid: React.FC<PageGridProps> = ({
               key={b.id} data-block-id={b.id} data-style-mode={b.styleOverride?.styleMode || 'inherit'}
               style={{ gridColumn: `${b.x + 1} / span ${b.w}`, gridRow: `${b.y + 1} / span ${b.h}`, position: 'relative', zIndex: isSelected ? 30 : 10, outline: editorOutline, outlineOffset: '2px', borderRadius: bStyle.radiusCss, background: isHero ? 'transparent' : bStyle.surfaceCssBackground, border: isHero ? 'none' : bStyle.borderCss, boxShadow: bStyle.shadowCss, color: bStyle.textColor, overflow: 'visible' }}
               onClick={(e) => { e.stopPropagation(); if (isEditable) setSelectedBlockId(b.id); }}
-              onMouseEnter={() => { if (isEditable) setHoveredBlockId(b.id); }}
-              onMouseLeave={() => { if (isEditable) setHoveredBlockId(null); }}
             >
               {isSelected && isEditable && (
                 <BlockContextMenu
@@ -154,22 +151,6 @@ export const PageGrid: React.FC<PageGridProps> = ({
                   onOpenBinding={onOpenBinding ? () => onOpenBinding(b) : undefined}
                   onOpenInspector={(tab) => setInspectedBlock({ id: b.id, tab })}
                 />
-              )}
-              {isEditable && (isSelected || hoveredBlockId === b.id) && (
-                ([
-                  ['up', b.y > 0, ArrowUp, 'vers le haut', { top: '-13px', left: '50%', transform: 'translateX(-50%)' }],
-                  ['down', b.y + b.h < rows, ArrowDown, 'vers le bas', { bottom: '-13px', left: '50%', transform: 'translateX(-50%)' }],
-                  ['left', b.x > 0, ArrowLeft, 'vers la gauche', { left: '-13px', top: '50%', transform: 'translateY(-50%)' }],
-                  ['right', b.x + b.w < cols, ArrowRight, 'vers la droite', { right: '-13px', top: '50%', transform: 'translateY(-50%)' }],
-                ] as const).filter(([, can]) => can).map(([dir,, Icon, lbl, pos]) => (
-                  <button
-                    key={dir} type="button" className={`btn-expand-${dir}`} title={`Agrandir le conteneur ${lbl}`}
-                    aria-label={`Agrandir ${lbl}`} onClick={(e) => { e.stopPropagation(); handleExpand(b.id, dir); }}
-                    style={{ position: 'absolute', ...(pos as React.CSSProperties), width: '24px', height: '24px', borderRadius: '50%', background: 'var(--accent)', color: '#fff', border: '2px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 35, padding: 0 }}
-                  >
-                    <Icon size={13} strokeWidth={2.5} />
-                  </button>
-                ))
               )}
               <div style={{ width: '100%', height: '100%', overflow: isHero ? 'hidden' : 'auto', borderRadius: bStyle.radiusCss, padding: isHero ? 0 : bStyle.paddingCss, color: bStyle.textColor, fontFamily: bStyle.bodyFont }}>
                 <BlockRenderer block={b} onChange={(p) => handleUpdateBlockData(b.id, p)} isEditable={isEditable} visualStyle={bStyle} hero={hero} onUpdateHero={onUpdateHero} subtitle={story?.subtitle} />
