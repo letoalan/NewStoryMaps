@@ -132,8 +132,8 @@ export function generateStandaloneHTML(story: StoryMap): string {
             const fZoom = fromCam.zoom || toCam.zoom, fPitch = fromCam.pitch || 0, fBearing = fromCam.bearing || 0;
             map.jumpTo({ center: pts[0], zoom: fZoom, pitch: fPitch, bearing: fBearing });
             const distDeg = Math.hypot((toCoord[0] - fromCoord[0]) * Math.cos(((fromCoord[1] + toCoord[1]) / 2) * Math.PI / 180), toCoord[1] - fromCoord[1]);
-            const baseMs = Math.max(800, (animCfg.durationSec || 4) * 1000), dur = Math.round(Math.min(12000, Math.max(1200, baseMs * Math.min(2.6, Math.max(0.55, 0.55 + Math.log1p(distDeg) * 0.42)))));
-            const idealMidZoom = Math.max(2.2, Math.min(13.5, 8.8 - Math.log2(distDeg + 0.15) * 1.35)), targetMidZoom = Math.min(Math.min(fZoom, toCam.zoom), idealMidZoom);
+            const baseMs = Math.max(1000, (animCfg.durationSec || 4.8) * 1000), dur = Math.round(baseMs * Math.min(1.15, Math.max(0.88, 0.88 + Math.log10(Math.max(0.01, distDeg) + 1) * 0.16)));
+            const targetMidZoom = Math.max(1.8, Math.min(Math.min(fZoom, toCam.zoom) - 0.25, Math.log2((360 * 350 * (dur / 1000)) / (256 * Math.max(0.01, distDeg)))));
             let elapsed = 0; const nSeg = pts.length - 1;
             vehicleTimer = setInterval(() => {
                 if (document.hidden) return;

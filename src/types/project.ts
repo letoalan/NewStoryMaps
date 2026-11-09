@@ -5,6 +5,7 @@
 
 import type { StoryMap } from './story';
 import type { BlockVisualOverride, PageVisualOverride, HeroConfig, RouteAnimationConfig } from './theme';
+import type { ImageCropTransform, TypographyStyleRole, MapEditorialPreset } from './editorial';
 
 export type ProjectMode = 'storymap' | 'rich-document' | 'brochure';
 
@@ -68,6 +69,13 @@ export interface Block {
   data: Record<string, unknown>;
   binding?: NarrativeBinding;
   styleOverride?: BlockVisualOverride;
+  zIndex?: number;
+  groupId?: string;
+  locked?: boolean;
+  readingOrder?: number;
+  imageCrop?: ImageCropTransform;
+  typographyRole?: TypographyStyleRole;
+  mapPreset?: MapEditorialPreset;
 }
 
 export interface PageLayout {

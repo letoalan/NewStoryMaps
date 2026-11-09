@@ -10,8 +10,9 @@ import { resolveMapStyle } from '../../types/map';
 import { attachMapDiagnostics } from '../../core/mapDiagnostics';
 import { syncRouteLayer, syncCanvasMarkers } from '../../core/canvasLayers';
 import { buildSegmentPathCoords } from '../../core/route';
-import { computeSegmentBearing, computePathMetrics, computeAdaptiveFlightDurationMs, computeReadableCruiseZoom } from '../../core/routeInterpolation';
+import { computeSegmentBearing, computeAdaptiveFlightDurationMs } from '../../core/routeInterpolation';
 import { createVehicleController, createTwoLevelVehicleDomElement, VehicleController } from '../../core/vehicleController';
+import { createFlightPlan } from '../../core/flightPlanner';
 import { PlayerNarrative } from './PlayerNarrative';
 import { RefreshCw, X } from 'lucide-react';
 
@@ -103,11 +104,10 @@ export const Player: React.FC<{ onExit?: () => void }> = ({ onExit }) => {
     const hasVehicle = Boolean(animCfg && animCfg.enabled && animCfg.vehicle !== 'none');
 
     if (hasVehicle && animCfg && currentIdx > 0 && !reduced) {
-      const prevCam = steps[currentIdx - 1].camera;
-      const nextCam = currentStep.camera;
+      const prevCam = steps[currentIdx - 1].camera, nextCam = currentStep.camera;
       const coords = buildSegmentPathCoords(prevCam.center, nextCam.center, rStyle);
-      const totalDeg = computePathMetrics(coords).totalLength;
-      const adaptiveSec = computeAdaptiveFlightDurationMs(totalDeg, animCfg.durationSec || 4) / 1000;
+      const vp = { width: map.getContainer()?.clientWidth || 1024, height: map.getContainer()?.clientHeight || 768 };
+      const plan = createFlightPlan(coords, prevCam, nextCam, vp, animCfg.pace || 'normal', animCfg.climbProfile || 'balanced');
       const initBrg = coords.length >= 2 ? computeSegmentBearing(coords[0], coords[1]) : 0;
       const { wrapper, innerIcon } = createTwoLevelVehicleDomElement(document, animCfg, vColor, initBrg);
       const mk = new Marker({ element: wrapper }).setLngLat(coords[0]).addTo(map);
@@ -116,22 +116,17 @@ export const Player: React.FC<{ onExit?: () => void }> = ({ onExit }) => {
 
       const ctrl = createVehicleController({
         coords,
-        config: { ...animCfg, durationSec: adaptiveSec, cameraFollow: animCfg.cameraFollow !== false },
+        config: { ...animCfg, durationSec: plan.estimatedDurationMs / 1000, cameraFollow: animCfg.cameraFollow !== false },
         prefersReducedMotion: reduced,
-        onSample: (sample, state) => {
-          const p = ctrl.getProgress();
+        onSample: (_s, state) => {
+          const sample = plan.sampleAtProgress(ctrl.getProgress());
           mk.setLngLat(sample.coordinates);
           if (animCfg.orientToRoute !== false) innerIcon.style.transform = `rotate(${sample.bearing}deg)`;
           if (ctrl.isCameraFollowActive()) {
-            map.jumpTo({
-              center: sample.coordinates,
-              zoom: computeReadableCruiseZoom(prevCam.zoom, nextCam.zoom, totalDeg, p),
-              pitch: prevCam.pitch + (nextCam.pitch - prevCam.pitch) * p,
-              bearing: prevCam.bearing + (nextCam.bearing - prevCam.bearing) * p,
-            });
+            map.jumpTo({ center: sample.coordinates, zoom: sample.zoom, pitch: sample.pitch, bearing: sample.bearing });
           }
           if (state === 'completed' && ctrl.isCameraFollowActive()) {
-            map.easeTo({ center: nextCam.center, zoom: nextCam.zoom, pitch: nextCam.pitch, bearing: nextCam.bearing, duration: 220 });
+            map.easeTo({ center: nextCam.center, zoom: nextCam.zoom, pitch: nextCam.pitch, bearing: nextCam.bearing, duration: 180 });
           }
         },
       });

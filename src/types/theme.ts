@@ -27,6 +27,8 @@ export interface RouteAnimationConfig {
   progressiveReveal?: boolean;
   sizePx?: number;
   staticPosition?: 'start' | 'middle' | 'end';
+  pace?: 'slow' | 'normal' | 'fast';
+  climbProfile?: 'subtle' | 'balanced' | 'ample';
 }
 
 export interface HeroConfig {

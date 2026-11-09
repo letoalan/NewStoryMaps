@@ -157,32 +157,32 @@ export function slicePathByProgress(metrics: PathMetrics, progress: number): Arr
 }
 
 /**
- * Calcule une durée de vol adaptative (en ms) proportionnelle à la distance géographique parcourue,
- * tout en préservant la lisibilité cartographique sur les longues distances.
+ * Calcule une durée de vol adaptative (en ms) dans une fourchette équivalente (3.8s à 5.4s pour base 4.8s).
  */
-export function computeAdaptiveFlightDurationMs(totalLengthDeg: number, baseDurationSec = 4): number {
-  const baseMs = Math.max(800, (baseDurationSec || 4) * 1000);
+export function computeAdaptiveFlightDurationMs(totalLengthDeg: number, baseDurationSec = 4.8): number {
+  const baseMs = Math.max(1000, (baseDurationSec || 4.8) * 1000);
   if (totalLengthDeg <= 0) return baseMs;
-  const distFactor = Math.min(2.6, Math.max(0.55, 0.55 + Math.log1p(totalLengthDeg) * 0.42));
-  return Math.round(Math.min(12000, Math.max(1200, baseMs * distFactor)));
+  const bracketFactor = Math.min(1.15, Math.max(0.88, 0.88 + Math.log10(Math.max(0.01, totalLengthDeg) + 1) * 0.16));
+  return Math.round(baseMs * bracketFactor);
 }
 
 /**
- * Calcule le niveau de zoom dynamique en vol (courbe parabolique de croisière) afin que la carte
- * dézoome progressivement sur les grandes distances et reste parfaitement lisible sans flou de tuiles.
+ * Calcule le zoom dynamique en vol garantissant une vitesse perçue constante sur écran et un vol centré.
  */
 export function computeReadableCruiseZoom(
   startZoom: number,
   endZoom: number,
   totalLengthDeg: number,
-  progress: number
+  progress: number,
+  vScreenPx = 350
 ): number {
   const t = Math.max(0, Math.min(1, progress));
   const linearZoom = startZoom + (endZoom - startZoom) * t;
   if (totalLengthDeg <= 0.05) return Number(linearZoom.toFixed(2));
-  const idealMidZoom = Math.max(2.2, Math.min(13.5, 8.8 - Math.log2(totalLengthDeg + 0.15) * 1.35));
+  const durSec = computeAdaptiveFlightDurationMs(totalLengthDeg, 4.8) / 1000;
+  const rawCruise = Math.log2((360 * vScreenPx * durSec) / (256 * Math.max(0.01, totalLengthDeg)));
   const minEndpointZoom = Math.min(startZoom, endZoom);
-  const targetMidZoom = Math.min(minEndpointZoom, idealMidZoom);
+  const targetMidZoom = Math.max(1.8, Math.min(minEndpointZoom - 0.25, rawCruise));
   const dipDepth = Math.max(0, linearZoom - targetMidZoom);
   const arch = Math.sin(t * Math.PI);
   return Number((linearZoom - dipDepth * arch).toFixed(2));

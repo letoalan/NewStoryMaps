@@ -6,12 +6,12 @@ Périmètre : points 1–9 validés ; point 10 et toute évaluation pédagogique
 Coordonner correct.md, newplan.md et zoom.md ; préserver les trois modes.
 
 ## M0 — Contrats et baseline
-- [ ] M0.01 Réauditer main et identifier les primitives réutilisables et travaux parallèles.
-- [ ] M0.02 Constituer fixtures : brochure, magazine et document non touristique.
-- [ ] M0.03 Exécuter tests/build existants et archiver le comportement de référence.
-- [ ] M0.04 Versionner sélection, groupes, verrouillage, ordre de lecture et transformations d’images.
-- [ ] M0.05 Formaliser placement guidé/avancé et superpositions autorisées sans changement silencieux.
-- [ ] M0.06 Définir matrice de rendu éditeur/présentation/HTML/PDF et contrats de migration.
+- [x] M0.01 Réauditer main et identifier les primitives réutilisables et travaux parallèles (validé par verify-mode3 Test 1).
+- [x] M0.02 Constituer fixtures : brochure, magazine et document non touristique (validé par editorialFixtures.ts).
+- [x] M0.03 Exécuter tests/build existants et archiver le comportement de référence (validé par suite npm test).
+- [x] M0.04 Versionner sélection, groupes, verrouillage, ordre de lecture et transformations d’images (validé par Block dans project.ts & editorial.ts).
+- [x] M0.05 Formaliser placement guidé/avancé et superpositions autorisées sans changement silencieux (validé par editorialLayout.ts).
+- [x] M0.06 Définir matrice de rendu éditeur/présentation/HTML/PDF et contrats de migration (validé par editorialGabarits.ts).
 Porte M0 : architecture documentée, pas de deuxième modèle concurrent ni dépendance à une formation.
 
 ## M1 — Interface d’atelier

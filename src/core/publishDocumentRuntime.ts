@@ -46,9 +46,10 @@ function attachLineVehicle(map, elId, rawCoords, animCfg, col) {
     if (reducedMotion) return;
     let userPausedFollow = false; map.on('dragstart', () => { userPausedFollow = true; }); map.on('zoomstart', () => { userPausedFollow = true; });
     const baseZ = (map.getZoom && map.getZoom()) || 11, first = coords[0], last = coords[coords.length - 1];
-    const distDeg = Math.hypot(last[0] - first[0], last[1] - first[1]), idealMidZ = Math.max(2.2, Math.min(13.5, 8.8 - Math.log2(distDeg + 0.15) * 1.35)), midZ = Math.min(baseZ, idealMidZ);
+    const distDeg = Math.hypot(last[0] - first[0], last[1] - first[1]);
+    const baseMs = Math.max(1000, (animCfg.durationSec || 4.8) * 1000), dur = Math.round(baseMs * Math.min(1.15, Math.max(0.88, 0.88 + Math.log10(Math.max(0.01, distDeg) + 1) * 0.16)));
+    const midZ = Math.max(1.8, Math.min(baseZ - 0.25, Math.log2((360 * 350 * (dur / 1000)) / (256 * Math.max(0.01, distDeg)))));
     if (animCfg.cameraFollow !== false && map.jumpTo) map.jumpTo({ center: coords[0], zoom: baseZ });
-    let t = 0; const baseMs = Math.max(1000, (animCfg.durationSec || 4) * 1000), dur = Math.round(Math.min(12000, Math.max(1200, baseMs * Math.min(2.6, Math.max(0.55, 0.55 + Math.log1p(distDeg) * 0.42)))));
     vehicleTimers[elId] = setInterval(() => {
         if (document.hidden) return;
         t = (t + 40) % dur; const p = t / dur, idx = Math.min(coords.length - 2, Math.floor(p * (coords.length - 1))), lt = (p * (coords.length - 1)) - idx;

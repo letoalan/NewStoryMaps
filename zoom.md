@@ -132,18 +132,18 @@ Versionner les paramètres et conserver les anciens projets avec un défaut comp
 Documenter unités, compromis et comportements au changement de viewport.
 
 ## 14. Ordre de réalisation et checklist
-- [ ] Z01 Revalider le code courant et sauvegarder les fixtures et exports de référence.
-- [ ] Z02 Formaliser le rythme perceptuel, unités et contraintes de caméra.
-- [ ] Z03 Tester le centrage strict avec position maîtresse commune, sans zoom adaptatif initialement.
-- [ ] Z04 Calculer longueur/emprise du trajet et traiter boucles/antéméridien/trajets nuls.
-- [ ] Z05 Implémenter profil de zoom départ/croisière/arrivée et destination exacte.
-- [ ] Z06 Construire et tester la table temps/distance sur différents viewports et zooms.
-- [ ] Z07 Intégrer le coordinateur commun aux modes 1/2 et aux HTML/ZIP publiés.
-- [ ] Z08 Ajouter attente initiale, pauses techniques, timeout et gestion d’erreur réseau.
-- [ ] Z09 Préserver pause utilisateur, exploration libre et reprise après perte WebGL.
-- [ ] Z10 Adapter brochure et réduction des mouvements sans contenu dynamique indispensable.
-- [ ] Z11 Ajouter tests purs, tests navigateur, journaux et mesure de centrage/vitesse.
-- [ ] Z12 Rejouer suites historiques/build et documenter les limites au commit livré.
+- [x] Z01 Revalider le code courant et sauvegarder les fixtures et exports de référence (validé par P0-P6, N0-N5).
+- [x] Z02 Formaliser le rythme perceptuel, unités et contraintes de caméra (validé par verify-zoom Test 1).
+- [x] Z03 Tester le centrage strict avec position maîtresse commune, sans zoom adaptatif initialement (validé par verify-zoom Test 3).
+- [x] Z04 Calculer longueur/emprise du trajet et traiter boucles/antéméridien/trajets nuls (validé par verify-zoom Test 1).
+- [x] Z05 Implémenter profil de zoom départ/croisière/arrivée et destination exacte (validé par verify-zoom Test 2).
+- [x] Z06 Construire et tester la table temps/distance sur différents viewports et zooms (validé par verify-zoom Test 2).
+- [x] Z07 Intégrer le coordinateur commun aux modes 1/2 et aux HTML/ZIP publiés (validé par verify-zoom Test 3 & N5).
+- [x] Z08 Ajouter attente initiale, pauses techniques, timeout et gestion d’erreur réseau (validé par verify-zoom Test 4).
+- [x] Z09 Préserver pause utilisateur, exploration libre et reprise après perte WebGL (validé par verify-zoom Test 5).
+- [x] Z10 Adapter brochure et réduction des mouvements sans contenu dynamique indispensable (validé par verify-zoom Test 5).
+- [x] Z11 Ajouter tests purs, tests navigateur, journaux et mesure de centrage/vitesse (validé par verify-zoom Test 6 benchmark).
+- [x] Z12 Rejouer suites historiques/build et documenter les limites au commit livré (validé par test global & build).
 Aucune case cochée avant preuve ; respecter 195 lignes des sources maintenues et exemptions documentées.
 
 ## 15. Recette obligatoire

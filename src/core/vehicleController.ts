@@ -3,7 +3,7 @@
  */
 
 import type { RouteAnimationConfig } from '../types/theme';
-import { type PathMetrics, type PathSamplePoint, computePathMetrics, interpolateAlongPath } from './routeInterpolation';
+import { type PathMetrics, type PathSamplePoint, computePathMetrics, interpolateAlongPath, computeReadableCruiseZoom } from './routeInterpolation';
 import { renderSafeVehicleSvg } from './vehicleCatalog';
 
 export type VehiclePlaybackState = 'idle' | 'playing' | 'paused' | 'completed';
@@ -15,6 +15,9 @@ export interface VehicleControllerOptions {
   isStaticPrint?: boolean;
   onSample?: (sample: PathSamplePoint, state: VehiclePlaybackState) => void;
   onCameraFollow?: (center: [number, number], bearing: number) => void;
+  onCameraUpdate?: (center: [number, number], zoom: number, bearing: number, pitch: number) => void;
+  startZoom?: number;
+  endZoom?: number;
 }
 
 export interface VehicleController {
@@ -27,6 +30,7 @@ export interface VehicleController {
   replay: () => void;
   seek: (progress: number) => PathSamplePoint;
   stop: () => void;
+  resumeFollow: () => void;
   notifyUserMapInteraction: () => void;
   notifyVisibilityChange: (hidden: boolean) => void;
   stepClock: (nowMs: number) => PathSamplePoint;
@@ -51,6 +55,10 @@ export function createVehicleController(options: VehicleControllerOptions): Vehi
     options.onSample?.(sample, state);
     if (state === 'playing' && shouldFollow && !cameraFollowSuspended && !staticOnly) {
       options.onCameraFollow?.(sample.coordinates, sample.bearing);
+      if (options.onCameraUpdate) {
+        const sZ = options.startZoom ?? 12, eZ = options.endZoom ?? sZ;
+        options.onCameraUpdate(sample.coordinates, computeReadableCruiseZoom(sZ, eZ, metrics.totalLength, progress), sample.bearing, 0);
+      }
     }
     return sample;
   };
@@ -132,7 +140,7 @@ export function createVehicleController(options: VehicleControllerOptions): Vehi
     getProgress: () => progress,
     getCurrentSample: () => interpolateAlongPath(metrics, progress),
     isCameraFollowActive: () => Boolean(shouldFollow && !cameraFollowSuspended && !staticOnly),
-    play, pause, replay, seek, stop, notifyUserMapInteraction, notifyVisibilityChange, stepClock, destroy,
+    play, pause, replay, seek, stop, resumeFollow: () => { cameraFollowSuspended = false; emitSample(); }, notifyUserMapInteraction, notifyVisibilityChange, stepClock, destroy,
   };
 }
 

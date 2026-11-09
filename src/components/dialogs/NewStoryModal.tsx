@@ -68,7 +68,7 @@ export const NewStoryModal: React.FC<NewStoryModalProps> = ({ isOpen, initialMod
       heightPreset: 'medium', contentAlign: 'center', title: resolvedTitle,
     } : undefined;
     const routeAnimation: RouteAnimationConfig | undefined = vehicle !== 'none' ? {
-      enabled: true, vehicle, durationSec: 4, durationMs: 4000, loop: true, orientToRoute: true, progressiveTrail: true, cameraFollow: true,
+      enabled: true, vehicle, durationSec: 4, durationMs: 4000, loop: true, orientToRoute: true, progressiveTrail: true, cameraFollow: true, pace: 'normal', climbProfile: 'balanced',
     } : undefined;
 
     onCreate({

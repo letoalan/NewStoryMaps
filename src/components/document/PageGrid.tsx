@@ -15,7 +15,7 @@ import { BlockContextMenu } from './BlockContextMenu';
 import { EmptyCellMenu } from './EmptyCellMenu';
 import { BlockRenderer } from './BlockRenderer';
 import { BlockInspectorModal } from '../dialogs/BlockInspectorModal';
-import { Plus } from 'lucide-react';
+import { Plus, ArrowRight } from 'lucide-react';
 
 interface PageGridProps {
   format: PageFormat;
@@ -35,6 +35,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
   format, blocks, onChangeBlocks, onOpenBinding, isEditable = true, story, page, hero, onUpdateHero, mode, outputProfile,
 }) => {
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null);
   const [activeEmptyCell, setActiveEmptyCell] = useState<{ x: number; y: number; anchorEl: HTMLElement | null } | null>(null);
   const [inspectedBlock, setInspectedBlock] = useState<{ id: string; tab: 'content' | 'replace' | 'style' } | null>(null);
 
