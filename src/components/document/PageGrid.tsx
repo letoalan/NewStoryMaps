@@ -15,7 +15,7 @@ import { BlockContextMenu } from './BlockContextMenu';
 import { EmptyCellMenu } from './EmptyCellMenu';
 import { BlockRenderer } from './BlockRenderer';
 import { BlockInspectorModal } from '../dialogs/BlockInspectorModal';
-import { Plus, ArrowRight } from 'lucide-react';
+import { Plus, ArrowRight, ArrowLeft, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface PageGridProps {
   format: PageFormat;
@@ -48,11 +48,8 @@ export const PageGrid: React.FC<PageGridProps> = ({
 
   const occupiedMatrix: Array<Array<Block | null>> = Array.from({ length: rows }, () => Array.from({ length: cols }, () => null));
   blocks.forEach((b) => {
-    for (let dy = 0; dy < b.h && b.y + dy < rows; dy++) {
-      for (let dx = 0; dx < b.w && b.x + dx < cols; dx++) {
-        occupiedMatrix[b.y + dy][b.x + dx] = b;
-      }
-    }
+    for (let dy = 0; dy < b.h && b.y + dy < rows; dy++)
+      for (let dx = 0; dx < b.w && b.x + dx < cols; dx++) occupiedMatrix[b.y + dy][b.x + dx] = b;
   });
 
   const handleUpdateBlockData = (id: string, patch: Record<string, unknown>) => {
@@ -73,7 +70,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
     }));
   };
 
-  const handleExpand = (blockId: string, dir: 'right' | 'down') => {
+  const handleExpand = (blockId: string, dir: 'right' | 'down' | 'left' | 'up') => {
     const res = expandBlock(blocks, blockId, dir, cols, rows);
     if (res.success) onChangeBlocks(res.blocks); else if (res.error) alert(res.error);
   };
@@ -83,11 +80,8 @@ export const PageGrid: React.FC<PageGridProps> = ({
   };
   const handleDuplicate = (blockId: string) => {
     const res = duplicateBlock(blocks, blockId, cols, rows);
-    if (res.success) {
-      onChangeBlocks(res.blocks);
-      const cloned = res.blocks[res.blocks.length - 1];
-      if (cloned) setSelectedBlockId(cloned.id);
-    } else if (res.error) alert(res.error);
+    if (res.success) { onChangeBlocks(res.blocks); const c = res.blocks[res.blocks.length - 1]; if (c) setSelectedBlockId(c.id); }
+    else if (res.error) alert(res.error);
   };
   const handleDelete = (blockId: string) => {
     onChangeBlocks(deleteBlock(blocks, blockId));
@@ -161,14 +155,21 @@ export const PageGrid: React.FC<PageGridProps> = ({
                   onOpenInspector={(tab) => setInspectedBlock({ id: b.id, tab })}
                 />
               )}
-              {isEditable && (isSelected || hoveredBlockId === b.id) && b.x + b.w < cols && (
-                <button
-                  type="button" className="btn-expand-right" title="Agrandir le conteneur vers la droite"
-                  aria-label="Agrandir vers la droite" onClick={(e) => { e.stopPropagation(); handleExpand(b.id, 'right'); }}
-                  style={{ position: 'absolute', right: '-13px', top: '50%', transform: 'translateY(-50%)', width: '26px', height: '26px', borderRadius: '50%', background: 'var(--accent)', color: '#fff', border: '2px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 35, padding: 0 }}
-                >
-                  <ArrowRight size={14} strokeWidth={2.5} />
-                </button>
+              {isEditable && (isSelected || hoveredBlockId === b.id) && (
+                ([
+                  ['up', b.y > 0, ArrowUp, 'vers le haut', { top: '-13px', left: '50%', transform: 'translateX(-50%)' }],
+                  ['down', b.y + b.h < rows, ArrowDown, 'vers le bas', { bottom: '-13px', left: '50%', transform: 'translateX(-50%)' }],
+                  ['left', b.x > 0, ArrowLeft, 'vers la gauche', { left: '-13px', top: '50%', transform: 'translateY(-50%)' }],
+                  ['right', b.x + b.w < cols, ArrowRight, 'vers la droite', { right: '-13px', top: '50%', transform: 'translateY(-50%)' }],
+                ] as const).filter(([, can]) => can).map(([dir,, Icon, lbl, pos]) => (
+                  <button
+                    key={dir} type="button" className={`btn-expand-${dir}`} title={`Agrandir le conteneur ${lbl}`}
+                    aria-label={`Agrandir ${lbl}`} onClick={(e) => { e.stopPropagation(); handleExpand(b.id, dir); }}
+                    style={{ position: 'absolute', ...(pos as React.CSSProperties), width: '24px', height: '24px', borderRadius: '50%', background: 'var(--accent)', color: '#fff', border: '2px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 35, padding: 0 }}
+                  >
+                    <Icon size={13} strokeWidth={2.5} />
+                  </button>
+                ))
               )}
               <div style={{ width: '100%', height: '100%', overflow: isHero ? 'hidden' : 'auto', borderRadius: bStyle.radiusCss, padding: isHero ? 0 : bStyle.paddingCss, color: bStyle.textColor, fontFamily: bStyle.bodyFont }}>
                 <BlockRenderer block={b} onChange={(p) => handleUpdateBlockData(b.id, p)} isEditable={isEditable} visualStyle={bStyle} hero={hero} onUpdateHero={onUpdateHero} subtitle={story?.subtitle} />

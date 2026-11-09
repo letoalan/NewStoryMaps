@@ -67,30 +67,22 @@ export function addBlock(blocks: Block[], newBlock: Block, cols: number, rows: n
   return { success: true, blocks: [...blocks, newBlock] };
 }
 
-export function expandBlock(blocks: Block[], blockId: string, dir: 'right' | 'down', cols: number, rows: number): GridOperationResult {
+export function expandBlock(blocks: Block[], blockId: string, dir: 'right' | 'down' | 'left' | 'up', cols: number, rows: number): GridOperationResult {
   const target = blocks.find((b) => b.id === blockId);
   if (!target) return { success: false, blocks, error: 'Bloc introuvable.' };
 
-  let step = 1;
-  let newW = dir === 'right' ? target.w + step : target.w;
-  let newH = dir === 'down' ? target.h + step : target.h;
-  let newRect: BlockRect = { x: target.x, y: target.y, w: newW, h: newH };
+  const getRect = (step: number): BlockRect => {
+    const dx = dir === 'left' ? -step : 0, dy = dir === 'up' ? -step : 0;
+    const dw = dir === 'right' || dir === 'left' ? step : 0, dh = dir === 'down' || dir === 'up' ? step : 0;
+    return { x: target.x + dx, y: target.y + dy, w: target.w + dw, h: target.h + dh };
+  };
 
-  if (!isRectValid(newRect, cols, rows) && (newW * newH) % 2 !== 0) {
-    step = 2;
-    newW = dir === 'right' ? target.w + step : target.w;
-    newH = dir === 'down' ? target.h + step : target.h;
-    newRect = { x: target.x, y: target.y, w: newW, h: newH };
-  }
+  let r = getRect(1);
+  if (!isRectValid(r, cols, rows) && (r.w * r.h) % 2 !== 0) r = getRect(2);
+  if (!isRectValid(r, cols, rows)) return { success: false, blocks, error: 'Agrandissement impossible : hors limites ou aire non autorisée.' };
+  if (hasCollision(r, blocks, blockId)) return { success: false, blocks, error: 'Agrandissement impossible : espace occupé.' };
 
-  if (!isRectValid(newRect, cols, rows)) {
-    return { success: false, blocks, error: 'Agrandissement impossible : hors limites ou aire non autorisée.' };
-  }
-  if (hasCollision(newRect, blocks, blockId)) {
-    return { success: false, blocks, error: 'Agrandissement impossible : espace occupé.' };
-  }
-
-  return { success: true, blocks: blocks.map((b) => (b.id === blockId ? { ...b, w: newW, h: newH } : b)) };
+  return { success: true, blocks: blocks.map((b) => (b.id === blockId ? { ...b, ...r } : b)) };
 }
 
 export function shrinkBlock(blocks: Block[], blockId: string): GridOperationResult {

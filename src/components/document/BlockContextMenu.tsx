@@ -9,13 +9,13 @@ import React, { useState, useRef } from 'react';
 import { Block, BlockType, ProjectMode } from '../../types/project';
 import { getAvailableCatalogItems } from '../../core/blockCatalog';
 import { EmptyCellMenu } from './EmptyCellMenu';
-import { ArrowRight, ArrowDown, Minimize2, Copy, Trash2, Link2, Sliders, Edit3, RefreshCw, RotateCcw } from 'lucide-react';
+import { ArrowRight, ArrowLeft, ArrowUp, ArrowDown, Minimize2, Copy, Trash2, Link2, Sliders, Edit3, RefreshCw, RotateCcw } from 'lucide-react';
 
 interface BlockContextMenuProps {
   block: Block;
   mode?: ProjectMode;
   onChangeType: (type: BlockType) => void;
-  onExpand: (dir: 'right' | 'down') => void;
+  onExpand: (dir: 'right' | 'down' | 'left' | 'up') => void;
   onShrink: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
@@ -139,8 +139,14 @@ export const BlockContextMenu: React.FC<BlockContextMenuProps> = ({
         </button>
       )}
 
+      <button type="button" className="btn btn-ghost btn-xs btn-icon" onClick={() => onExpand('left')} title="Agrandir vers la gauche">
+        <ArrowLeft size={13} />
+      </button>
       <button type="button" className="btn btn-ghost btn-xs btn-icon" onClick={() => onExpand('right')} title="Agrandir vers la droite">
         <ArrowRight size={13} />
+      </button>
+      <button type="button" className="btn btn-ghost btn-xs btn-icon" onClick={() => onExpand('up')} title="Agrandir vers le haut">
+        <ArrowUp size={13} />
       </button>
       <button type="button" className="btn btn-ghost btn-xs btn-icon" onClick={() => onExpand('down')} title="Agrandir vers le bas">
         <ArrowDown size={13} />
