@@ -148,6 +148,8 @@ export const PageGrid: React.FC<PageGridProps> = ({
               key={b.id} data-block-id={b.id} data-style-mode={b.styleOverride?.styleMode || 'inherit'}
               style={{ gridColumn: `${b.x + 1} / span ${b.w}`, gridRow: `${b.y + 1} / span ${b.h}`, position: 'relative', zIndex: isSelected ? 30 : 10, outline: editorOutline, outlineOffset: '2px', borderRadius: bStyle.radiusCss, background: isHero ? 'transparent' : bStyle.surfaceCssBackground, border: isHero ? 'none' : bStyle.borderCss, boxShadow: bStyle.shadowCss, color: bStyle.textColor, overflow: 'visible' }}
               onClick={(e) => { e.stopPropagation(); if (isEditable) setSelectedBlockId(b.id); }}
+              onMouseEnter={() => { if (isEditable) setHoveredBlockId(b.id); }}
+              onMouseLeave={() => { if (isEditable) setHoveredBlockId(null); }}
             >
               {isSelected && isEditable && (
                 <BlockContextMenu
@@ -158,6 +160,15 @@ export const PageGrid: React.FC<PageGridProps> = ({
                   onOpenBinding={onOpenBinding ? () => onOpenBinding(b) : undefined}
                   onOpenInspector={(tab) => setInspectedBlock({ id: b.id, tab })}
                 />
+              )}
+              {isEditable && (isSelected || hoveredBlockId === b.id) && b.x + b.w < cols && (
+                <button
+                  type="button" className="btn-expand-right" title="Agrandir le conteneur vers la droite"
+                  aria-label="Agrandir vers la droite" onClick={(e) => { e.stopPropagation(); handleExpand(b.id, 'right'); }}
+                  style={{ position: 'absolute', right: '-13px', top: '50%', transform: 'translateY(-50%)', width: '26px', height: '26px', borderRadius: '50%', background: 'var(--accent)', color: '#fff', border: '2px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 35, padding: 0 }}
+                >
+                  <ArrowRight size={14} strokeWidth={2.5} />
+                </button>
               )}
               <div style={{ width: '100%', height: '100%', overflow: isHero ? 'hidden' : 'auto', borderRadius: bStyle.radiusCss, padding: isHero ? 0 : bStyle.paddingCss, color: bStyle.textColor, fontFamily: bStyle.bodyFont }}>
                 <BlockRenderer block={b} onChange={(p) => handleUpdateBlockData(b.id, p)} isEditable={isEditable} visualStyle={bStyle} hero={hero} onUpdateHero={onUpdateHero} subtitle={story?.subtitle} />
