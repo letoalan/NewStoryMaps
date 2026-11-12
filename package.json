@@ -28,7 +28,9 @@
     "test:r3": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-r3.mjs",
     "test:r4": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-r4.mjs",
     "test:r5": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-r5.mjs",
-    "test": "npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:p3 && npm run test:p4 && npm run test:p5 && npm run test:p6 && npm run test:n0 && npm run test:n1 && npm run test:n2 && npm run test:n3 && npm run test:n4 && npm run test:n5 && npm run test:zoom && npm run test:mode3 && npm run test:charter && npm run test:r1 && npm run test:r2 && npm run test:r3 && npm run test:r4 && npm run test:r5"
+    "test:r6": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-r6.mjs",
+    "test:r7": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-r7.mjs",
+    "test": "npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:p3 && npm run test:p4 && npm run test:p5 && npm run test:p6 && npm run test:n0 && npm run test:n1 && npm run test:n2 && npm run test:n3 && npm run test:n4 && npm run test:n5 && npm run test:zoom && npm run test:mode3 && npm run test:charter && npm run test:r1 && npm run test:r2 && npm run test:r3 && npm run test:r4 && npm run test:r5 && npm run test:r6 && npm run test:r7"
   },
   "dependencies": {
     "lucide-react": "^1.16.0",

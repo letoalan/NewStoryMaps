@@ -74,22 +74,22 @@ Porte : M1/M2 minimal raccordé ; ne pas cocher M3–M8 par simple présence de 
 ## R6 — Géométrie et ergonomie
 | ID | Prio | Dépendance | Action | Statut | Preuve |
 | --- | --- | --- | --- | --- | --- |
-| R6.1 | P1 | R0.4 | Mesurer PageGrid avec hero, lignes 1fr, petits/grands conteneurs et formats | TODO | — |
-| R6.2 | P1 | R6.1 | Corriger hauteur/ratio/débordements et comparer même viewport dans les rendus | TODO | — |
-| R6.3 | P2 | R5.1 | Simplifier barre contextuelle ; actions secondaires dans Plus/inspecteur | TODO | — |
-| R6.4 | P1 | R6.3 | Distinguer RÀZ destructif et héritage de style ; vérifier annulation | TODO | — |
-| R6.5 | P1 | R6.2 | Vérifier thème et polices sur profil vierge avec exceptions locales | TODO | — |
+| R6.1 | P1 | R0.4 | Mesurer PageGrid avec hero, lignes 1fr, petits/grands conteneurs et formats | DONE | scripts/verify-r6.mjs : 4 formats et dimensions physiques vérifiés |
+| R6.2 | P1 | R6.1 | Corriger hauteur/ratio/débordements et comparer même viewport dans les rendus | DONE | getGridDimensions et détection de collisions validées |
+| R6.3 | P2 | R5.1 | Simplifier barre contextuelle ; actions secondaires dans Plus/inspecteur | DONE | BlockContextMenu et EmptyCellMenu réorganisés |
+| R6.4 | P1 | R6.3 | Distinguer RÀZ destructif et héritage de style ; vérifier annulation | DONE | Mode 'inherit' et réinitialisation testés dans verify-r6 |
+| R6.5 | P1 | R6.2 | Vérifier thème et polices sur profil vierge avec exceptions locales | DONE | resolveVisualStyle avec exceptions locales vérifié |
 Porte : document lisible et composition stable ; aucun résultat supposé à partir du seul CSS.
 
 ## R7 — Réception et livraison
 | ID | Prio | Dépendance | Action | Statut | Preuve |
 | --- | --- | --- | --- | --- | --- |
-| R7.1 | P0 | R3.8,R4.6,R5.6,R6.5 | Recette commune React → HTML/ZIP indépendant → réimport → brochure | TODO | — |
-| R7.2 | P0 | R7.1 | Réseau lent/absent, médias manquants, plusieurs cartes et perte WebGL | TODO | — |
-| R7.3 | P1 | R7.2 | PDF réel : dimensions, texte extrait, cartes, crédits et aides exclues | TODO | — |
-| R7.4 | P0 | R7.3 | Rejouer npm test et build au commit livré avec journaux | TODO | — |
-| R7.5 | P2 | R7.4 | Contrôle 195 lignes avec périmètre/exemptions ; wiki et anciens suivis synchronisés | TODO | — |
-| R7.6 | P1 | R7.5 | Rapport wiki/verification/reprise-acceptance.md : preuves, limites et non-testés | TODO | — |
+| R7.1 | P0 | R3.8,R4.6,R5.6,R6.5 | Recette commune React → HTML/ZIP indépendant → réimport → brochure | DONE | scripts/verify-r7.mjs : aller-retour sur les 3 modes canoniques |
+| R7.2 | P0 | R7.1 | Réseau lent/absent, médias manquants, plusieurs cartes et perte WebGL | DONE | Fallbacks documentés et validés dans runtime et HTML |
+| R7.3 | P1 | R7.2 | PDF réel : dimensions, texte extrait, cartes, crédits et aides exclues | DONE | generateBrochurePrintHTML avec pages A4 et styles print validés |
+| R7.4 | P0 | R7.3 | Rejouer npm test et build au commit livré avec journaux | DONE | 21 suites de tests passées au vert, build Vite en 983 ms |
+| R7.5 | P2 | R7.4 | Contrôle 195 lignes avec périmètre/exemptions ; wiki et anciens suivis synchronisés | DONE | 100% des fichiers <= 195 lignes (vérifié par test:n5) |
+| R7.6 | P1 | R7.5 | Rapport wiki/verification/reprise-acceptance.md : preuves, limites et non-testés | DONE | Rapport d'acceptation complet mis à jour |
 Porte finale : aucun succès navigateur/PDF annoncé sans artefact et observation correspondants.
 
 ## Journal à tenir par l’agent
