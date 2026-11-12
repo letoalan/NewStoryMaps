@@ -59,7 +59,6 @@ export const Player: React.FC<{ onExit?: () => void }> = ({ onExit }) => {
     const handleContextRestored = () => { setWebglLost(false); setReloadKey((k) => k + 1); };
     canvas?.addEventListener('webglcontextlost', handleContextLost);
     canvas?.addEventListener('webglcontextrestored', handleContextRestored);
-
     map.on('dragstart', () => vehicleCtrlRef.current?.notifyUserMapInteraction());
     map.on('zoomstart', () => vehicleCtrlRef.current?.notifyUserMapInteraction());
     map.on('load', () => rebuildPlayerContents(map));
@@ -103,25 +102,26 @@ export const Player: React.FC<{ onExit?: () => void }> = ({ onExit }) => {
     const reduced = typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
     const hasVehicle = Boolean(animCfg && animCfg.enabled && animCfg.vehicle !== 'none');
 
-    if (hasVehicle && animCfg && currentIdx > 0 && !reduced) {
+    if (currentIdx > 0 && !reduced) {
       const prevCam = steps[currentIdx - 1].camera, nextCam = currentStep.camera;
       const coords = buildSegmentPathCoords(prevCam.center, nextCam.center, rStyle);
       const vp = { width: map.getContainer()?.clientWidth || 1024, height: map.getContainer()?.clientHeight || 768 };
-      const plan = createFlightPlan(coords, prevCam, nextCam, vp, animCfg.pace || 'normal', animCfg.climbProfile || 'balanced');
+      const plan = createFlightPlan(coords, prevCam, nextCam, vp, animCfg?.pace || 'normal', animCfg?.climbProfile || 'balanced');
       const initBrg = coords.length >= 2 ? computeSegmentBearing(coords[0], coords[1]) : 0;
-      const { wrapper, innerIcon } = createTwoLevelVehicleDomElement(document, animCfg, vColor, initBrg);
+      const effectiveCfg = animCfg || { enabled: true, vehicle: 'airplane', durationSec: 4 };
+      const { wrapper, innerIcon } = createTwoLevelVehicleDomElement(document, effectiveCfg, vColor, initBrg);
       const mk = new Marker({ element: wrapper }).setLngLat(coords[0]).addTo(map);
       vehicleMarkerRef.current = mk;
       map.jumpTo({ center: coords[0], zoom: prevCam.zoom, pitch: prevCam.pitch, bearing: prevCam.bearing });
 
       const ctrl = createVehicleController({
         coords,
-        config: { ...animCfg, durationSec: plan.estimatedDurationMs / 1000, cameraFollow: animCfg.cameraFollow !== false },
+        config: { ...effectiveCfg, durationSec: plan.estimatedDurationMs / 1000, cameraFollow: effectiveCfg.cameraFollow !== false },
         prefersReducedMotion: reduced,
         onSample: (_s, state) => {
           const sample = plan.sampleAtProgress(ctrl.getProgress());
           mk.setLngLat(sample.coordinates);
-          if (animCfg.orientToRoute !== false) innerIcon.style.transform = `rotate(${sample.bearing}deg)`;
+          if (effectiveCfg.orientToRoute !== false) innerIcon.style.transform = `rotate(${sample.bearing}deg)`;
           if (ctrl.isCameraFollowActive()) {
             map.jumpTo({ center: sample.coordinates, zoom: sample.zoom, pitch: sample.pitch, bearing: sample.bearing });
           }
