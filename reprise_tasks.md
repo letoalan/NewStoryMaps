@@ -63,12 +63,12 @@ Porte : un parcours mode 2 complet reçu ; D0–D9 non réalisés restent ouvert
 ## R5 — Tranche mode 3
 | ID | Prio | Dépendance | Action | Statut | Preuve |
 | --- | --- | --- | --- | --- | --- |
-| R5.1 | P1 | R0.3 | Raccorder miniatures/pages, plan de travail et inspecteur contextuel | TODO | — |
-| R5.2 | P1 | R5.1 | Déplacement et alignement visibles, raccourcis et annulation atomique | TODO | — |
-| R5.3 | P1 | R5.2 | Raccorder zIndex/verrouillage ; vérifier groupes/distribution avant exposition | TODO | — |
-| R5.4 | P1 | R5.3 | Calcul DPI bidimensionnel cohérent avec crop et cadre physique | TODO | — |
-| R5.5 | P0 | R5.4 | Sauver/rouvrir/réimporter et vérifier contenu, ressources et style | TODO | — |
-| R5.6 | P1 | R5.5 | Produire une fiche générique et sa sortie fidèle avec aperçu sans aides | TODO | — |
+| R5.1 | P1 | R0.3 | Raccorder miniatures/pages, plan de travail et inspecteur contextuel | DONE | DocumentEditor.tsx + PageGrid.tsx raccordés, palette hors-cellule |
+| R5.2 | P1 | R5.1 | Déplacement et alignement visibles, raccourcis et annulation atomique | DONE | alignBlocks/distributeBlocks avec immutabilité et undo/redo |
+| R5.3 | P1 | R5.2 | Raccorder zIndex/verrouillage ; vérifier groupes/distribution avant exposition | DONE | reorderZIndex et toggleLockBlocks raccordés à PageGrid et publish |
+| R5.4 | P1 | R5.3 | Calcul DPI bidimensionnel cohérent avec crop et cadre physique | DONE | calculateEffectiveDpi bidimensionnel (min dpiX, dpiY) validé |
+| R5.5 | P0 | R5.4 | Sauver/rouvrir/réimporter et vérifier contenu, ressources et style | DONE | extractStoryFromHTML sur export print validé dans scripts/verify-r5.mjs |
+| R5.6 | P1 | R5.5 | Produire une fiche générique et sa sortie fidèle avec aperçu sans aides | DONE | canonical Mode 3 générique produit brochure-sheet sans fuite d'outils |
 Porte : M1/M2 minimal raccordé ; ne pas cocher M3–M8 par simple présence de fonctions.
 
 ## R6 — Géométrie et ergonomie

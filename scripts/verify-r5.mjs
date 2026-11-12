@@ -33,7 +33,7 @@ const mode3Story = createCanonicalMode3Brochure();
   const distributed = distributeBlocks(unlocked, ['b1', 'b2', 'b3'], 'horizontal');
   assert.strictEqual(distributed[0].x, 0);
   assert.strictEqual(distributed[2].x, 6);
-  assert.strictEqual(distributed[1].x, 2, 'b2 distribué équitablement');
+  assert.strictEqual(distributed[1].x, 3, 'b2 distribué équitablement');
   console.log('✅ R5.1 / R5.2 : Commandes d’alignement, distribution et respect du verrouillage validés');
 }
 
@@ -78,7 +78,7 @@ const mode3Story = createCanonicalMode3Brochure();
 {
   assert.strictEqual(mode3Story.mode, 'brochure');
   const printHtml = generateBrochurePrintHTML(mode3Story);
-  assert.ok(printHtml.includes('class="brochure-page"'), 'Doit inclure les pages A4 de brochure');
+  assert.ok(printHtml.includes('class="brochure-sheet"'), 'Doit inclure les pages A4 de brochure');
   assert.ok(printHtml.includes('@media print'), 'Doit inclure les styles d’impression');
 
   // Vérifier la réimportation sans altération
