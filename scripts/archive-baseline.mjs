@@ -37,3 +37,4 @@ const h3 = generateBrochurePrintHTML(m3);
 fs.writeFileSync(path.join(outDir, 'mode3-brochure.html'), h3, 'utf8');
 
 console.log('✅ 3 fixtures canoniques et leurs exports HTML archivés dans wiki/verification/fixtures/baseline/');
+
