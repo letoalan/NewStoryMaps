@@ -60,7 +60,9 @@ export function computeFlightCruiseZoom(startZoom: number, endZoom: number, dist
   const vScreen = Math.max(100, (viewportWidth || 1024) * (PACE_SCREEN_FRACTION.normal || 0.35));
   const durSec = computeAdaptiveFlightDurationMs(distDeg, 4.8) / 1000;
   const targetCruise = Math.log2((360 * vScreen * durSec) / (256 * Math.max(0.01, distDeg))) + vpBonus;
-  return Number(Math.max(1.8, Math.min(minEnd - 0.25, targetCruise - (CLIMB_DIP[climb] || 0))).toFixed(2));
+  // Dézoom plus franc d'au moins 2 à 2.5 niveaux sur trajets interurbains pour sécuriser les tuiles
+  const maxClimbZoom = distDeg > 0.8 ? minEnd - 2.0 : minEnd - 0.75;
+  return Number(Math.max(1.8, Math.min(maxClimbZoom, targetCruise - (CLIMB_DIP[climb] || 0))).toFixed(2));
 }
 
 function sampleZoomProfile(startZ: number, cruiseZ: number, endZ: number, t: number): number {
