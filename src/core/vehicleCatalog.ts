@@ -82,6 +82,10 @@ export const VEHICLE_CATALOG: VehicleCatalogItem[] = [
   },
 ];
 
+export const VEHICLE_SVG_PATHS: Record<string, string> = Object.fromEntries(
+  VEHICLE_CATALOG.filter((v) => v.svgPath).map((v) => [v.id, v.svgPath])
+);
+
 export function getVehicleItem(type?: VehicleType | null): VehicleCatalogItem {
   return VEHICLE_CATALOG.find((v) => v.id === type) || VEHICLE_CATALOG[0];
 }

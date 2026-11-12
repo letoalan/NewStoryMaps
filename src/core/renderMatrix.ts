@@ -65,6 +65,11 @@ export const BLOCK_RENDER_MATRIX: Record<BlockType, BlockCapabilityEntry> = {
     profiles: { editor: 'interactive', web: 'static', presentation: 'static', print: 'static' },
     staticFallback: 'Bloc de crédits, licences et sources obligatoires',
   },
+  button: {
+    type: 'button', category: 'Texte', allowedModes: ['rich-document'],
+    profiles: { editor: 'interactive', web: 'interactive', presentation: 'interactive', print: 'static' },
+    staticFallback: 'Bouton d’action cartographique ou lien externe',
+  },
 };
 
 export interface ProfileContract {

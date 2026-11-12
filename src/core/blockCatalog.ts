@@ -55,6 +55,10 @@ export const BLOCK_CATALOG: BlockCatalogItem[] = [
     type: 'source', label: 'Sources & Crédits', description: 'Attributions légales et références bibliographiques',
     category: 'Documentation', allowedModes: ['rich-document', 'brochure'],
   },
+  {
+    type: 'button', label: 'Bouton d’action', description: 'Commande interactive liée à la carte ou navigation',
+    category: 'Texte', allowedModes: ['rich-document'],
+  },
 ];
 
 export function getAvailableCatalogItems(mode: ProjectMode = 'rich-document'): BlockCatalogItem[] {
@@ -96,6 +100,9 @@ export function convertBlockTypePreservingContent(block: Block, newType: BlockTy
   if (newType === 'image' && !nextData.url && Array.isArray(oldData.items) && oldData.items.length > 0) {
     const first = oldData.items[0] as any;
     nextData.url = typeof first === 'string' ? first : String(first?.url || '');
+  }
+  if (newType === 'button' && !nextData.label) {
+    nextData.label = preservedText || 'Bouton d’action';
   }
 
   return {

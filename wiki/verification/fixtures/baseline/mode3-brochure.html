@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlas Comparatif : Rives de Seine &amp; Mobilités (Brochure A4) — Brochure A4</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+    <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <style>@page { size: A4 portrait; margin: 0; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:#334155; color:#0f172a; }
+.print-toolbar { position:sticky; top:0; z-index:50; height:52px; background:#0f172a; color:#f8fafc; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid rgba(255,255,255,0.12); }
+.btn-print { padding:7px 14px; background:#0b7fb0; color:#fff; border:none; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer; }
+.btn-print:disabled { opacity:0.4; cursor:not-allowed; background:#64748b; }
+.sheets-container { display:flex; flex-direction:column; align-items:center; padding:24px; gap:24px; }
+.brochure-sheet { width:210mm; height:297mm; padding:15mm; background:#ffffff; box-shadow:0 8px 28px rgba(0,0,0,0.35); display:flex; flex-direction:column; justify-content:space-between; overflow:hidden; page-break-after:always; break-after:page; }
+.brochure-sheet:last-child { page-break-after:auto; break-after:auto; }
+.sheet-header { display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0b7fb0; padding-bottom:6px; margin-bottom:10px; }
+.sheet-footer { display:flex; justify-content:space-between; align-items:center; border-top:1px solid #cbd5e1; padding-top:6px; margin-top:10px; font-size:10px; color:#475569; }
+.binding-pill { display:inline-flex; align-items:center; gap:3px; background:#f0f9ff; color:#0b7fb0; border:1px solid #0b7fb0; padding:1px 7px; border-radius:999px; font-size:10px; font-weight:700; margin-bottom:4px; }
+@media print {
+    body { background:#ffffff; }
+    .no-print { display:none !important; }
+    .sheets-container { padding:0; gap:0; }
+    .brochure-sheet { box-shadow:none; margin:0; }
+}</style>
+</head>
+<body>
+    <div class="print-toolbar no-print">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <strong>Atlas Comparatif : Rives de Seine &amp; Mobilités (Brochure A4)</strong>
+            <span style="font-size:12px;color:#94a3b8;">Format A4 Portrait (210×297 mm) · 2 page(s)</span>
+            <span id="print-status" style="font-size:11px;padding:2px 8px;border-radius:999px;background:#1e293b;color:#38bdf8;">Préparation des cartes…</span>
+        </div>
+        <button type="button" class="btn-print" id="btn-print" disabled data-action="print">Imprimer / Enregistrer en PDF A4</button>
+    </div>
+    <main class="sheets-container"><article class="brochure-sheet" id="sheet-0" aria-label="Axe Fluvial et Repères" style="background:#ffffff;color:#1a1816;font-family:Inter,sans-serif;">
+        <header class="sheet-header">
+          <div>
+            <strong style="color:#0b7fb0;font-size:13px;font-family:Lora,sans-serif;">Atlas Comparatif : Rives de Seine &amp; Mobilités (Brochure A4)</strong>
+            <span style="margin-left:10px;color:#475569;font-size:11px;">Par Conservation du Patrimoine</span>
+          </div>
+          <span style="font-size:11px;color:#64748b;">Axe Fluvial et Repères</span>
+        </header>
+        
+        <div class="sheet-grid" style="display:grid;grid-template-columns:repeat(6, minmax(0, 1fr));grid-template-rows:repeat(8, minmax(0, 1fr));gap:10px;flex:1;min-height:0;box-sizing:border-box;">
+          <div class="block" id="block-b-title-1" data-style-mode="inherit" style="grid-column:1 / span 6;grid-row:1 / span 1;background:transparent;border:none;border-radius:8px;padding:0;box-shadow:none;color:#1a1816;overflow:hidden;position:relative;min-width:0;min-height:0;box-sizing:border-box;"><div class="hero-title-wrap" style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;display:flex;flex-direction:column;justify-content:center;padding:12px 16px;color:#fff;"><img class="hero-photo" src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&amp;fit=crop&amp;w=1200&amp;q=80" alt="Couverture" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;"/><div style="position:absolute;inset:0;background:linear-gradient(135deg, rgba(11, 127, 176, 0.688) 0%, rgba(11, 127, 176, 0.22) 100%);z-index:2;pointer-events:none;"></div><div style="position:relative;z-index:3;"><h1 style="margin:0;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,0.6);font-family:Lora,sans-serif;">1. Diagnostic de l’Axe Seine</h1><p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.92);">De la Tour Eiffel à la butte Montmartre le long de la Seine</p></div></div></div>
+<div class="block" id="block-b-map-1" data-style-mode="inherit" style="grid-column:1 / span 4;grid-row:2 / span 4;background:rgba(255, 255, 255, 1);border:1px solid #e2dfd9;border-radius:8px;padding:14px;box-shadow:none;color:#1a1816;overflow:auto;position:relative;min-width:0;min-height:0;box-sizing:border-box;"><div class="doc-map-wrapper" style="position:relative;width:100%;height:100%;min-height:140px;border-radius:8px;overflow:hidden;background:#e2e8f0;">
+      <div class="doc-map-canvas" id="doc-map-b-map-1" data-map-id="map-seine" data-target-feature="" data-action="highlight" aria-label="Carte Fluviale" style="position:absolute;inset:0;width:100%;height:100%;"></div>
+      <div class="doc-map-fallback" id="doc-map-fb-b-map-1" style="display:none;position:absolute;inset:0;background:#1e293b;color:#e2e8f0;padding:12px;align-items:center;justify-content:center;text-align:center;font-size:12px;">Carte "Carte Fluviale" (mode hors-ligne)</div>
+      <div class="doc-map-attrib" style="position:absolute;bottom:3px;right:5px;background:rgba(255,255,255,0.88);color:#334155;padding:1px 5px;border-radius:3px;font-size:9px;z-index:5;">© OpenStreetMap · © CARTO · © OpenStreetMap · © CARTO</div>
+    </div></div>
+<div class="block" id="block-b-txt-1" data-style-mode="inherit" data-binding-map="map-seine" data-binding-feature="f-eiffel" data-binding-action="highlight" style="grid-column:5 / span 2;grid-row:2 / span 2;background:rgba(255, 255, 255, 1);border:1px solid #e2dfd9;border-radius:8px;padding:14px;box-shadow:none;color:#1a1816;overflow:auto;position:relative;min-width:0;min-height:0;box-sizing:border-box;"><button type="button" class="binding-pill" data-action="narrative-binding" data-map-id="map-seine" data-feature-id="f-eiffel" data-binding-action="highlight">#1 · highlight</button><div style="font-size:13px;line-height:1.55;color:#1a1816;font-family:Inter,sans-serif;"><p>Focus sur la Tour Eiffel et les berges.</p></div></div>
+<div class="block" id="block-b-call-1" data-style-mode="custom" data-binding-map="map-seine" data-binding-feature="f-corridor" data-binding-action="zoom" style="grid-column:5 / span 2;grid-row:4 / span 2;background:rgba(255, 255, 255, 0.9);border:1px solid #e2dfd9;border-radius:8px;padding:14px;box-shadow:none;color:#1a1816;overflow:auto;position:relative;min-width:0;min-height:0;box-sizing:border-box;"><button type="button" class="binding-pill" data-action="narrative-binding" data-map-id="map-seine" data-feature-id="f-corridor" data-binding-action="zoom">#3 · zoom</button><div style="padding:10px;background:#f0f9ff;border-left:4px solid #dc2626;border-radius:8px;color:#1a1816;">Tracé fluvial continu de 5,4 km.</div></div>
+<div class="block" id="block-b-gal-1" data-style-mode="inherit" style="grid-column:1 / span 4;grid-row:6 / span 2;background:rgba(255, 255, 255, 1);border:1px solid #e2dfd9;border-radius:8px;padding:14px;box-shadow:none;color:#1a1816;overflow:auto;position:relative;min-width:0;min-height:0;box-sizing:border-box;"><div class="contact-sheet" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;"><figure style="margin:0;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#f8fafc;"><img src="https://example.com/seine1.jpg" alt="Pont d’Iéna" style="width:100%;height:80px;object-fit:cover;display:block;"/><figcaption style="font-size:10px;padding:3px 6px;color:#334155;">Pont d’Iéna</figcaption></figure><figure style="margin:0;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#f8fafc;"><img src="https://example.com/seine2.jpg" alt="Quai du Louvre" style="width:100%;height:80px;object-fit:cover;display:block;"/><figcaption style="font-size:10px;padding:3px 6px;color:#334155;">Quai du Louvre</figcaption></figure></div></div>
+<div class="block" id="block-b-src-1" data-style-mode="inherit" style="grid-column:5 / span 2;grid-row:6 / span 2;background:rgba(255, 255, 255, 1);border:1px solid #e2dfd9;border-radius:8px;padding:14px;box-shadow:none;color:#1a1816;overflow:auto;position:relative;min-width:0;min-height:0;box-sizing:border-box;"><div style="font-size:11px;color:#5c574f;font-style:italic;">Sources : © OpenStreetMap contributors, © CARTO, Atelier Paris 2026.</div></div>
+        </div>
+        <footer class="sheet-footer">
+          <span>Atlas Comparatif : Rives de Seine &amp; Mobilités (Brochure A4) · Brochure cartographique A4</span>
+          <strong>Page 1 / 2</strong>
+        </footer>
+      </article>
+<article class="brochure-sheet" id="sheet-1" aria-label="Belvédère Nord &amp; Synthèse" style="background:#ffffff;color:#1a1816;font-family:Inter,sans-serif;">
+        <header class="sheet-header">
+          <div>
+            <strong style="color:#0b7fb0;font-size:13px;font-family:Lora,sans-serif;">Atlas Comparatif : Rives de Seine &amp; Mobilités (Brochure A4)</strong>
+            
+          </div>
+          <span style="font-size:11px;color:#64748b;">Belvédère Nord &amp; Synthèse</span>
+        </header>
+        
+        <div class="sheet-grid" style="display:grid;grid-template-columns:repeat(6, minmax(0, 1fr));grid-template-rows:repeat(8, minmax(0, 1fr));gap:10px;flex:1;min-height:0;box-sizing:border-box;">
+          <div class="block" id="block-b-title-2" data-style-mode="inherit" style="grid-column:1 / span 6;grid-row:1 / span 1;background:transparent;border:none;border-radius:8px;padding:0;box-shadow:none;color:#1a1816;overflow:hidden;position:relative;min-width:0;min-height:0;box-sizing:border-box;"><div class="hero-title-wrap" style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;display:flex;flex-direction:column;justify-content:center;padding:12px 16px;color:#fff;"><img class="hero-photo" src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&amp;fit=crop&amp;w=1200&amp;q=80" alt="Couverture" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;"/><div style="position:absolute;inset:0;background:linear-gradient(135deg, rgba(11, 127, 176, 0.688) 0%, rgba(11, 127, 176, 0.22) 100%);z-index:2;pointer-events:none;"></div><div style="position:relative;z-index:3;"><h2 style="margin:0;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,0.6);font-family:Lora,sans-serif;">2. Secteur Nord et Indicateurs</h2><p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.92);">De la Tour Eiffel à la butte Montmartre le long de la Seine</p></div></div></div>
+<div class="block" id="block-b-map-2" data-style-mode="inherit" style="grid-column:1 / span 4;grid-row:2 / span 4;background:rgba(255, 255, 255, 1);border:1px solid #e2dfd9;border-radius:8px;padding:14px;box-shadow:none;color:#1a1816;overflow:auto;position:relative;min-width:0;min-height:0;box-sizing:border-box;"><div class="doc-map-wrapper" style="position:relative;width:100%;height:100%;min-height:140px;border-radius:8px;overflow:hidden;background:#e2e8f0;">
+      <div class="doc-map-canvas" id="doc-map-b-map-2" data-map-id="map-nord" data-target-feature="" data-action="highlight" aria-label="Carte Montmartre" style="position:absolute;inset:0;width:100%;height:100%;"></div>
+      <div class="doc-map-fallback" id="doc-map-fb-b-map-2" style="display:none;position:absolute;inset:0;background:#1e293b;color:#e2e8f0;padding:12px;align-items:center;justify-content:center;text-align:center;font-size:12px;">Carte "Carte Montmartre" (mode hors-ligne)</div>
+      <div class="doc-map-attrib" style="position:absolute;bottom:3px;right:5px;background:rgba(255,255,255,0.88);color:#334155;padding:1px 5px;border-radius:3px;font-size:9px;z-index:5;">© OpenStreetMap · © CARTO · © OpenStreetMap · © CARTO</div>
+    </div></div>
+<div class="block" id="block-b-tbl-2" data-style-mode="inherit" style="grid-column:5 / span 2;grid-row:2 / span 4;background:rgba(255, 255, 255, 1);border:1px solid #e2dfd9;border-radius:8px;padding:14px;box-shadow:none;color:#1a1816;overflow:auto;position:relative;min-width:0;min-height:0;box-sizing:border-box;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><tr><th style="border:1px solid #cbd5e1;padding:6px;background:#f8fafc;color:#0f172a;">Site</th><th style="border:1px solid #cbd5e1;padding:6px;background:#f8fafc;color:#0f172a;">Fréquentation</th></tr><tr><td style="border:1px solid #cbd5e1;padding:6px;color:#1a1816;">Tour Eiffel</td><td style="border:1px solid #cbd5e1;padding:6px;color:#1a1816;">6,2 M</td></tr><tr><td style="border:1px solid #cbd5e1;padding:6px;color:#1a1816;">Montmartre</td><td style="border:1px solid #cbd5e1;padding:6px;color:#1a1816;">11,0 M</td></tr></table></div>
+<div class="block" id="block-b-leg-2" data-style-mode="inherit" style="grid-column:1 / span 6;grid-row:6 / span 1;background:rgba(255, 255, 255, 1);border:1px solid #e2dfd9;border-radius:8px;padding:14px;box-shadow:none;color:#1a1816;overflow:auto;position:relative;min-width:0;min-height:0;box-sizing:border-box;"><div style="font-size:11px;color:#5c574f;font-style:normal;">Légende : #1 Tour Eiffel · #2 Louvre · #3 Corridor Fluvial · #4 Sacré-Cœur · © OpenStreetMap · © CARTO</div></div>
+        </div>
+        <footer class="sheet-footer">
+          <span>Atlas Comparatif : Rives de Seine &amp; Mobilités (Brochure A4) · Brochure cartographique A4</span>
+          <strong>Page 2 / 2</strong>
+        </footer>
+      </article></main>
+    <script id="storymap-data" type="application/json">{"id":"brochure-1794499080054","version":"2.0.0","schemaVersion":2,"title":"Atlas Comparatif : Rives de Seine & Mobilités (Brochure A4)","subtitle":"De la Tour Eiffel à la butte Montmartre le long de la Seine","author":"Conservation du Patrimoine","created":1794499080054,"modified":1794499080054,"mode":"brochure","brand":{"primaryFont":"Lora","secondaryFont":"Inter","colors":["#0f172a","#334155","#0b7fb0"]},"appearance":{"theme":"light","font":"Lora","accentColor":"#0b7fb0","panelPosition":"left","showProgress":true,"routeStyle":"ship","markerShape":"number","showAllMarkers":true},"routeAnimation":{"enabled":true,"vehicle":"ship","durationSec":4,"durationMs":4000,"followCamera":false,"progressiveReveal":true,"staticPosition":"middle"},"hero":{"enabled":true,"mediaType":"photo","mediaUrl":"https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=80","credit":"© Photo Patrimoine CC-BY","license":"CC-BY 4.0","alt":"Vue panoramique de la Seine à Paris","fit":"cover","focalPoint":[50,50],"align":"center","heightPx":260,"veilType":"gradient","veilColor":"#0f172a","veilOpacity":0.55,"title":"Circuit Patrimoine Parisien","subtitle":"Parcours fluvial et monumental en cinq étapes","showLogo":true},"mapStyle":"voyager","layers":[],"steps":[{"id":"s1","title":"1. Tour Eiffel","description":"\u003cp>Repère métallique édifié en 1889.\u003c/p>","camera":{"center":[2.2945,48.8584],"zoom":14,"pitch":25,"bearing":0}},{"id":"s2","title":"2. Esplanade des Invalides","description":"\u003cp>Perspective classique et dôme doré.\u003c/p>","camera":{"center":[2.3126,48.8566],"zoom":14,"pitch":20,"bearing":15}},{"id":"s3","title":"3. Musée du Louvre","description":"\u003cp>Ancien palais royal au cœur de la cité.\u003c/p>","camera":{"center":[2.3376,48.8606],"zoom":14,"pitch":25,"bearing":30}},{"id":"s4","title":"4. Cathédrale Notre-Dame","description":"\u003cp>Joyau gothique sur l’île de la Cité.\u003c/p>","camera":{"center":[2.3499,48.853],"zoom":15,"pitch":15,"bearing":-10}},{"id":"s5","title":"5. Butte Montmartre","description":"\u003cp>Belvédère culminant au nord de Paris.\u003c/p>","camera":{"center":[2.3431,48.8867],"zoom":14,"pitch":30,"bearing":45}}],"format":"a4-portrait","maps":[{"id":"map-seine","name":"Axe Seine & Monuments","mapStyle":"positron","view":{"center":[2.326,48.858],"zoom":12.5,"pitch":10,"bearing":0},"routeAnimation":{"enabled":true,"vehicle":"ship","durationSec":3.5,"durationMs":3500,"progressiveReveal":true,"staticPosition":"middle"},"layers":[{"id":"layer-monuments","name":"Repères patrimoniaux","visible":true,"color":"#0b7fb0","features":[{"id":"f-eiffel","name":"Tour Eiffel","geometryType":"Point","coordinates":[2.2945,48.8584],"numberIndex":1},{"id":"f-louvre","name":"Louvre","geometryType":"Point","coordinates":[2.3376,48.8606],"numberIndex":2},{"id":"f-corridor","name":"Corridor Fluvial","geometryType":"LineString","coordinates":[[2.2945,48.8584],[2.3126,48.8566],[2.3376,48.8606],[2.3499,48.853]],"numberIndex":3}]}]},{"id":"map-nord","name":"Secteur Nord Montmartre","mapStyle":"voyager","view":{"center":[2.3431,48.8867],"zoom":14,"pitch":20,"bearing":0},"layers":[{"id":"layer-nord","name":"Périmètre Nord","visible":true,"color":"#16a34a","features":[{"id":"f-montmartre","name":"Sacré-Cœur","geometryType":"Point","coordinates":[2.3431,48.8867],"numberIndex":4}]}]}],"pages":[{"id":"page-1","title":"Axe Fluvial et Repères","layout":{"format":"a4-portrait","gridColumns":6,"gridRows":8,"marginMm":15},"blocks":[{"id":"b-title-1","type":"title","x":0,"y":0,"w":6,"h":1,"data":{"text":"1. Diagnostic de l’Axe Seine","level":1}},{"id":"b-map-1","type":"map","x":0,"y":1,"w":4,"h":4,"data":{"title":"Carte Fluviale","mapId":"map-seine","caption":"© OpenStreetMap · © CARTO"}},{"id":"b-txt-1","type":"text","x":4,"y":1,"w":2,"h":2,"data":{"text":"\u003cp>Focus sur la Tour Eiffel et les berges.\u003c/p>"},"binding":{"mapId":"map-seine","targetFeatureId":"f-eiffel","action":"highlight","numberIndex":1}},{"id":"b-call-1","type":"callout","x":4,"y":3,"w":2,"h":2,"data":{"text":"Tracé fluvial continu de 5,4 km."},"binding":{"mapId":"map-seine","targetFeatureId":"f-corridor","action":"zoom","numberIndex":3},"styleOverride":{"styleMode":"custom","accentColor":"#dc2626","backgroundOpacity":0.9}},{"id":"b-gal-1","type":"image","x":0,"y":5,"w":4,"h":2,"data":{"caption":"Vues des berges","items":[{"url":"https://example.com/seine1.jpg","caption":"Pont d’Iéna"},{"url":"https://example.com/seine2.jpg","caption":"Quai du Louvre"}],"isContactSheet":true,"contactSheetItems":[{"url":"https://example.com/seine1.jpg","caption":"Pont d’Iéna"},{"url":"https://example.com/seine2.jpg","caption":"Quai du Louvre"}],"url":"https://example.com/seine1.jpg"}},{"id":"b-src-1","type":"source","x":4,"y":5,"w":2,"h":2,"data":{"text":"Sources : © OpenStreetMap contributors, © CARTO, Atelier Paris 2026."}}]},{"id":"page-2","title":"Belvédère Nord & Synthèse","layout":{"format":"a4-portrait","gridColumns":6,"gridRows":8,"marginMm":15},"blocks":[{"id":"b-title-2","type":"title","x":0,"y":0,"w":6,"h":1,"data":{"text":"2. Secteur Nord et Indicateurs","level":2}},{"id":"b-map-2","type":"map","x":0,"y":1,"w":4,"h":4,"data":{"title":"Carte Montmartre","mapId":"map-nord","caption":"© OpenStreetMap · © CARTO"}},{"id":"b-tbl-2","type":"table","x":4,"y":1,"w":2,"h":4,"data":{"rows":[["Site","Fréquentation"],["Tour Eiffel","6,2 M"],["Montmartre","11,0 M"]]}},{"id":"b-leg-2","type":"legend","x":0,"y":5,"w":6,"h":1,"data":{"text":"Légende : #1 Tour Eiffel · #2 Louvre · #3 Corridor Fluvial · #4 Sacré-Cœur · © OpenStreetMap · © CARTO"}}]}]}</script>
+    <script>const storyData = JSON.parse(document.getElementById('storymap-data').textContent);
+let isReadyForPrint = false;
+const mapStates = {};
+const mapInstances = {};
+const RAST_SAT = { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }] };
+const RAST_HYB = { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 }, labels: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }, { id: 'labels', type: 'raster', source: 'labels' }] };
+function resolveStyle(s) {
+    if (!s || s === 'positron') return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+    if (s === 'voyager') return 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+    if (s === 'dark-matter' || s === 'dark') return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+    if (s === 'liberty') return 'https://tiles.openfreemap.org/styles/liberty';
+    if (s === 'bright') return 'https://tiles.openfreemap.org/styles/bright';
+    if (s === 'fiord') return 'https://tiles.openfreemap.org/styles/fiord';
+    if (s === 'ofm-positron') return 'https://tiles.openfreemap.org/styles/positron';
+    if (s === 'ofm-dark') return 'https://tiles.openfreemap.org/styles/dark';
+    if (s === 'satellite' || s === 'esri-satellite') return RAST_SAT;
+    if (s === 'hybrid' || s === 'esri-hybrid') return RAST_HYB;
+    if (/^(https?:|data:|\/)/.test(s)) return s;
+    return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+}
+function featCenter(f) {
+    const c = f && f.coordinates;
+    if (!Array.isArray(c) || !c.length) return null;
+    if (f.geometryType === 'Point') return [c[0], c[1]];
+    if (f.geometryType === 'LineString') return c[Math.floor(c.length / 2)];
+    return (f.geometryType === 'Polygon' && Array.isArray(c[0]) && c[0].length) ? c[0][0] : null;
+}
+function expandLineCoords(base) {
+    const rStyle = (storyData.appearance && storyData.appearance.routeStyle) || 'dashed';
+    if (!Array.isArray(base) || base.length < 2 || (rStyle !== 'curved' && rStyle !== 'airplane' && rStyle !== 'ship')) return base || [];
+    const out = [];
+    for (let k = 0; k < base.length - 1; k++) {
+        const p1 = base[k], p2 = base[k + 1], dLng = p2[0] - p1[0], dLat = p2[1] - p1[1];
+        if (Math.hypot(dLng, dLat) < 0.001) { if (k === 0) out.push(p1); out.push(p2); continue; }
+        const cLng = (p1[0] + p2[0]) / 2 - dLat * 0.18, cLat = (p1[1] + p2[1]) / 2 + dLng * 0.18;
+        for (let i = (k === 0 ? 0 : 1); i <= 16; i++) { const t = i / 16, u = 1 - t; out.push([u * u * p1[0] + 2 * u * t * cLng + t * t * p2[0], u * u * p1[1] + 2 * u * t * cLat + t * t * p2[1]]); }
+    }
+    return out;
+}
+function checkReadiness(totalCount) {
+    const statusEl = document.getElementById('print-status');
+    const printBtn = document.getElementById('btn-print');
+    const ids = Object.keys(mapStates);
+    const errors = ids.filter(id => mapStates[id].state === 'error' || mapStates[id].state === 'timeout');
+    const readyCount = ids.filter(id => mapStates[id].state === 'ready').length;
+    if (errors.length > 0) {
+        isReadyForPrint = false;
+        if (printBtn) printBtn.disabled = true;
+        if (statusEl) {
+            statusEl.style.background = '#dc2626';
+            statusEl.style.color = '#fff';
+            statusEl.textContent = 'Erreur cartographique (' + errors.length + ' carte(s)) — Impression verrouillée';
+        }
+        return;
+    }
+    if (readyCount === totalCount) {
+        isReadyForPrint = true;
+        if (printBtn) printBtn.disabled = false;
+        if (statusEl) {
+            statusEl.style.background = '#15803d';
+            statusEl.style.color = '#fff';
+            statusEl.textContent = 'Prêt pour impression PDF A4 (' + totalCount + '/' + totalCount + ' cartes validées)';
+        }
+    } else {
+        if (statusEl) statusEl.textContent = 'Préparation cartographique (' + readyCount + '/' + totalCount + ')…';
+    }
+}
+function initBrochureMaps() {
+    const maps = storyData.maps || [];
+    const els = Array.from(document.querySelectorAll('.doc-map-canvas'));
+    const statusEl = document.getElementById('print-status'), printBtn = document.getElementById('btn-print');
+    if (!els.length) {
+        isReadyForPrint = true;
+        if (printBtn) printBtn.disabled = false;
+        if (statusEl) { statusEl.style.background = '#15803d'; statusEl.style.color = '#fff'; statusEl.textContent = 'Prêt pour impression PDF A4 (aucun élément cartographique)'; }
+        return;
+    }
+    if (typeof maplibregl === 'undefined') {
+        isReadyForPrint = false;
+        if (printBtn) printBtn.disabled = true;
+        if (statusEl) { statusEl.style.background = '#dc2626'; statusEl.style.color = '#fff'; statusEl.textContent = 'Erreur : MapLibre GL non disponible — Impression bloquée'; }
+        return;
+    }
+    els.forEach(el => { mapStates[el.id] = { state: 'loading', settled: false }; });
+    const settle = (id, st, detail) => {
+        if (mapStates[id] && mapStates[id].settled) return;
+        mapStates[id] = { state: st, settled: true, detail };
+        checkReadiness(els.length);
+    };
+    setTimeout(() => {
+        els.forEach(el => { if (!mapStates[el.id] || !mapStates[el.id].settled) settle(el.id, 'timeout', 'Délai d’attente dépassé (10s)'); });
+    }, 10000);
+    els.forEach((el) => {
+        const mapId = el.getAttribute('data-map-id'), targetFeatId = el.getAttribute('data-target-feature');
+        const scene = mapId ? maps.find(m => m.id === mapId) : maps[0];
+        if (!scene) {
+            settle(el.id, 'error', mapId ? 'Scène cartographique "' + mapId + '" introuvable' : 'Aucune scène cartographique disponible');
+            return;
+        }
+        const v = scene.view || { center: [2.3522, 48.8566], zoom: 11, pitch: 0, bearing: 0 };
+        try {
+            const map = new maplibregl.Map({ container: el, style: resolveStyle(scene.mapStyle), center: v.center, zoom: v.zoom, pitch: v.pitch || 0, bearing: v.bearing || 0, interactive: false, attributionControl: false, preserveDrawingBuffer: true });
+            mapInstances[el.id] = map;
+            map.on('load', () => {
+                const feats = [];
+                (scene.layers || []).forEach(l => {
+                    if (!l.visible) return;
+                    (l.features || []).forEach(f => {
+                        const col = (targetFeatId && f.id === targetFeatId) ? '#e11d48' : (f.color || l.color || '#0b7fb0');
+                        const fCoords = f.geometryType === 'LineString' ? expandLineCoords(f.coordinates) : f.coordinates;
+                        feats.push({ type: 'Feature', id: f.id, geometry: { type: f.geometryType, coordinates: fCoords }, properties: { id: f.id, color: col } });
+                        const pt = featCenter(f);
+                        if (pt) {
+                            const mEl = document.createElement('div');
+                            mEl.style.cssText = 'width:22px;height:22px;border-radius:50%;background:' + col + ';color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;';
+                            mEl.textContent = String(f.numberIndex || 1);
+                            new maplibregl.Marker({ element: mEl }).setLngLat(pt).addTo(map);
+                        }
+                        const animCfg = f.routeAnimation || scene.routeAnimation || storyData.routeAnimation;
+                        if (f.geometryType === 'LineString' && Array.isArray(fCoords) && fCoords.length >= 2 && animCfg && animCfg.enabled && animCfg.vehicle !== 'none') {
+                            const a = fCoords[fCoords.length - 2], b = fCoords[fCoords.length - 1];
+                            const ang = (Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI + 360) % 360;
+                            const vw = document.createElement('div'); vw.className = 'vehicle-marker-wrap static-print-vehicle';
+                            vw.style.cssText = 'width:24px;height:24px;display:flex;align-items:center;justify-content:center;';
+                            const vi = document.createElement('div'); vi.className = 'vehicle-marker-icon';
+                            vi.style.cssText = 'width:100%;height:100%;transform:rotate(' + ang.toFixed(1) + 'deg);';
+                            vi.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="' + col + '" stroke="#fff" stroke-width="1.5"><path d="M12 2L16 10H14V18H10V10H8L12 2Z"/></svg>';
+                            vw.appendChild(vi);
+                            new maplibregl.Marker({ element: vw }).setLngLat(b).addTo(map);
+                        }
+                    });
+                });
+                map.addSource('scene-shapes', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
+                map.addLayer({ id: 'scene-polygons-fill', type: 'fill', source: 'scene-shapes', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.3 } });
+                map.addLayer({ id: 'scene-lines-layer', type: 'line', source: 'scene-shapes', filter: ['!=', ['geometry-type'], 'Point'], paint: { 'line-color': ['get', 'color'], 'line-width': 3.5 } });
+                map.once('idle', () => settle(el.id, 'ready'));
+            });
+            map.on('error', (err) => settle(el.id, 'error', String(err && err.error ? err.error.message : err)));
+        } catch (ex) {
+            settle(el.id, 'error', String(ex));
+        }
+    });
+}
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (btn && btn.getAttribute('data-action') === 'print') {
+        if (!isReadyForPrint) { alert("Impression indisponible : chargement des cartes incomplet ou en échec."); return; }
+        window.print();
+    }
+});
+window.addEventListener('beforeprint', (e) => {
+    if (!isReadyForPrint) { alert("Impression annulée : attente de la stabilisation des cartes."); if (e && e.preventDefault) e.preventDefault(); }
+});
+window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+        if (!isReadyForPrint) { e.preventDefault(); alert("Impression bloquée : les cartes ne sont pas prêtes."); }
+    }
+});
+window.addEventListener('unload', () => { Object.keys(mapInstances).forEach(k => { try { mapInstances[k].remove(); } catch (_) {} }); });
+window.addEventListener('DOMContentLoaded', initBrochureMaps);</script>
+</body>
+</html>

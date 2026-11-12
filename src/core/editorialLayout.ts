@@ -133,18 +133,22 @@ export function calculateEffectiveDpi(
   blockWidthMm: number,
   blockHeightMm: number,
   crop?: ImageCropTransform
-): { dpi: number; quality: 'optimal' | 'acceptable' | 'low' } {
+): { dpi: number; quality: 'optimal' | 'acceptable' | 'low'; dpiX: number; dpiY: number } {
   if (naturalW <= 0 || naturalH <= 0 || blockWidthMm <= 0 || blockHeightMm <= 0) {
-    return { dpi: 0, quality: 'low' };
+    return { dpi: 0, quality: 'low', dpiX: 0, dpiY: 0 };
   }
-  const cropZoom = crop?.zoom || 1;
+  const cropZoom = Math.max(0.1, crop?.zoom || 1);
   const effectiveW = naturalW / cropZoom;
+  const effectiveH = naturalH / cropZoom;
   const widthInches = blockWidthMm / 25.4;
-  const dpi = Math.round(effectiveW / widthInches);
+  const heightInches = blockHeightMm / 25.4;
+  const dpiX = Math.round(effectiveW / widthInches);
+  const dpiY = Math.round(effectiveH / heightInches);
+  const dpi = Math.min(dpiX, dpiY);
 
   let quality: 'optimal' | 'acceptable' | 'low' = 'optimal';
   if (dpi < 150) quality = 'low';
   else if (dpi < 240) quality = 'acceptable';
-  return { dpi, quality };
+  return { dpi, quality, dpiX, dpiY };
 }
 

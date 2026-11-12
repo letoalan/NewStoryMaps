@@ -2,23 +2,24 @@
  * StoryMap — Script client autonome embarqué pour documents interactifs (P4 / N3 / N4)
  */
 
+import { VEHICLE_SVG_PATHS } from './vehicleCatalog';
+
 export function getDocumentRuntimeScript(total: number, safeAccent: string): string {
   return `const storyData = JSON.parse(document.getElementById('storymap-data').textContent);
 const total = ${total}, reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let curPage = 0, curProfile = 'slide';
-const mapInstances = {}, vehicleTimers = {};
+const mapInstances = {}, vehicleTimers = {}, VEH_PATHS = ${JSON.stringify(VEHICLE_SVG_PATHS)};
 const RAST_SAT = { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }] };
-const RAST_HYB = { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 }, labels: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }, { id: 'labels', type: 'raster', source: 'labels' }] };
+const RAST_HYB = { version: 8, sources: { satellite: RAST_SAT.sources.satellite, labels: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }, { id: 'labels', type: 'raster', source: 'labels' }] };
 function resolveStyle(s) {
     if (!s || s === 'positron' || s === 'voyager') return 'https://basemaps.cartocdn.com/gl/' + (s || 'positron') + '-gl-style/style.json';
     if (s === 'dark-matter' || s === 'dark') return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-    if (s === 'liberty' || s === 'bright' || s === 'fiord') return 'https://tiles.openfreemap.org/styles/' + s;
+    if (/^(liberty|bright|fiord)$/.test(s)) return 'https://tiles.openfreemap.org/styles/' + s;
     if (s === 'ofm-positron' || s === 'ofm-dark') return 'https://tiles.openfreemap.org/styles/' + s.slice(4);
     return (s === 'satellite' || s === 'esri-satellite') ? RAST_SAT : (s === 'hybrid' || s === 'esri-hybrid') ? RAST_HYB : /^(https?:|data:|\\/)/.test(s) ? s : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 }
 function featCenter(f) {
-    const c = f && f.coordinates;
-    if (!Array.isArray(c) || !c.length) return null;
+    const c = f && f.coordinates; if (!Array.isArray(c) || !c.length) return null;
     return f.geometryType === 'Point' ? [c[0], c[1]] : f.geometryType === 'LineString' ? c[Math.floor(c.length / 2)] : (f.geometryType === 'Polygon' && Array.isArray(c[0]) && c[0].length) ? c[0][0] : null;
 }
 function expandLineCoords(base) {
@@ -36,35 +37,36 @@ function expandLineCoords(base) {
 function attachLineVehicle(map, elId, rawCoords, animCfg, col) {
     const coords = expandLineCoords(rawCoords);
     if (!animCfg || !animCfg.enabled || animCfg.vehicle === 'none' || !Array.isArray(coords) || coords.length < 2) return;
-    const wrap = document.createElement('div'); wrap.className = 'vehicle-marker-wrap'; wrap.style.cssText = 'width:26px;height:26px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:20;';
-    const icon = document.createElement('div'); icon.className = 'vehicle-marker-icon'; icon.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;transform-origin:center center;';
+    const wrap = document.createElement('div'), icon = document.createElement('div');
+    wrap.className = 'vehicle-marker-wrap'; wrap.style.cssText = 'width:26px;height:26px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:20;';
+    icon.className = 'vehicle-marker-icon'; icon.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;transform-origin:center center;';
     const initBrg = (Math.atan2(coords[1][0] - coords[0][0], coords[1][1] - coords[0][1]) * 180 / Math.PI + 360) % 360;
-    icon.style.transform = 'rotate(' + initBrg.toFixed(1) + 'deg)';
-    icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="' + col + '" stroke="#fff" stroke-width="1.5"><path d="M12 2L16 10H14V18H10V10H8L12 2Z"/></svg>';
+    icon.style.transform = 'rotate(' + (animCfg.orientToRoute !== false ? initBrg.toFixed(1) : 0) + 'deg)';
+    icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="' + col + '" stroke="#fff" stroke-width="1.5"><path d="' + (VEH_PATHS[animCfg.vehicle] || VEH_PATHS.airplane) + '"/></svg>';
     wrap.appendChild(icon);
     const mk = new maplibregl.Marker({ element: wrap }).setLngLat(reducedMotion ? coords[coords.length - 1] : coords[0]).addTo(map);
     if (reducedMotion) return;
     let userPausedFollow = false; map.on('dragstart', () => { userPausedFollow = true; }); map.on('zoomstart', () => { userPausedFollow = true; });
-    const baseZ = (map.getZoom && map.getZoom()) || 11, first = coords[0], last = coords[coords.length - 1];
-    const distDeg = Math.hypot(last[0] - first[0], last[1] - first[1]);
+    const baseZ = (map.getZoom && map.getZoom()) || 11, first = coords[0], last = coords[coords.length - 1], distDeg = Math.hypot(last[0] - first[0], last[1] - first[1]);
     const baseMs = Math.max(1000, (animCfg.durationSec || 4.8) * 1000), dur = Math.round(baseMs * Math.min(1.15, Math.max(0.88, 0.88 + Math.log10(Math.max(0.01, distDeg) + 1) * 0.16)));
     const midZ = Math.max(1.8, Math.min(baseZ - 0.25, Math.log2((360 * 350 * (dur / 1000)) / (256 * Math.max(0.01, distDeg)))));
-    if (animCfg.cameraFollow !== false && map.jumpTo) map.jumpTo({ center: coords[0], zoom: baseZ });
-    vehicleTimers[elId] = setInterval(() => {
+    const shouldFollow = animCfg.cameraFollow !== false && animCfg.followCamera !== false;
+    if (shouldFollow && map.jumpTo) map.jumpTo({ center: coords[0], zoom: baseZ });
+    let t = 0; vehicleTimers[elId] = setInterval(() => {
         if (document.hidden) return;
-        t = (t + 40) % dur; const p = t / dur, idx = Math.min(coords.length - 2, Math.floor(p * (coords.length - 1))), lt = (p * (coords.length - 1)) - idx;
+        t += 40; if (t >= dur) { if (animCfg.loop) t = t % dur; else { t = dur; clearInterval(vehicleTimers[elId]); delete vehicleTimers[elId]; } }
+        const p = t / dur, idx = Math.min(coords.length - 2, Math.floor(p * (coords.length - 1))), lt = (p * (coords.length - 1)) - idx;
         const a = coords[idx], b = coords[idx + 1], ang = (Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI + 360) % 360;
         const curPos = [a[0] + (b[0] - a[0]) * lt, a[1] + (b[1] - a[1]) * lt], curZ = distDeg > 0.05 ? baseZ - Math.max(0, baseZ - midZ) * Math.sin(p * Math.PI) : baseZ;
-        mk.setLngLat(curPos); icon.style.transform = 'rotate(' + ang.toFixed(1) + 'deg)';
-        if (animCfg.cameraFollow !== false && !userPausedFollow && map.jumpTo) map.jumpTo({ center: curPos, zoom: curZ });
+        mk.setLngLat(curPos); if (animCfg.orientToRoute !== false) icon.style.transform = 'rotate(' + ang.toFixed(1) + 'deg)';
+        if (shouldFollow && !userPausedFollow && map.jumpTo) map.jumpTo({ center: curPos, zoom: curZ });
     }, 40);
 }
 function initDocMaps() {
     const maps = storyData.maps || [];
     document.querySelectorAll('.doc-map-canvas').forEach((el) => {
         if (mapInstances[el.id]) { mapInstances[el.id].resize(); return; }
-        const mapId = el.getAttribute('data-map-id'), targetFeatId = el.getAttribute('data-target-feature');
-        const scene = mapId ? maps.find(m => m.id === mapId) : maps[0];
+        const mapId = el.getAttribute('data-map-id'), targetFeatId = el.getAttribute('data-target-feature'), scene = mapId ? maps.find(m => m.id === mapId) : maps[0];
         if (typeof maplibregl === 'undefined' || !scene) {
             const fb = document.getElementById(el.id.replace('doc-map-', 'doc-map-fb-'));
             if (fb) { fb.style.display = 'flex'; if (!scene && mapId) { const p = fb.querySelector('p'); if (p) p.textContent = 'Scène cartographique "' + mapId + '" introuvable'; } }
@@ -83,12 +85,10 @@ function initDocMaps() {
                     feats.push({ type: 'Feature', id: f.id, geometry: { type: f.geometryType, coordinates: fCoords }, properties: { id: f.id, color: col } });
                     const pt = featCenter(f);
                     if (pt) {
-                        const wrap = document.createElement('div'); wrap.className = 'doc-map-marker-wrap'; wrap.setAttribute('data-feat-id', f.id);
-                        wrap.style.cssText = 'width:24px;height:24px;display:flex;align-items:center;justify-content:center;pointer-events:auto;';
-                        const pin = document.createElement('div'); pin.className = 'doc-map-marker-pin';
-                        pin.style.cssText = 'width:22px;height:22px;border-radius:50%;background:' + col + ';color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:transform 0.3s ease,box-shadow 0.3s ease;';
-                        pin.textContent = String(f.numberIndex || 1); wrap.appendChild(pin);
-                        new maplibregl.Marker({ element: wrap }).setLngLat(pt).addTo(map);
+                        const wrap = document.createElement('div'), pin = document.createElement('div');
+                        wrap.className = 'doc-map-marker-wrap'; wrap.setAttribute('data-feat-id', f.id); wrap.style.cssText = 'width:24px;height:24px;display:flex;align-items:center;justify-content:center;pointer-events:auto;';
+                        pin.className = 'doc-map-marker-pin'; pin.style.cssText = 'width:22px;height:22px;border-radius:50%;background:' + col + ';color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:transform 0.3s ease,box-shadow 0.3s ease;';
+                        pin.textContent = String(f.numberIndex || 1); wrap.appendChild(pin); new maplibregl.Marker({ element: wrap }).setLngLat(pt).addTo(map);
                     }
                     if (f.geometryType === 'LineString') attachLineVehicle(map, el.id + '-' + f.id, f.coordinates, f.routeAnimation || scene.routeAnimation || storyData.routeAnimation, col);
                 });
@@ -108,7 +108,10 @@ function triggerNarrativeBinding(mapId, featId, action) {
     document.querySelectorAll('.doc-map-canvas').forEach(el => {
         if (el.getAttribute('data-map-id') !== mapId) return;
         const m = mapInstances[el.id]; if (!m) return;
-        if (action === 'zoom' && pt) m.flyTo({ center: pt, zoom: 14, duration: reducedMotion ? 0 : 800 });
+        if (action === 'overview') {
+            if (scene.view && scene.view.bounds) m.fitBounds(scene.view.bounds, { duration: reducedMotion ? 0 : 800 });
+            else if (scene.view && scene.view.center) m.flyTo({ center: scene.view.center, zoom: scene.view.zoom || 12, duration: reducedMotion ? 0 : 800 });
+        } else if (action === 'zoom' && pt) m.flyTo({ center: pt, zoom: 14, duration: reducedMotion ? 0 : 800 });
         else if (action === 'highlight') {
             if (pt) m.panTo(pt, { duration: reducedMotion ? 0 : 500 });
             el.querySelectorAll('.doc-map-marker-wrap').forEach(w => {
@@ -142,19 +145,11 @@ function triggerNarrativeBinding(mapId, featId, action) {
 function stepGallery(id, delta) {
     const box = document.getElementById('gal-' + id); if (!box) return;
     const count = Number(box.getAttribute('data-count')) || 1, cur = ((Number(box.getAttribute('data-cur')) || 0) + delta + count) % count;
-    box.setAttribute('data-cur', String(cur));
-    document.querySelectorAll('.gallery-slide[data-gallery="' + id + '"]').forEach((img, idx) => { img.style.display = idx === cur ? 'block' : 'none'; });
+    box.setAttribute('data-cur', String(cur)); document.querySelectorAll('.gallery-slide[data-gallery="' + id + '"]').forEach((img, idx) => { img.style.display = idx === cur ? 'block' : 'none'; });
     const lbl = document.getElementById('gal-lbl-' + id); if (lbl) lbl.textContent = (cur + 1) + '/' + count;
 }
-function setProfile(p) {
-    curProfile = p; document.getElementById('main-stage').className = 'profile-' + p;
-    ['slide', 'vertical', 'horizontal'].forEach(k => document.getElementById('prof-' + k).classList.toggle('active', k === p));
-    document.getElementById('slide-footer').style.display = p === 'slide' ? 'flex' : 'none'; updateUI();
-}
-function toggleToc(force) {
-    const dr = document.getElementById('toc-drawer'), open = typeof force === 'boolean' ? force : dr.style.display !== 'block';
-    dr.style.display = open ? 'block' : 'none'; document.getElementById('toc-btn').setAttribute('aria-expanded', String(open));
-}
+function setProfile(p) { curProfile = p; document.getElementById('main-stage').className = 'profile-' + p; ['slide', 'vertical', 'horizontal'].forEach(k => document.getElementById('prof-' + k).classList.toggle('active', k === p)); document.getElementById('slide-footer').style.display = p === 'slide' ? 'flex' : 'none'; updateUI(); }
+function toggleToc(force) { const dr = document.getElementById('toc-drawer'), open = typeof force === 'boolean' ? force : dr.style.display !== 'block'; dr.style.display = open ? 'block' : 'none'; document.getElementById('toc-btn').setAttribute('aria-expanded', String(open)); }
 function updateUI() {
     for (let i = 0; i < total; i++) {
         const el = document.getElementById('page-' + i), toc = document.getElementById('toc-' + i);
@@ -169,7 +164,12 @@ function updateUI() {
         d.setAttribute('data-action', 'goto-page'); d.setAttribute('data-page-idx', String(i));
         if (i === curPage) d.setAttribute('aria-current', 'page'); dc.appendChild(d);
     }
-    setTimeout(() => { initDocMaps(); document.querySelectorAll('video').forEach((v) => { v.defaultMuted = true; v.muted = true; v.playsInline = true; v.play().catch(()=>{}); }); }, 30);
+    setTimeout(() => {
+        initDocMaps();
+        const sc = curProfile === 'slide' ? document.getElementById('page-' + curPage) : document;
+        if (sc && sc.querySelectorAll) sc.querySelectorAll('video[autoplay]').forEach((v) => { if (v.paused) { v.defaultMuted = true; v.muted = true; v.playsInline = true; v.play().catch(()=>{}); } });
+        if (curProfile === 'slide') document.querySelectorAll('.document-page').forEach((p, idx) => { if (idx !== curPage && p.querySelectorAll) p.querySelectorAll('video').forEach((v) => v.pause()); });
+    }, 30);
 }
 function setPage(n) { if (n >= 0 && n < total) { curPage = n; updateUI(); if (curProfile !== 'slide') { const el = document.getElementById('page-' + n); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' }); } } }
 function toggleFs() { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); else document.exitFullscreen().catch(() => {}); }
@@ -186,8 +186,7 @@ document.addEventListener('click', (e) => {
 });
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { toggleToc(false); return; }
-    const t = e.target;
-    if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName) || (t.closest && (t.closest('.maplibregl-map') || t.closest('[data-carousel-control="true"]'))))) return;
+    const t = e.target; if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName) || (t.closest && (t.closest('.maplibregl-map') || t.closest('[data-carousel-control="true"]'))))) return;
     if (e.key === 'ArrowRight' || e.key === 'PageDown') setPage(curPage + 1); else if (e.key === 'ArrowLeft' || e.key === 'PageUp') setPage(curPage - 1);
 });
 window.addEventListener('DOMContentLoaded', updateUI); updateUI();`;

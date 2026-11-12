@@ -1,0 +1,134 @@
+{
+  "id": "fixture-mode1-tour-5",
+  "version": "2.0.0",
+  "schemaVersion": 2,
+  "title": "Circuit Patrimoine Parisien en 5 Étapes",
+  "subtitle": "De la Tour Eiffel à la butte Montmartre le long de la Seine",
+  "author": "Conservation du Patrimoine",
+  "created": 1731000000000,
+  "modified": 1731000010000,
+  "mode": "storymap",
+  "brand": {
+    "primaryFont": "Lora",
+    "secondaryFont": "Inter",
+    "colors": [
+      "#0f172a",
+      "#334155",
+      "#0b7fb0"
+    ]
+  },
+  "appearance": {
+    "theme": "light",
+    "font": "Lora",
+    "accentColor": "#0b7fb0",
+    "panelPosition": "left",
+    "showProgress": true,
+    "routeStyle": "ship",
+    "markerShape": "number",
+    "showAllMarkers": true
+  },
+  "routeAnimation": {
+    "enabled": true,
+    "vehicle": "ship",
+    "durationSec": 4,
+    "durationMs": 4000,
+    "followCamera": false,
+    "progressiveReveal": true,
+    "staticPosition": "middle"
+  },
+  "hero": {
+    "enabled": true,
+    "mediaType": "photo",
+    "mediaUrl": "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=80",
+    "credit": "© Photo Patrimoine CC-BY",
+    "license": "CC-BY 4.0",
+    "alt": "Vue panoramique de la Seine à Paris",
+    "fit": "cover",
+    "focalPoint": [
+      50,
+      50
+    ],
+    "align": "center",
+    "heightPx": 260,
+    "veilType": "gradient",
+    "veilColor": "#0f172a",
+    "veilOpacity": 0.55,
+    "title": "Circuit Patrimoine Parisien",
+    "subtitle": "Parcours fluvial et monumental en cinq étapes",
+    "showLogo": true
+  },
+  "mapStyle": "voyager",
+  "layers": [],
+  "steps": [
+    {
+      "id": "s1",
+      "title": "1. Tour Eiffel",
+      "description": "<p>Repère métallique édifié en 1889.</p>",
+      "camera": {
+        "center": [
+          2.2945,
+          48.8584
+        ],
+        "zoom": 14,
+        "pitch": 25,
+        "bearing": 0
+      }
+    },
+    {
+      "id": "s2",
+      "title": "2. Esplanade des Invalides",
+      "description": "<p>Perspective classique et dôme doré.</p>",
+      "camera": {
+        "center": [
+          2.3126,
+          48.8566
+        ],
+        "zoom": 14,
+        "pitch": 20,
+        "bearing": 15
+      }
+    },
+    {
+      "id": "s3",
+      "title": "3. Musée du Louvre",
+      "description": "<p>Ancien palais royal au cœur de la cité.</p>",
+      "camera": {
+        "center": [
+          2.3376,
+          48.8606
+        ],
+        "zoom": 14,
+        "pitch": 25,
+        "bearing": 30
+      }
+    },
+    {
+      "id": "s4",
+      "title": "4. Cathédrale Notre-Dame",
+      "description": "<p>Joyau gothique sur l’île de la Cité.</p>",
+      "camera": {
+        "center": [
+          2.3499,
+          48.853
+        ],
+        "zoom": 15,
+        "pitch": 15,
+        "bearing": -10
+      }
+    },
+    {
+      "id": "s5",
+      "title": "5. Butte Montmartre",
+      "description": "<p>Belvédère culminant au nord de Paris.</p>",
+      "camera": {
+        "center": [
+          2.3431,
+          48.8867
+        ],
+        "zoom": 14,
+        "pitch": 30,
+        "bearing": 45
+      }
+    }
+  ]
+}

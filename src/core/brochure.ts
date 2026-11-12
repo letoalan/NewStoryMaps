@@ -115,6 +115,18 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
         notes.push(`Page ${pIdx + 1} : Galerie "${b.id}" développée en planche contact de ${items.length} image(s).`);
       }
 
+      if (cloned.type === 'button') {
+        cloned = {
+          ...cloned,
+          type: 'text',
+          data: {
+            ...cloned.data,
+            text: `<p><strong>${String(cloned.data.label || 'Action')}</strong></p>`,
+          },
+        };
+        notes.push(`Page ${pIdx + 1} : Bouton "${b.id}" converti en texte informatif statique.`);
+      }
+
       if (cloned.binding && cloned.type !== 'map') {
         const key = `${cloned.binding.mapId}::${cloned.binding.targetFeatureId || ''}`;
         if (featureNumberMap.has(key)) {
