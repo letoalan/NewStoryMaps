@@ -28,12 +28,12 @@ Porte : animation réellement exécutée dans l’artefact, pas seulement chaîn
 ## R2 — Moteur partagé
 | ID | Prio | Dépendance | Action | Statut | Preuve |
 | --- | --- | --- | --- | --- | --- |
-| R2.1 | P0 | R1.2 | Inventorier les contrôleurs et choisir une façade unique sans réécriture inutile | TODO | — |
-| R2.2 | P0 | R2.1 | Partager catalogue, géométrie, horloge et états entre React et exports | TODO | — |
-| R2.3 | P0 | R2.2 | Supprimer les boucles divergentes ; respecter véhicule, loop, orientation et durée | TODO | — |
-| R2.4 | P1 | R2.3 | Un pilote caméra/carte, suspendre hors page et nettoyer toutes les ressources | TODO | — |
-| R2.5 | P1 | R2.4 | Respecter autoplay et pauses média/récit/véhicule ; pas de relance vidéo globale | TODO | — |
-| R2.6 | P0 | R2.5 | Comparer deux véhicules distincts dans React et HTML/ZIP hors application | TODO | — |
+| R2.1 | P0 | R1.2 | Inventorier les contrôleurs et choisir une façade unique sans réécriture inutile | DONE | Inventaire documenté ; façade createVehicleController + VEHICLE_SVG_PATHS |
+| R2.2 | P0 | R2.1 | Partager catalogue, géométrie, horloge et états entre React et exports | DONE | VEHICLE_SVG_PATHS exporté de vehicleCatalog vers publish.ts et publishDocumentRuntime.ts |
+| R2.3 | P0 | R2.2 | Supprimer les boucles divergentes ; respecter véhicule, loop, orientation et durée | DONE | scripts/verify-r2.mjs : loop: false/true, orientToRoute, durée validés |
+| R2.4 | P1 | R2.3 | Un pilote caméra/carte, suspendre hors page et nettoyer toutes les ressources | DONE | Marqueur 2 niveaux, cameraFollow, destruction propre validés |
+| R2.5 | P1 | R2.4 | Respecter autoplay et pauses média/récit/véhicule ; pas de relance vidéo globale | DONE | Scope de page active et non-relance des vidéos en pause dans updateUI |
+| R2.6 | P0 | R2.5 | Comparer deux véhicules distincts dans React et HTML/ZIP hors application | DONE | scripts/verify-r2.mjs : bus et navire testés dans exports Mode 1 et Mode 2 |
 Porte : même contrat de déplacement dans tous les rendus web.
 
 ## R3 — Zoom et chargement

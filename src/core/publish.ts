@@ -7,13 +7,13 @@ import { convertLegacyToModern } from './adapter';
 import { sanitizeHTML, escapeAttr } from './sanitize';
 import { extractProjectThemeTokens, resolveVisualStyle } from './themeResolver';
 import { renderPublishedHeroHTML } from './heroRenderer';
+import { VEHICLE_SVG_PATHS } from './vehicleCatalog';
 
 export function generateStandaloneHTML(story: StoryMap): string {
   const tokens = extractProjectThemeTokens(story);
   const vStyle = resolveVisualStyle(story, null, null, 'web-interactive');
   const safeAccent = /^#[0-9a-fA-F]{3,8}$/.test(tokens.accentColor || '') ? tokens.accentColor : '#0b7fb0';
-  const isRight = story.appearance?.panelPosition === 'right';
-  const isCenter = story.appearance?.panelPosition === 'center';
+  const isRight = story.appearance?.panelPosition === 'right', isCenter = story.appearance?.panelPosition === 'center';
   const title = story.title || 'StoryMap';
 
   const cleanStory: StoryMap = { ...story, steps: (story.steps || []).map((s) => ({ ...s, description: sanitizeHTML(s.description || '') })) };
@@ -57,6 +57,7 @@ export function generateStandaloneHTML(story: StoryMap): string {
         const story = JSON.parse(document.getElementById('storymap-data').textContent);
         const steps = (story.steps || []).filter(s => !s.hidden);
         const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const vehiclePaths = ${JSON.stringify(VEHICLE_SVG_PATHS)};
         let currentIdx = 0, map, activeMarkers = [], vehicleMarker = null, vehicleTimer = null, autoplayTimer = null;
 
         function buildSegCoords(p1, p2) {
@@ -121,7 +122,7 @@ export function generateStandaloneHTML(story: StoryMap): string {
             const wrap = document.createElement('div'); wrap.className = 'vehicle-marker-wrap'; wrap.style.cssText = 'width:28px;height:28px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:25;';
             const icon = document.createElement('div'); icon.className = 'vehicle-marker-icon';
             icon.style.cssText = 'width:100%;height:100%;transform:rotate(' + calcBrg(pts[0], pts[1] || pts[0]).toFixed(1) + 'deg);';
-            icon.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="${safeAccent}" stroke="#fff" stroke-width="1.5"><path d="M12 2L16 10H14V18H10V10H8L12 2Z"/></svg>';
+            icon.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="${safeAccent}" stroke="#fff" stroke-width="1.5"><path d="' + (vehiclePaths[animCfg.vehicle] || vehiclePaths.airplane) + '"/></svg>';
             wrap.appendChild(icon);
             if (!fromCoord || reducedMotion) {
                 vehicleMarker = new maplibregl.Marker({ element: wrap }).setLngLat(toCoord).addTo(map);
