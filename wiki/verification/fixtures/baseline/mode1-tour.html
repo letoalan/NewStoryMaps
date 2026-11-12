@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Circuit Patrimoine Parisien en 5 Étapes</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+    <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: Inter, system-ui, sans-serif; overflow: hidden; background: #0f1216; }
+        #map { position: absolute; inset: 0; width: 100%; height: 100%; }
+        #map-fallback { display: none; position: absolute; inset: 0; background: #1a202c; color: #a0aec0; align-items: center; justify-content: center; text-align: center; padding: 2rem; }
+        .panel { position: absolute; top: 20px; left: 20px; bottom: 20px; width: min(420px, calc(100vw - 40px)); background: rgba(255, 255, 255, 1); color: #1a1816; border: 1px solid #e2dfd9; border-radius: 8px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 10; display: flex; flex-direction: column; overflow: hidden; }
+        .panel-header { padding: 16px 20px; border-bottom: 1px solid #e2e5eb; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #e5f2f8; color: #0b7fb0; font-size: 11px; font-weight: 600; }
+        .panel-title { margin: 8px 0 0; font-size: 18px; font-weight: 700; color: #1a1816; font-family: Lora, sans-serif; }
+        .panel-body { flex: 1; padding: 20px; overflow-y: auto; font-size: 14px; line-height: 1.6; color: #1a1816; }
+        .panel-body img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; }
+        .panel-footer { padding: 12px 20px; border-top: 1px solid #e2e5eb; display: flex; align-items: center; justify-content: space-between; background: #f7f8fa; }
+        .panel-meta { padding: 6px 16px; font-size: 10.5px; color: #858e9e; border-top: 1px solid #e2e5eb; background: #fafbfc; }
+        .btn { padding: 8px 14px; border: 1px solid #ccd2db; border-radius: 6px; background: #fff; cursor: pointer; font-weight: 600; font-size: 13px; }
+        .btn:disabled { opacity: 0.4; cursor: default; }
+    </style></head><body>
+    <div id="map"></div><div id="map-fallback"><div><h3>Mode dégradé hors-ligne</h3><p>Fond cartographique indisponible sans connexion.</p></div></div>
+    <div class="panel">
+        <div class="panel-header"><span class="badge" id="step-badge">Étape 1</span><h2 class="panel-title" id="step-title"></h2></div>
+        <div class="panel-body" id="step-body"></div>
+        <div class="panel-footer"><button class="btn" id="btn-prev" onclick="prevStep()">Précédent</button><span id="step-count" style="font-size:12px;color:#858e9e"></span><button class="btn" id="btn-next" onclick="nextStep()">Suivant</button></div>
+        <div class="panel-meta">StoryMap (MIT) · Cartographie © OpenStreetMap, CARTO, Esri</div>
+    </div>
+    <div id="hero-template" style="display:none"><header class="story-hero" id="story-hero-story" data-render-mode="photo" style="position:relative;width:100%;min-height:340px;background:#0f172a;overflow:hidden;border-radius:8px;margin-bottom:14px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:24px;text-align:center;color:#ffffff;">
+    <img class="hero-photo" src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&amp;fit=crop&amp;w=1200&amp;q=80" alt="Circuit Patrimoine Parisien" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 50%;z-index:1;"/><div class="hero-veil" style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(15, 23, 42, 0.193) 0%, rgba(15, 23, 42, 0.632) 100%);z-index:2;pointer-events:none;"></div>
+    <div class="hero-content" style="position:relative;z-index:3;max-width:680px;display:flex;flex-direction:column;align-items:center;gap:6px;">
+      
+      <h1 style="margin:0;font-size:24px;font-weight:700;color:#ffffff;">Circuit Patrimoine Parisien</h1>
+      <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.92);line-height:1.45;">Parcours fluvial et monumental en cinq étapes</p>
+    </div>
+    <span class="hero-credit" style="position:absolute;bottom:8px;right:12px;z-index:4;font-size:10px;color:rgba(255,255,255,0.82);background:rgba(15,23,42,0.6);padding:2px 6px;border-radius:4px;">© Photo Patrimoine CC-BY</span>
+  </header></div>
+    <script id="storymap-data" type="application/json">{"id":"fixture-mode1-tour-5","version":"2.0.0","schemaVersion":2,"title":"Circuit Patrimoine Parisien en 5 Étapes","subtitle":"De la Tour Eiffel à la butte Montmartre le long de la Seine","author":"Conservation du Patrimoine","created":1731000000000,"modified":1731000010000,"mode":"storymap","brand":{"primaryFont":"Lora","secondaryFont":"Inter","colors":["#0f172a","#334155","#0b7fb0"]},"appearance":{"theme":"light","font":"Lora","accentColor":"#0b7fb0","panelPosition":"left","showProgress":true,"routeStyle":"ship","markerShape":"number","showAllMarkers":true},"routeAnimation":{"enabled":true,"vehicle":"ship","durationSec":4,"durationMs":4000,"followCamera":false,"progressiveReveal":true,"staticPosition":"middle"},"hero":{"enabled":true,"mediaType":"photo","mediaUrl":"https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=80","credit":"© Photo Patrimoine CC-BY","license":"CC-BY 4.0","alt":"Vue panoramique de la Seine à Paris","fit":"cover","focalPoint":[50,50],"align":"center","heightPx":260,"veilType":"gradient","veilColor":"#0f172a","veilOpacity":0.55,"title":"Circuit Patrimoine Parisien","subtitle":"Parcours fluvial et monumental en cinq étapes","showLogo":true},"mapStyle":"voyager","layers":[],"steps":[{"id":"s1","title":"1. Tour Eiffel","description":"\u003cp>Repère métallique édifié en 1889.\u003c/p>","camera":{"center":[2.2945,48.8584],"zoom":14,"pitch":25,"bearing":0}},{"id":"s2","title":"2. Esplanade des Invalides","description":"\u003cp>Perspective classique et dôme doré.\u003c/p>","camera":{"center":[2.3126,48.8566],"zoom":14,"pitch":20,"bearing":15}},{"id":"s3","title":"3. Musée du Louvre","description":"\u003cp>Ancien palais royal au cœur de la cité.\u003c/p>","camera":{"center":[2.3376,48.8606],"zoom":14,"pitch":25,"bearing":30}},{"id":"s4","title":"4. Cathédrale Notre-Dame","description":"\u003cp>Joyau gothique sur l’île de la Cité.\u003c/p>","camera":{"center":[2.3499,48.853],"zoom":15,"pitch":15,"bearing":-10}},{"id":"s5","title":"5. Butte Montmartre","description":"\u003cp>Belvédère culminant au nord de Paris.\u003c/p>","camera":{"center":[2.3431,48.8867],"zoom":14,"pitch":30,"bearing":45}}]}</script><script id="story-data" type="application/json">{"id":"fixture-mode1-tour-5","version":"2.0.0","schemaVersion":2,"title":"Circuit Patrimoine Parisien en 5 Étapes","subtitle":"De la Tour Eiffel à la butte Montmartre le long de la Seine","author":"Conservation du Patrimoine","created":1731000000000,"modified":1731000010000,"mode":"storymap","brand":{"primaryFont":"Lora","secondaryFont":"Inter","colors":["#0f172a","#334155","#0b7fb0"]},"appearance":{"theme":"light","font":"Lora","accentColor":"#0b7fb0","panelPosition":"left","showProgress":true,"routeStyle":"ship","markerShape":"number","showAllMarkers":true},"routeAnimation":{"enabled":true,"vehicle":"ship","durationSec":4,"durationMs":4000,"followCamera":false,"progressiveReveal":true,"staticPosition":"middle"},"hero":{"enabled":true,"mediaType":"photo","mediaUrl":"https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=80","credit":"© Photo Patrimoine CC-BY","license":"CC-BY 4.0","alt":"Vue panoramique de la Seine à Paris","fit":"cover","focalPoint":[50,50],"align":"center","heightPx":260,"veilType":"gradient","veilColor":"#0f172a","veilOpacity":0.55,"title":"Circuit Patrimoine Parisien","subtitle":"Parcours fluvial et monumental en cinq étapes","showLogo":true},"mapStyle":"voyager","layers":[],"steps":[{"id":"s1","title":"1. Tour Eiffel","description":"\u003cp>Repère métallique édifié en 1889.\u003c/p>","camera":{"center":[2.2945,48.8584],"zoom":14,"pitch":25,"bearing":0}},{"id":"s2","title":"2. Esplanade des Invalides","description":"\u003cp>Perspective classique et dôme doré.\u003c/p>","camera":{"center":[2.3126,48.8566],"zoom":14,"pitch":20,"bearing":15}},{"id":"s3","title":"3. Musée du Louvre","description":"\u003cp>Ancien palais royal au cœur de la cité.\u003c/p>","camera":{"center":[2.3376,48.8606],"zoom":14,"pitch":25,"bearing":30}},{"id":"s4","title":"4. Cathédrale Notre-Dame","description":"\u003cp>Joyau gothique sur l’île de la Cité.\u003c/p>","camera":{"center":[2.3499,48.853],"zoom":15,"pitch":15,"bearing":-10}},{"id":"s5","title":"5. Butte Montmartre","description":"\u003cp>Belvédère culminant au nord de Paris.\u003c/p>","camera":{"center":[2.3431,48.8867],"zoom":14,"pitch":30,"bearing":45}}]}</script>
+    <script>
+        const story = JSON.parse(document.getElementById('storymap-data').textContent);
+        const steps = (story.steps || []).filter(s => !s.hidden);
+        const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        let currentIdx = 0, map, activeMarkers = [], vehicleMarker = null, vehicleTimer = null, autoplayTimer = null;
+
+        function buildSegCoords(p1, p2) {
+            const rStyle = (story.appearance && story.appearance.routeStyle) || 'dashed';
+            if (rStyle !== 'curved' && rStyle !== 'airplane' && rStyle !== 'ship') return [p1, p2];
+            const dLng = p2[0] - p1[0], dLat = p2[1] - p1[1];
+            if (Math.hypot(dLng, dLat) < 0.001) return [p1, p2];
+            const cLng = (p1[0] + p2[0]) / 2 - dLat * 0.18, cLat = (p1[1] + p2[1]) / 2 + dLng * 0.18, pts = [];
+            for (let i = 0; i <= 16; i++) { const t = i / 16, u = 1 - t; pts.push([u * u * p1[0] + 2 * u * t * cLng + t * t * p2[0], u * u * p1[1] + 2 * u * t * cLat + t * t * p2[1]]); }
+            return pts;
+        }
+
+        function getStyle() {
+            const s = story.mapStyle || 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+            if (s === 'esri-satellite' || s === 'satellite') return { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }] };
+            if (s === 'esri-hybrid' || s === 'hybrid') return { version: 8, sources: { satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 }, labels: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19 } }, layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }, { id: 'labels', type: 'raster', source: 'labels' }] };
+            if (s === 'positron' || s === 'voyager') return 'https://basemaps.cartocdn.com/gl/' + s + '-gl-style/style.json';
+            if (s === 'dark-matter' || s === 'dark') return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+            if (s === 'liberty' || s === 'bright' || s === 'fiord') return 'https://tiles.openfreemap.org/styles/' + s;
+            if (s === 'ofm-positron' || s === 'ofm-dark') return 'https://tiles.openfreemap.org/styles/' + s.slice(4);
+            return /^(https?:|data:|\/)/.test(s) ? s : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+        }
+
+        function initMap() {
+            try {
+                if (typeof maplibregl === 'undefined') throw new Error('CDN indisponible');
+                const step = steps[0] || { camera: { center: [2.35, 48.85], zoom: 4, pitch: 0, bearing: 0 } };
+                map = new maplibregl.Map({ container: 'map', style: getStyle(), center: step.camera.center, zoom: step.camera.zoom, pitch: step.camera.pitch, bearing: step.camera.bearing });
+                map.on('error', () => { document.getElementById('map-fallback').style.display = 'flex'; });
+                map.on('load', () => { addRoute(); renderStep(); });
+            } catch (e) { document.getElementById('map-fallback').style.display = 'flex'; renderStep(); }
+        }
+
+        function addRoute() {
+            if (!map) return;
+            const base = steps.map(s => s.camera.center);
+            if (base.length < 2) return;
+            const rStyle = (story.appearance && story.appearance.routeStyle) || 'dashed';
+            if (rStyle === 'none') return;
+            const coords = [];
+            for (let i = 0; i < base.length - 1; i++) { const seg = buildSegCoords(base[i], base[i + 1]); if (i > 0) seg.shift(); coords.push(...seg); }
+            let dash = rStyle === 'solid' ? undefined : rStyle === 'dotted' ? [1, 2] : rStyle === 'ship' ? [5, 3] : [4, 2];
+            const paint = { 'line-color': '#0b7fb0', 'line-width': 3 };
+            if (dash) paint['line-dasharray'] = dash;
+            map.addSource('route', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } } });
+            map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: paint });
+        }
+
+        function animateSegmentVehicle(fromCam, toCam, animCfg) {
+            if (vehicleTimer) { clearInterval(vehicleTimer); vehicleTimer = null; }
+            if (vehicleMarker) { vehicleMarker.remove(); vehicleMarker = null; }
+            if (!map || !toCam) return false;
+            const fromCoord = fromCam && fromCam.center ? fromCam.center : null, toCoord = toCam.center;
+            const hasV = animCfg && animCfg.enabled && animCfg.vehicle !== 'none';
+            if (!hasV || !toCoord) {
+                map.flyTo({ center: toCoord, zoom: toCam.zoom, pitch: toCam.pitch, bearing: toCam.bearing, essential: true, duration: reducedMotion ? 0 : 1800 });
+                return false;
+            }
+            const nextCam = steps[currentIdx + 1] && steps[currentIdx + 1].camera ? steps[currentIdx + 1].camera : null;
+            const pts = fromCoord ? buildSegCoords(fromCoord, toCoord) : (nextCam ? buildSegCoords(toCoord, nextCam.center) : [toCoord, toCoord]);
+            const calcBrg = (a, b) => (Math.atan2((b[0] - a[0]) * Math.cos(((a[1] + b[1]) / 2) * Math.PI / 180), b[1] - a[1]) * 180 / Math.PI + 360) % 360;
+            const wrap = document.createElement('div'); wrap.className = 'vehicle-marker-wrap'; wrap.style.cssText = 'width:28px;height:28px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:25;';
+            const icon = document.createElement('div'); icon.className = 'vehicle-marker-icon';
+            icon.style.cssText = 'width:100%;height:100%;transform:rotate(' + calcBrg(pts[0], pts[1] || pts[0]).toFixed(1) + 'deg);';
+            icon.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="#0b7fb0" stroke="#fff" stroke-width="1.5"><path d="M12 2L16 10H14V18H10V10H8L12 2Z"/></svg>';
+            wrap.appendChild(icon);
+            if (!fromCoord || reducedMotion) {
+                vehicleMarker = new maplibregl.Marker({ element: wrap }).setLngLat(toCoord).addTo(map);
+                map.jumpTo({ center: toCoord, zoom: toCam.zoom, pitch: toCam.pitch, bearing: toCam.bearing });
+                return 0;
+            }
+            vehicleMarker = new maplibregl.Marker({ element: wrap }).setLngLat(pts[0]).addTo(map);
+            const fZoom = fromCam.zoom || toCam.zoom, fPitch = fromCam.pitch || 0, fBearing = fromCam.bearing || 0;
+            map.jumpTo({ center: pts[0], zoom: fZoom, pitch: fPitch, bearing: fBearing });
+            const distDeg = Math.hypot((toCoord[0] - fromCoord[0]) * Math.cos(((fromCoord[1] + toCoord[1]) / 2) * Math.PI / 180), toCoord[1] - fromCoord[1]);
+            const baseMs = Math.max(1000, (animCfg.durationSec || 4.8) * 1000), dur = Math.round(baseMs * Math.min(1.15, Math.max(0.88, 0.88 + Math.log10(Math.max(0.01, distDeg) + 1) * 0.16)));
+            const targetMidZoom = Math.max(1.8, Math.min(Math.min(fZoom, toCam.zoom) - 0.25, Math.log2((360 * 350 * (dur / 1000)) / (256 * Math.max(0.01, distDeg)))));
+            let elapsed = 0; const nSeg = pts.length - 1;
+            vehicleTimer = setInterval(() => {
+                if (document.hidden) return;
+                elapsed += 35; const t = Math.min(1, elapsed / dur), idx = Math.min(nSeg - 1, Math.floor(t * nSeg)), lt = t * nSeg - idx;
+                const a = pts[idx], b = pts[idx + 1], curPos = [a[0] + (b[0] - a[0]) * lt, a[1] + (b[1] - a[1]) * lt];
+                const linZ = fZoom + (toCam.zoom - fZoom) * t, curZ = distDeg > 0.05 ? linZ - Math.max(0, linZ - targetMidZoom) * Math.sin(t * Math.PI) : linZ;
+                vehicleMarker.setLngLat(curPos); icon.style.transform = 'rotate(' + calcBrg(a, b).toFixed(1) + 'deg)';
+                if (animCfg.cameraFollow !== false) map.jumpTo({ center: curPos, zoom: curZ, pitch: fPitch + ((toCam.pitch || 0) - fPitch) * t, bearing: fBearing + ((toCam.bearing || 0) - fBearing) * t });
+                if (t >= 1) { clearInterval(vehicleTimer); vehicleTimer = null; }
+            }, 35);
+            return dur;
+        }
+
+        function renderStep() {
+            const step = steps[currentIdx] || { title: '', description: '' };
+            document.getElementById('step-badge').textContent = 'Étape ' + (currentIdx + 1);
+            document.getElementById('step-title').textContent = step.title;
+            const body = document.getElementById('step-body'); body.textContent = '';
+            if (currentIdx === 0) { const tpl = document.getElementById('hero-template'); if (tpl && tpl.innerHTML) { const h = document.createElement('div'); h.innerHTML = tpl.innerHTML; body.appendChild(h); } }
+            if (step.media && step.media.url) { const img = document.createElement('img'); img.src = step.media.url; img.alt = step.media.alt || step.title || ''; body.appendChild(img); }
+            const desc = document.createElement('div'); desc.innerHTML = step.description || ''; body.appendChild(desc);
+            const total = steps.length || 1;
+            document.getElementById('step-count').textContent = (currentIdx + 1) + ' / ' + total;
+            document.getElementById('btn-prev').disabled = currentIdx === 0; document.getElementById('btn-next').disabled = currentIdx === total - 1;
+            if (map && step.camera) {
+                activeMarkers.forEach(m => m.remove()); activeMarkers = [];
+                (step.markers || [{ coordinates: step.camera.center }]).forEach(m => activeMarkers.push(new maplibregl.Marker({ color: '#0b7fb0' }).setLngLat(m.coordinates).addTo(map)));
+                const prevS = currentIdx > 0 ? steps[currentIdx - 1] : null;
+                const fDur = animateSegmentVehicle(prevS && prevS.camera ? prevS.camera : null, step.camera, step.routeAnimation || story.routeAnimation) || 0;
+                if (autoplayTimer) clearTimeout(autoplayTimer);
+                if (currentIdx < steps.length - 1) autoplayTimer = setTimeout(() => { nextStep(); }, ((story.appearance && story.appearance.autoplayInterval) || 5000) + fDur);
+            }
+        }
+
+        function nextStep() { if (currentIdx < steps.length - 1) { currentIdx++; renderStep(); } }
+        function prevStep() { if (currentIdx > 0) { currentIdx--; renderStep(); } }
+        window.addEventListener('DOMContentLoaded', initMap);
+    </script>
+</body>
+</html>

@@ -10,19 +10,19 @@ Une tâche sans preuve ne passe pas DONE ; garder un journal de blocage et une t
 ## R0 — Baseline
 | ID | Prio | Dépendance | Action | Statut | Preuve |
 | --- | --- | --- | --- | --- | --- |
-| R0.1 | P0 | — | Relever HEAD, état de travail, environnement et travaux parallèles ; branche de travail dédiée | TODO | — |
-| R0.2 | P0 | R0.1 | npm ci, npm test, npm run build ; conserver journaux initiaux | TODO | — |
-| R0.3 | P0 | R0.1 | Archiver fixtures mode 1, deux cartes et brochure avec exports | TODO | — |
-| R0.4 | P1 | R0.2 | Configurer recette navigateur reproductible et dossier de preuves | TODO | — |
+| R0.1 | P0 | — | Relever HEAD, état de travail, environnement et travaux parallèles ; branche de travail dédiée | DONE | HEAD 8c82086, branche reprise-consolidation, working tree clean |
+| R0.2 | P0 | R0.1 | npm ci, npm test, npm run build ; conserver journaux initiaux | DONE | npm test (16 suites passées), npm run build (960ms) |
+| R0.3 | P0 | R0.1 | Archiver fixtures mode 1, deux cartes et brochure avec exports | DONE | scripts/archive-baseline.mjs -> wiki/verification/fixtures/baseline/ (3 JSON + 3 HTML) |
+| R0.4 | P1 | R0.2 | Configurer recette navigateur reproductible et dossier de preuves | DONE | wiki/verification/reprise-acceptance.md créé, tests Node VM / DOM isolés |
 Porte : baseline connue ; chaque panne initiale est attribuée et non masquée.
 
 ## R1 — Hotfix de publication
 | ID | Prio | Dépendance | Action | Statut | Preuve |
 | --- | --- | --- | --- | --- | --- |
-| R1.1 | P0 | R0.3 | Exécuter le callback de attachLineVehicle et reproduire la lecture de t non déclarée | TODO | — |
-| R1.2 | P0 | R1.1 | Corriger dans le runtime réel et conserver le test rouge puis vert | TODO | — |
-| R1.3 | P0 | R1.2,R0.4 | Ouvrir un HTML exporté indépendant ; vérifier déplacement et absence de ReferenceError | TODO | — |
-| R1.4 | P1 | R1.3 | Tester zéro/une/plusieurs lignes, disabled et reduced-motion | TODO | — |
+| R1.1 | P0 | R0.3 | Exécuter le callback de attachLineVehicle et reproduire la lecture de t non déclarée | DONE | scripts/verify-r1.mjs : ReferenceError: t is not defined reproduit |
+| R1.2 | P0 | R1.1 | Corriger dans le runtime réel et conserver le test rouge puis vert | DONE | src/core/publishDocumentRuntime.ts (let t = 0;), test:r1 vert |
+| R1.3 | P0 | R1.2,R0.4 | Ouvrir un HTML exporté indépendant ; vérifier déplacement et absence de ReferenceError | DONE | scripts/verify-r1.mjs : déplacement observable du marqueur (5 ticks VM) |
+| R1.4 | P1 | R1.3 | Tester zéro/une/plusieurs lignes, disabled et reduced-motion | DONE | scripts/verify-r1.mjs : 4 cas testés et validés |
 Porte : animation réellement exécutée dans l’artefact, pas seulement chaîne générée.
 
 ## R2 — Moteur partagé

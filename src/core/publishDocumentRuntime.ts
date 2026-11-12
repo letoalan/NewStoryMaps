@@ -50,7 +50,7 @@ function attachLineVehicle(map, elId, rawCoords, animCfg, col) {
     const baseMs = Math.max(1000, (animCfg.durationSec || 4.8) * 1000), dur = Math.round(baseMs * Math.min(1.15, Math.max(0.88, 0.88 + Math.log10(Math.max(0.01, distDeg) + 1) * 0.16)));
     const midZ = Math.max(1.8, Math.min(baseZ - 0.25, Math.log2((360 * 350 * (dur / 1000)) / (256 * Math.max(0.01, distDeg)))));
     if (animCfg.cameraFollow !== false && map.jumpTo) map.jumpTo({ center: coords[0], zoom: baseZ });
-    vehicleTimers[elId] = setInterval(() => {
+    let t = 0; vehicleTimers[elId] = setInterval(() => {
         if (document.hidden) return;
         t = (t + 40) % dur; const p = t / dur, idx = Math.min(coords.length - 2, Math.floor(p * (coords.length - 1))), lt = (p * (coords.length - 1)) - idx;
         const a = coords[idx], b = coords[idx + 1], ang = (Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI + 360) % 360;
