@@ -108,7 +108,10 @@ function triggerNarrativeBinding(mapId, featId, action) {
     document.querySelectorAll('.doc-map-canvas').forEach(el => {
         if (el.getAttribute('data-map-id') !== mapId) return;
         const m = mapInstances[el.id]; if (!m) return;
-        if (action === 'zoom' && pt) m.flyTo({ center: pt, zoom: 14, duration: reducedMotion ? 0 : 800 });
+        if (action === 'overview') {
+            if (scene.view && scene.view.bounds) m.fitBounds(scene.view.bounds, { duration: reducedMotion ? 0 : 800 });
+            else if (scene.view && scene.view.center) m.flyTo({ center: scene.view.center, zoom: scene.view.zoom || 12, duration: reducedMotion ? 0 : 800 });
+        } else if (action === 'zoom' && pt) m.flyTo({ center: pt, zoom: 14, duration: reducedMotion ? 0 : 800 });
         else if (action === 'highlight') {
             if (pt) m.panTo(pt, { duration: reducedMotion ? 0 : 500 });
             el.querySelectorAll('.doc-map-marker-wrap').forEach(w => {

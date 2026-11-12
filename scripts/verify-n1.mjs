@@ -19,14 +19,14 @@ console.log('=== VÉRIFICATION PORTE N1 : PALETTE FLOTTANTE & INSPECTEUR DE BLOC
 
 // 1. Catalogue de blocs partagé et filtrage par mode
 console.log('1. Test du catalogue partagé et filtrage par mode (N1.03, N1.05)...');
-assert.equal(BLOCK_CATALOG.length, 9, 'Le catalogue complet expose les 9 types de blocs');
+assert.equal(BLOCK_CATALOG.length, 10, 'Le catalogue complet expose les 10 types de blocs');
 assert.equal(CATALOG_CATEGORIES.length, 4, '4 catégories : Texte, Médias, Carte, Documentation');
 
 const docItems = getAvailableCatalogItems('rich-document');
 const brochureItems = getAvailableCatalogItems('brochure');
-assert.equal(docItems.length, 9, 'Mode 2 (rich-document) expose les 9 types de blocs');
-assert.equal(brochureItems.length, 8, 'Mode 3 (brochure) filtre les blocs purement interactifs (gallery) et propose 8 types');
-assert.equal(brochureItems.some((i) => i.type === 'gallery'), false, 'Le carrousel interactif est filtré en mode brochure');
+assert.equal(docItems.length, 10, 'Mode 2 (rich-document) expose les 10 types de blocs');
+assert.equal(brochureItems.length, 8, 'Mode 3 (brochure) filtre les blocs purement interactifs (gallery, button) et propose 8 types');
+assert.equal(brochureItems.some((i) => i.type === 'gallery' || i.type === 'button'), false, 'Les éléments purement interactifs sont filtrés en mode brochure');
 const galItem = BLOCK_CATALOG.find((i) => i.type === 'gallery');
 assert.ok(galItem?.staticAlternative, 'Alternative statique documentée pour gallery');
 for (const item of docItems) {

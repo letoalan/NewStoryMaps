@@ -137,13 +137,18 @@ export function renderPublishedBlockHTML(
     const action = escapeAttr(b.binding?.action || 'highlight');
     const title = escapeAttr((b.data.title as string) || 'Carte interactive');
     const cap = escapeAttr((b.data.caption as string) || '');
-    content = `<div class="doc-map-wrapper" style="position:relative;width:100%;height:100%;min-height:140px;border-radius:${escapeAttr(vStyle.radiusCss)};overflow:hidden;background:#e2e8f0;">
-      <div class="doc-map-canvas" id="doc-map-${safeId}" data-map-id="${mapId}" data-target-feature="${targetFeat}" data-action="${action}" aria-label="${title}" style="position:absolute;inset:0;width:100%;height:100%;"></div>
-      <div class="doc-map-fallback" id="doc-map-fb-${safeId}" style="display:none;position:absolute;inset:0;background:#1e293b;color:#e2e8f0;padding:12px;align-items:center;justify-content:center;text-align:center;font-size:12px;">Carte "${title}" (mode hors-ligne)</div>
-      <div class="doc-map-attrib" style="position:absolute;bottom:3px;right:5px;background:rgba(255,255,255,0.88);color:#334155;padding:1px 5px;border-radius:3px;font-size:9px;z-index:5;">${cap ? `${cap} · ` : ''}© OpenStreetMap · © CARTO</div>
-    </div>`;
+    content = `<div class="doc-map-wrapper" style="position:relative;width:100%;height:100%;min-height:140px;border-radius:${escapeAttr(vStyle.radiusCss)};overflow:hidden;background:#e2e8f0;"><div class="doc-map-canvas" id="doc-map-${safeId}" data-map-id="${mapId}" data-target-feature="${targetFeat}" data-action="${action}" aria-label="${title}" style="position:absolute;inset:0;width:100%;height:100%;"></div><div class="doc-map-fallback" id="doc-map-fb-${safeId}" style="display:none;position:absolute;inset:0;background:#1e293b;color:#e2e8f0;padding:12px;align-items:center;justify-content:center;text-align:center;font-size:12px;">Carte "${title}" (mode hors-ligne)</div><div class="doc-map-attrib" style="position:absolute;bottom:3px;right:5px;background:rgba(255,255,255,0.88);color:#334155;padding:1px 5px;border-radius:3px;font-size:9px;z-index:5;">${cap ? `${cap} · ` : ''}© OpenStreetMap · © CARTO</div></div>`;
   } else if (b.type === 'legend' || b.type === 'source') {
     content = `<div style="font-size:11px;color:${escapeAttr(vStyle.mutedTextColor)};font-style:${b.type === 'source' ? 'italic' : 'normal'};">${sanitizeHTML((b.data.text as string) || '')}</div>`;
+  } else if (b.type === 'button') {
+    const btnLabel = escapeAttr((b.data.label as string) || (b.data.text as string) || 'Action');
+    const mapId = escapeAttr((b.binding?.mapId || (b.data.mapId as string) || ''));
+    const featId = escapeAttr((b.binding?.targetFeatureId || (b.data.targetFeatureId as string) || ''));
+    const action = escapeAttr((b.binding?.action || (b.data.action as string) || 'zoom'));
+    const url = sanitizeSafeUrl((b.data.url as string) || '');
+    content = url
+      ? `<div style="display:flex;align-items:center;justify-content:center;height:100%;"><a href="${url}" target="_blank" rel="noopener noreferrer" class="doc-action-btn" style="display:inline-flex;align-items:center;gap:6px;background:${escapeAttr(effectiveAccent)};color:#fff;padding:8px 16px;border-radius:${escapeAttr(vStyle.radiusCss)};text-decoration:none;font-weight:600;font-size:13px;">${btnLabel} ↗</a></div>`
+      : `<div style="display:flex;align-items:center;justify-content:center;height:100%;"><button type="button" class="doc-action-btn" data-action="narrative-binding" data-map-id="${mapId}" data-feature-id="${featId}" data-binding-action="${action}" style="display:inline-flex;align-items:center;gap:6px;background:${escapeAttr(effectiveAccent)};color:#fff;border:none;padding:8px 16px;border-radius:${escapeAttr(vStyle.radiusCss)};cursor:pointer;font-weight:600;font-size:13px;box-shadow:${escapeAttr(vStyle.shadowCss)};">${btnLabel}</button></div>`;
   } else if (b.type === 'text') {
     content = `${bindingBadge}<div style="font-size:13px;line-height:1.55;color:${escapeAttr(vStyle.textColor)};font-family:${escapeAttr(vStyle.bodyFont)},sans-serif;">${sanitizeHTML((b.data.text as string) || '')}</div>`;
   } else {

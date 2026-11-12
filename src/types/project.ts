@@ -29,12 +29,15 @@ export type BlockType =
   | 'source'
   | 'table'
   | 'callout'
-  | 'gallery';
+  | 'gallery'
+  | 'button';
+
+export type NarrativeBindingAction = 'highlight' | 'zoom' | 'filter' | 'overview';
 
 export interface NarrativeBinding {
   mapId: string;
   targetFeatureId?: string;
-  action?: 'highlight' | 'zoom' | 'filter';
+  action?: NarrativeBindingAction;
   description?: string;
   numberIndex?: number; // Pour le Mode 3 (renvoi brochure numéroté)
 }

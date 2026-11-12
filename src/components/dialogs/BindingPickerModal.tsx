@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { Block, NarrativeBinding, ProjectMap } from '../../types/project';
+import { Block, NarrativeBinding, NarrativeBindingAction, ProjectMap } from '../../types/project';
 import { X, Link2, Unlink, Check } from 'lucide-react';
 
 interface ContentProps {
@@ -18,11 +18,21 @@ const BindingPickerContent: React.FC<ContentProps> = ({ block, maps, onClose, on
   const initialMapId = currentBinding?.mapId || maps[0]?.id || '';
   const [selectedMapId, setSelectedMapId] = useState<string>(initialMapId);
   const [selectedFeatureId, setSelectedFeatureId] = useState<string>(currentBinding?.targetFeatureId || '');
-  const [action, setAction] = useState<'highlight' | 'zoom' | 'filter'>(currentBinding?.action || 'highlight');
+  const [action, setAction] = useState<NarrativeBindingAction>(currentBinding?.action || 'highlight');
   const [numberIndex, setNumberIndex] = useState<number>(currentBinding?.numberIndex || 1);
+  const [testStatus, setTestStatus] = useState<string | null>(null);
 
   const selectedMap = maps.find((m) => m.id === selectedMapId) || maps[0];
   const allFeatures = (selectedMap?.layers || []).flatMap((l) => l.features || []);
+
+  const actionLabel = action === 'zoom' ? 'Zoom & cadrage' : action === 'highlight' ? 'Surbrillance' : action === 'overview' ? 'Vue générale' : 'Filtrage';
+  const targetName = allFeatures.find((f) => f.id === selectedFeatureId)?.name || 'Vue d’ensemble';
+  const summaryText = `${actionLabel} sur « ${targetName} » (${selectedMap?.name || 'Carte'})`;
+
+  const handleTest = () => {
+    setTestStatus(`Action simulée : ${summaryText}`);
+    setTimeout(() => setTestStatus(null), 2500);
+  };
 
   const handleSave = () => {
     if (!selectedMapId) return;
@@ -79,9 +89,10 @@ const BindingPickerContent: React.FC<ContentProps> = ({ block, maps, onClose, on
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <div>
               <label style={{ fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Action interactive (Mode 2)</label>
-              <select className="select" style={{ width: '100%' }} value={action} onChange={(e) => setAction(e.target.value as any)}>
+              <select className="select" style={{ width: '100%' }} value={action} onChange={(e) => setAction(e.target.value as NarrativeBindingAction)}>
                 <option value="highlight">Surbrillance</option>
                 <option value="zoom">Zoom & cadrage</option>
+                <option value="overview">Vue générale (réinitialisation)</option>
                 <option value="filter">Filtrer couches</option>
               </select>
             </div>
@@ -96,6 +107,14 @@ const BindingPickerContent: React.FC<ContentProps> = ({ block, maps, onClose, on
               />
             </div>
           </div>
+
+          <div style={{ padding: '8px 12px', background: 'var(--surface-2)', borderRadius: 'var(--r-md)', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ color: 'var(--text-muted)' }}>{summaryText}</span>
+            <button type="button" className="btn btn-secondary" onClick={handleTest} style={{ fontSize: '11px', padding: '4px 10px' }}>Tester</button>
+          </div>
+          {testStatus && (
+            <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: 600 }}>{testStatus}</div>
+          )}
         </div>
 
         <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

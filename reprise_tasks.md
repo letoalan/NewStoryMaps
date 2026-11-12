@@ -52,12 +52,12 @@ Porte : trajet centré, destination exacte et traitement des tuiles prouvé sur 
 ## R4 — Tranche mode 2
 | ID | Prio | Dépendance | Action | Statut | Preuve |
 | --- | --- | --- | --- | --- | --- |
-| R4.1 | P1 | R0.3 | Définir contrat minimal section carte–récit et migration sans perte | TODO | — |
-| R4.2 | P1 | R4.1 | Livrer section avec deux fiches, bureau/mobile et bloc Bouton | TODO | — |
-| R4.3 | P1 | R4.2 | Assistant texte/action/cible/test ; zoom/surbrillance/vue générale | TODO | — |
-| R4.4 | P0 | R4.3,R2.2 | Exécuteur partagé, cibles stables, isolation entre deux cartes et état temporaire | TODO | — |
-| R4.5 | P1 | R4.4,R3.6 | Arbitrer bouton et suivi véhicule ; clavier, focus et réinitialisation | TODO | — |
-| R4.6 | P1 | R4.5 | Sauver/rouvrir/exporter HTML/ZIP/réimporter la tranche sans perte | TODO | — |
+| R4.1 | P1 | R0.3 | Définir contrat minimal section carte–récit et migration sans perte | DONE | Contrat NarrativeBindingAction et bloc button validés sans perte |
+| R4.2 | P1 | R4.1 | Livrer section avec deux fiches, bureau/mobile et bloc Bouton | DONE | Bloc ButtonBlock, 2 fiches et 2 cartes indépendantes dans canonical |
+| R4.3 | P1 | R4.2 | Assistant texte/action/cible/test ; zoom/surbrillance/vue générale | DONE | BindingPickerModal : texte/action/cible/test et action overview |
+| R4.4 | P0 | R4.3,R2.2 | Exécuteur partagé, cibles stables, isolation entre deux cartes et état temporaire | DONE | triggerNarrativeBinding partagé, isolation Seine/Nord validée par test:r4 |
+| R4.5 | P1 | R4.4,R3.6 | Arbitrer bouton et suivi véhicule ; clavier, focus et réinitialisation | DONE | doc-action-btn sans badge technique, réinitialisation overview |
+| R4.6 | P1 | R4.5 | Sauver/rouvrir/exporter HTML/ZIP/réimporter la tranche sans perte | DONE | Aller-retour export HTML / réimport prouvé dans scripts/verify-r4.mjs |
 Porte : un parcours mode 2 complet reçu ; D0–D9 non réalisés restent ouverts.
 
 ## R5 — Tranche mode 3
