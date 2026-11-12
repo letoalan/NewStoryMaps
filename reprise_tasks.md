@@ -39,14 +39,14 @@ Porte : même contrat de déplacement dans tous les rendus web.
 ## R3 — Zoom et chargement
 | ID | Prio | Dépendance | Action | Statut | Preuve |
 | --- | --- | --- | --- | --- | --- |
-| R3.1 | P0 | R2.1 | Tests reproducteurs : dernier cadrage, reprise de frames, horloge et chargement | TODO | — |
-| R3.2 | P0 | R3.1 | Corriger émission finale et réarmement de resumeFollow | TODO | — |
-| R3.3 | P0 | R3.2 | Corriger horloge monotone et suivi des sources non symétrique | TODO | — |
-| R3.4 | P1 | R3.3 | Planifier temps/distance selon projection et viewport utile ; ne pas exposer une vitesse fictive | TODO | — |
-| R3.5 | P0 | R2.3,R3.4 | Brancher réellement coordinateur/moniteur à la carte React et au runtime commun | TODO | — |
-| R3.6 | P1 | R3.5 | Distinguer geste utilisateur et caméra programmée ; reprise explicite | TODO | — |
-| R3.7 | P1 | R3.6 | Tester pauses techniques, timeout, visibilité et reconstruction WebGL | TODO | — |
-| R3.8 | P1 | R3.7 | Mesurer centrage/zoom/arrivée sur trajets urbain, régional et intercontinental | TODO | — |
+| R3.1 | P0 | R2.1 | Tests reproducteurs : dernier cadrage, reprise de frames, horloge et chargement | DONE | scripts/verify-r3.mjs : tests reproducteurs et vérification unitaire |
+| R3.2 | P0 | R3.1 | Corriger émission finale et réarmement de resumeFollow | DONE | travelCoordinator.ts : émission à state==='completed' et restart RAF dans resumeFollow |
+| R3.3 | P0 | R3.2 | Corriger horloge monotone et suivi des sources non symétrique | DONE | mapReadinessMonitor.ts : horloge unifiée currentClockMs et tracking de reprise |
+| R3.4 | P1 | R3.3 | Planifier temps/distance selon projection et viewport utile ; ne pas exposer une vitesse fictive | DONE | flightPlanner.ts & test:zoom validés |
+| R3.5 | P0 | R2.3,R3.4 | Brancher réellement coordinateur/moniteur à la carte React et au runtime commun | DONE | Intégré dans Player.tsx, MapBlockPreview.tsx et publishDocumentRuntime.ts |
+| R3.6 | P1 | R3.5 | Distinguer geste utilisateur et caméra programmée ; reprise explicite | DONE | notifyUserInteraction bascule en free-exploration, resumeFollow réengage |
+| R3.7 | P1 | R3.6 | Tester pauses techniques, timeout, visibilité et reconstruction WebGL | DONE | test:zoom Z07-Z10 et test:r3 validés |
+| R3.8 | P1 | R3.7 | Mesurer centrage/zoom/arrivée sur trajets urbain, régional et intercontinental | DONE | Z01-Z04 et Z11 validés par scripts/verify-zoom.mjs |
 Porte : trajet centré, destination exacte et traitement des tuiles prouvé sur vraie carte.
 
 ## R4 — Tranche mode 2

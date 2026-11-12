@@ -50,7 +50,7 @@ export function createTravelCoordinator(options: TravelCoordinatorOptions): Trav
   const emitSample = (): FlightPlanSample => {
     const sample = plan.sampleAtProgress(progress);
     options.onSample?.(sample, state);
-    if (cameraLocked && !staticOnly && (state === 'playing' || state === 'technical-pause')) {
+    if (cameraLocked && !staticOnly && (state === 'playing' || state === 'technical-pause' || state === 'completed')) {
       options.onCameraUpdate?.(sample.coordinates, sample.zoom, sample.bearing, sample.pitch);
     }
     return sample;
@@ -119,7 +119,15 @@ export function createTravelCoordinator(options: TravelCoordinatorOptions): Trav
   };
 
   const resumeFollow = () => {
-    cameraLocked = true; if (state === 'free-exploration') setState('playing'); emitSample();
+    cameraLocked = true;
+    if (state === 'free-exploration') {
+      setState('playing');
+      lastFrameTimeMs = null;
+      emitSample();
+      scheduleTick();
+      return;
+    }
+    emitSample();
   };
 
   const notifyVisibilityChange = (hidden: boolean) => {

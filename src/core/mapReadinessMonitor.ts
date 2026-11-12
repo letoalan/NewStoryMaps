@@ -14,7 +14,7 @@ export interface MapReadinessOptions {
 export interface MapReadinessMonitor {
   getStatus: () => MapReadinessStatus;
   notifyFrameStart: (nowMs: number) => void;
-  notifySourceData: (isLoaded: boolean, hasError?: boolean) => void;
+  notifySourceData: (isLoaded: boolean, hasError?: boolean, nowMs?: number) => void;
   notifyTilesLoaded: (nowMs: number) => void;
   notifyMapIdle: () => void;
   isFlightAllowed: () => boolean;
@@ -30,6 +30,7 @@ export function createMapReadinessMonitor(options: MapReadinessOptions = {}): Ma
   let status: MapReadinessStatus = 'ready';
   let loadingSinceMs: number | null = null;
   let lastRecoveredMs: number | null = null;
+  let currentClockMs = 0;
   let pendingTilesCount = 0;
 
   const setStatus = (next: MapReadinessStatus, detail?: string) => {
@@ -40,6 +41,7 @@ export function createMapReadinessMonitor(options: MapReadinessOptions = {}): Ma
   };
 
   const notifyFrameStart = (nowMs: number) => {
+    currentClockMs = nowMs;
     if (status === 'error') return;
     if (pendingTilesCount > 0) {
       if (loadingSinceMs === null) loadingSinceMs = nowMs;
@@ -53,22 +55,26 @@ export function createMapReadinessMonitor(options: MapReadinessOptions = {}): Ma
       if (nowMs - lastRecoveredMs >= recoveryDelayMs) {
         setStatus('ready', 'Fond cartographique prêt.');
         loadingSinceMs = null;
+        lastRecoveredMs = null;
       }
     }
   };
 
-  const notifySourceData = (isLoaded: boolean, hasError = false) => {
+  const notifySourceData = (isLoaded: boolean, hasError = false, nowMs?: number) => {
     if (hasError) {
       setStatus('error', 'Erreur de chargement d’une source cartographique.');
       return;
     }
     if (!isLoaded) {
       pendingTilesCount++;
+      if (loadingSinceMs === null) {
+        loadingSinceMs = typeof nowMs === 'number' ? nowMs : currentClockMs;
+      }
       if (status === 'ready') setStatus('loading');
     } else {
       pendingTilesCount = Math.max(0, pendingTilesCount - 1);
       if (pendingTilesCount === 0) {
-        lastRecoveredMs = Date.now();
+        lastRecoveredMs = typeof nowMs === 'number' ? nowMs : currentClockMs;
         if (status === 'loading') setStatus('ready');
       }
     }
