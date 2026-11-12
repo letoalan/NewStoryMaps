@@ -143,7 +143,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
           return (
             <div
               key={b.id} data-block-id={b.id} data-style-mode={b.styleOverride?.styleMode || 'inherit'}
-              style={{ gridColumn: `${b.x + 1} / span ${b.w}`, gridRow: `${b.y + 1} / span ${b.h}`, position: 'relative', zIndex: isSelected ? 30 : 10, outline: editorOutline, outlineOffset: '2px', borderRadius: bStyle.radiusCss, background: isHero ? 'transparent' : bStyle.surfaceCssBackground, border: isHero ? 'none' : bStyle.borderCss, boxShadow: bStyle.shadowCss, color: bStyle.textColor, overflow: 'visible', minWidth: 0, minHeight: 0, boxSizing: 'border-box' }}
+              style={{ gridColumn: `${b.x + 1} / span ${b.w}`, gridRow: `${b.y + 1} / span ${b.h}`, position: 'relative', zIndex: isSelected ? 30 : (typeof b.zIndex === 'number' ? 10 + b.zIndex : 10), outline: editorOutline, outlineOffset: '2px', borderRadius: bStyle.radiusCss, background: isHero ? 'transparent' : bStyle.surfaceCssBackground, border: isHero ? 'none' : bStyle.borderCss, boxShadow: bStyle.shadowCss, color: bStyle.textColor, overflow: 'visible', minWidth: 0, minHeight: 0, boxSizing: 'border-box' }}
               onClick={(e) => { e.stopPropagation(); if (isEditable) setSelectedBlockId(b.id); }}
             >
               {isSelected && isEditable && (

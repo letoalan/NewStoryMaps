@@ -158,7 +158,7 @@ export function renderPublishedBlockHTML(
   const isHero = b.type === 'title' && Boolean((page?.hero?.enabled ? page.hero : story?.hero?.enabled ? story.hero : undefined)?.enabled);
   const blockBg = isHero ? 'transparent' : escapeAttr(vStyle.surfaceCssBackground), blockBorder = isHero ? 'none' : escapeAttr(vStyle.borderCss), blockPad = isHero ? '0' : escapeAttr(vStyle.paddingCss), blockOverflow = isHero ? 'hidden' : 'auto';
 
-  return `<div class="block" id="block-${safeId}" data-style-mode="${escapeAttr(b.styleOverride?.styleMode || 'inherit')}"${bindingAttrs} style="grid-column:${colStart} / span ${colSpan};grid-row:${rowStart} / span ${rowSpan};background:${blockBg};border:${blockBorder};border-radius:${escapeAttr(vStyle.radiusCss)};padding:${blockPad};box-shadow:${escapeAttr(vStyle.shadowCss)};color:${escapeAttr(vStyle.textColor)};overflow:${blockOverflow};position:relative;min-width:0;min-height:0;box-sizing:border-box;">${content}</div>`;
+  return `<div class="block" id="block-${safeId}" data-style-mode="${escapeAttr(b.styleOverride?.styleMode || 'inherit')}"${bindingAttrs} style="grid-column:${colStart} / span ${colSpan};grid-row:${rowStart} / span ${rowSpan};z-index:${typeof b.zIndex === 'number' ? b.zIndex : 1};background:${blockBg};border:${blockBorder};border-radius:${escapeAttr(vStyle.radiusCss)};padding:${blockPad};box-shadow:${escapeAttr(vStyle.shadowCss)};color:${escapeAttr(vStyle.textColor)};overflow:${blockOverflow};position:relative;min-width:0;min-height:0;box-sizing:border-box;">${content}</div>`;
 }
 
 export function renderPublishedPageHTML(
