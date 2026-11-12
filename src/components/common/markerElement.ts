@@ -3,10 +3,13 @@
  */
 
 import { MarkerShape } from '../../types/story';
+import { isDarkColor } from '../../core/themeResolver';
 
 export interface MarkerElementOptions {
   shape?: MarkerShape;
   color?: string;
+  textColor?: string;
+  borderColor?: string;
   index?: number;
   isActive?: boolean;
 }
@@ -16,6 +19,8 @@ export function createMarkerElement(opts: MarkerElementOptions): HTMLElement {
   const color = opts.color || '#0b7fb0';
   const isActive = opts.isActive ?? true;
   const index = (opts.index ?? 0) + 1;
+  const numTextColor = opts.textColor || (isDarkColor(color) ? '#ffffff' : '#111827');
+  const numBorderColor = opts.borderColor || (isDarkColor(color) ? '#ffffff' : '#111827');
 
   const el = document.createElement('div');
   el.className = `custom-story-marker marker-${shape} ${isActive ? 'active' : 'inactive'}`;
@@ -29,13 +34,13 @@ export function createMarkerElement(opts: MarkerElementOptions): HTMLElement {
     el.style.height = '28px';
     el.style.borderRadius = '50%';
     el.style.backgroundColor = color;
-    el.style.color = '#ffffff';
+    el.style.color = numTextColor;
     el.style.display = 'grid';
     el.style.placeItems = 'center';
     el.style.fontSize = '12px';
     el.style.fontWeight = '700';
     el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.35)';
-    el.style.border = '2px solid #ffffff';
+    el.style.border = `2px solid ${numBorderColor}`;
     el.textContent = String(index);
     return el;
   }

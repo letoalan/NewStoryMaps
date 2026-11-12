@@ -7,16 +7,19 @@ import { useStory } from '../../context/StoryContext';
 import { StoryFont, RouteLineStyle, MarkerShape } from '../../types/story';
 import { VehicleType } from '../../types/theme';
 import { DEFAULT_THEME_TOKENS, extractProjectThemeTokens, measureColorContrast } from '../../core/themeResolver';
+import { applyCharterToStory } from '../../core/graphicCharter';
 import { VEHICLE_CATALOG } from '../../core/vehicleCatalog';
 import { parseVideoEmbedUrl, cleanGoogleRedirectUrl } from '../../core/videoEmbed';
-import { X, Settings, Palette, Image, Navigation, RotateCcw, AlertTriangle } from 'lucide-react';
+import { CharterImportModal } from './CharterImportModal';
+import { X, Settings, Palette, Image, Navigation, RotateCcw, AlertTriangle, FileCode } from 'lucide-react';
 
-const FONTS: StoryFont[] = ['Inter', 'Lora', 'Merriweather', 'Roboto', 'Cinzel'];
+const FONTS: StoryFont[] = ['Inter', 'Nunito', 'Lora', 'Merriweather', 'Roboto', 'Cinzel'];
 const ACCENT_COLORS = ['#0b7fb0', '#2563eb', '#16a34a', '#dc2626', '#9333ea', '#d97706'];
 
 export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { story, updateStory } = useStory();
   const [tab, setTab] = useState<'theme' | 'hero' | 'route'>('theme');
+  const [isCharterModalOpen, setIsCharterModalOpen] = useState(false);
 
   if (!isOpen || !story) return null;
   const app = story.appearance;
@@ -31,16 +34,10 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
   const contrastRatio = measureColorContrast(tok.textColor, tok.surfaceBackground);
 
   const updateTheme = (patch: Partial<typeof tok>, logoUrl?: string) => {
-    const nextTok = { ...tok, ...patch };
-    const nextAccent = nextTok.accentColor || nextTok.primaryColor;
-    const nextHero = story.hero ? {
-      ...story.hero,
-      veilColor: (!story.hero.veilColor || story.hero.veilColor === '#0f172a' || story.hero.veilColor === tok.primaryColor) ? nextTok.primaryColor : story.hero.veilColor,
-      backgroundColor: nextTok.primaryColor,
-    } : undefined;
+    const nextTok = { ...tok, ...patch }, nextAccent = nextTok.accentColor || nextTok.primaryColor;
+    const nextHero = story.hero ? { ...story.hero, veilColor: (!story.hero.veilColor || story.hero.veilColor === '#0f172a' || story.hero.veilColor === tok.primaryColor) ? nextTok.primaryColor : story.hero.veilColor, backgroundColor: nextTok.primaryColor, logoUrl: logoUrl !== undefined ? logoUrl : (story.hero.logoUrl || story.brand?.logo) } : undefined;
     updateStory({
-      themeTokens: nextTok,
-      ...(nextHero ? { hero: nextHero } : {}),
+      themeTokens: nextTok, ...(nextHero ? { hero: nextHero } : {}),
       brand: { primaryColor: nextTok.primaryColor, secondaryColor: nextTok.secondaryColor, fontTitle: nextTok.headingFont, fontBody: nextTok.bodyFont, logo: logoUrl !== undefined ? logoUrl : story.brand?.logo },
       appearance: { ...app, accentColor: nextAccent, font: (nextTok.bodyFont as StoryFont) || app.font, headingFont: nextTok.headingFont, bodyFont: nextTok.bodyFont, panelBackground: nextTok.surfaceBackground, textColor: nextTok.textColor },
     });
@@ -108,7 +105,10 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: '6px', background: contrastRatio < 4.5 ? '#fef3c7' : '#f0fdf4', color: contrastRatio < 4.5 ? '#92400e' : '#166534' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>{contrastRatio < 4.5 && <AlertTriangle size={14} />} Contraste : <strong>{contrastRatio}:1</strong> {contrastRatio < 4.5 ? '(Avertissement WCAG < 4.5)' : '(Conforme WCAG AA)'}</span>
-                <button type="button" className="btn btn-ghost btn-xs" onClick={() => updateTheme(DEFAULT_THEME_TOKENS, '')}><RotateCcw size={12} /> <span>Réinitialiser</span></button>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button type="button" className="btn btn-ghost btn-xs" onClick={() => setIsCharterModalOpen(true)} title="Importer ou exporter la charte graphique JSON"><FileCode size={12} /> <span>Charte JSON</span></button>
+                  <button type="button" className="btn btn-ghost btn-xs" onClick={() => updateTheme(DEFAULT_THEME_TOKENS, '')}><RotateCcw size={12} /> <span>Réinitialiser</span></button>
+                </div>
               </div>
             </>
           )}
@@ -120,18 +120,8 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
                 <span>Activer la couverture Hero d’ouverture</span>
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div>
-                  <label style={{ fontWeight: 600 }}>Type de média</label>
-                  <select className="select" style={{ width: '100%' }} value={hero.mediaType} onChange={(e) => updateStory({ hero: { ...hero, mediaType: e.target.value as 'photo' | 'video' | 'none' } })}>
-                    <option value="photo">Photographie</option><option value="video">Vidéo (avec poster statique)</option><option value="none">Couleur unie seule</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontWeight: 600 }}>Hauteur</label>
-                  <select className="select" style={{ width: '100%' }} value={hero.heightPreset || 'medium'} onChange={(e) => updateStory({ hero: { ...hero, heightPreset: e.target.value as any } })}>
-                    <option value="compact">Compacte</option><option value="medium">Moyenne</option><option value="tall">Haute</option><option value="fullscreen">Plein écran</option>
-                  </select>
-                </div>
+                <div><label style={{ fontWeight: 600 }}>Type de média</label><select className="select" style={{ width: '100%' }} value={hero.mediaType} onChange={(e) => updateStory({ hero: { ...hero, mediaType: e.target.value as any } })}><option value="photo">Photographie</option><option value="video">Vidéo (avec poster)</option><option value="none">Couleur unie</option></select></div>
+                <div><label style={{ fontWeight: 600 }}>Hauteur</label><select className="select" style={{ width: '100%' }} value={hero.heightPreset || 'medium'} onChange={(e) => updateStory({ hero: { ...hero, heightPreset: e.target.value as any } })}><option value="compact">Compacte</option><option value="medium">Moyenne</option><option value="tall">Haute</option><option value="fullscreen">Plein écran</option></select></div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '8px', alignItems: 'end' }}>
                 <div><label style={{ fontWeight: 600 }}>URL du média (YouTube, Vimeo ou vidéo MP4)</label><input type="text" className="input" value={hero.mediaUrl || ''} onChange={(e) => { const c = cleanGoogleRedirectUrl(e.target.value); const p = parseVideoEmbedUrl(c); updateStory({ hero: { ...hero, mediaUrl: c, mediaType: p.isEmbed || /\.(mp4|webm|ogg|mov)$/i.test(c) ? 'video' : hero.mediaType } }); }} placeholder="https://youtu.be/... ou https://..." /></div>
@@ -186,6 +176,12 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
           )}
         </div>
       </div>
+      <CharterImportModal
+        isOpen={isCharterModalOpen}
+        onClose={() => setIsCharterModalOpen(false)}
+        onApply={(doc) => updateStory(applyCharterToStory(story, doc))}
+        initialCharter={(story.graphicCharter as any) || null}
+      />
     </div>
   );
 };

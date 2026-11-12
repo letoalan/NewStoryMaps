@@ -6,6 +6,7 @@ import { Map as MLMap, Marker, GeoJSONSource } from 'maplibre-gl';
 import type { MapFeature, ProjectMap } from '../types/project';
 import type { RouteLineStyle } from '../types/story';
 import { expandRouteCoordsByStyle } from './route';
+import { isDarkColor } from './themeResolver';
 
 export interface SceneGeoJSONFeature {
   type: 'Feature';
@@ -47,15 +48,9 @@ export function getFeatureCenter(f: MapFeature): [number, number] | null {
   if (f.geometryType === 'Polygon') {
     const ring = Array.isArray(c[0]) && Array.isArray(c[0][0]) ? c[0] : Array.isArray(c[0]) ? c : [];
     if (ring.length === 0) return null;
-    let sumLng = 0;
-    let sumLat = 0;
-    let count = 0;
+    let sumLng = 0, sumLat = 0, count = 0;
     for (const pt of ring) {
-      if (typeof pt?.[0] === 'number' && typeof pt?.[1] === 'number') {
-        sumLng += pt[0];
-        sumLat += pt[1];
-        count++;
-      }
+      if (typeof pt?.[0] === 'number' && typeof pt?.[1] === 'number') { sumLng += pt[0]; sumLat += pt[1]; count++; }
     }
     return count > 0 ? [sumLng / count, sumLat / count] : null;
   }
@@ -178,9 +173,11 @@ export function renderSceneLayersOnMap(
       if (!center) continue;
       const isHighlighted = Boolean(highlightedFeatureId && f.id === highlightedFeatureId);
       const color = isHighlighted ? '#e11d48' : f.color || layer.color || '#0b7fb0';
+      const numTxt = isDarkColor(color) ? '#ffffff' : '#111827';
+      const numBdr = isDarkColor(color) ? '#ffffff' : '#111827';
 
       const el = document.createElement('div');
-      el.style.cssText = `width:${ isHighlighted ? 26 : 22 }px;height:${ isHighlighted ? 26 : 22 }px;border-radius:50%;background:${color};color:#fff;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;`;
+      el.style.cssText = `width:${ isHighlighted ? 26 : 22 }px;height:${ isHighlighted ? 26 : 22 }px;border-radius:50%;background:${color};color:${numTxt};border:2px solid ${numBdr};box-shadow:0 2px 6px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;`;
       el.textContent = String(f.numberIndex || 1);
       el.title = `${f.name} (${f.geometryType})`;
 

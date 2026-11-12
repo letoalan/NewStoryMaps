@@ -8,6 +8,7 @@ import type { ProjectBrand, ProjectMode } from './project';
 import type { PageFormat } from './grid';
 
 import type { SharedThemeTokens, HeroConfig, RouteAnimationConfig } from './theme';
+import type { GraphicCharterDoc } from './graphicCharter';
 
 export type SaveStatus = 'saved' | 'saving' | 'dirty' | 'error';
 
@@ -20,6 +21,7 @@ export interface CreateStoryOptions {
   hero?: HeroConfig;
   routeAnimation?: RouteAnimationConfig;
   templateId?: string;
+  graphicCharter?: GraphicCharterDoc;
 }
 
 export interface StoryContextType {

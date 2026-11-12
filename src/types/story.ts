@@ -6,9 +6,10 @@ import type { Step } from './step';
 import type { ProjectBrand, ProjectMode, Page, ProjectMap } from './project';
 import type { PageFormat } from './grid';
 import type { SharedThemeTokens, HeroConfig, RouteAnimationConfig } from './theme';
+import type { GraphicCharterDoc } from './graphicCharter';
 
 export type UITheme = 'light' | 'dark' | 'auto';
-export type StoryFont = 'Inter' | 'Lora' | 'Merriweather' | 'Roboto' | 'Cinzel';
+export type StoryFont = 'Inter' | 'Lora' | 'Merriweather' | 'Roboto' | 'Nunito' | 'Cinzel';
 
 export type RouteLineStyle =
   | 'solid'
@@ -75,6 +76,7 @@ export interface StoryMap {
   themeTokens?: Partial<SharedThemeTokens>;
   hero?: HeroConfig;
   routeAnimation?: RouteAnimationConfig;
+  graphicCharter?: GraphicCharterDoc;
   format?: PageFormat;
   pages?: Page[];
   maps?: ProjectMap[];

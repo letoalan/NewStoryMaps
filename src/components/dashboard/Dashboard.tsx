@@ -7,10 +7,11 @@ import { StoryListItem } from '../../types/story';
 import { db } from '../../core/db';
 import { StoryCard } from './StoryCard';
 import { Header } from '../common/Header';
-import { Plus, Upload, Search, Map, BookOpen, Archive } from 'lucide-react';
+import { Plus, Upload, Search, Map, BookOpen, Archive, FileCode } from 'lucide-react';
 import { parseStoryFile, exportAllStoriesBackupZip } from '../../core/io';
 import { EXAMPLE_STORY } from '../../data/exampleStory';
 import { NewStoryModal } from '../dialogs/NewStoryModal';
+import { CharterImportModal } from '../dialogs/CharterImportModal';
 
 import { ProjectMode } from '../../types/project';
 import { CreateStoryOptions } from '../../types/context';
@@ -26,6 +27,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isCharterModalOpen, setIsCharterModalOpen] = useState(false);
   const [initialMode, setInitialMode] = useState<ProjectMode>('storymap');
 
   const loadAll = async () => {
@@ -77,10 +79,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
     await loadAll();
   };
 
-  const filtered = stories.filter((s) =>
-    s.title.toLowerCase().includes(filter.toLowerCase()) ||
-    (s.subtitle && s.subtitle.toLowerCase().includes(filter.toLowerCase()))
-  );
+  const filtered = stories.filter((s) => s.title.toLowerCase().includes(filter.toLowerCase()) || (s.subtitle && s.subtitle.toLowerCase().includes(filter.toLowerCase())));
 
   return (
     <div className="dash">
@@ -106,6 +105,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
               <Upload size={16} /> <span>Importer</span>
               <input type="file" accept=".json,.html,.htm,.zip,application/json,text/html,application/zip" onChange={handleImport} style={{ display: 'none' }} />
             </label>
+            <button className="btn btn-ghost" onClick={() => setIsCharterModalOpen(true)} title="Importer ou prévisualiser une charte graphique JSON">
+              <FileCode size={16} /> <span>Charte JSON</span>
+            </button>
             <button className="btn btn-primary" onClick={() => setIsNewModalOpen(true)}>
               <Plus size={16} /> <span>Nouvelle StoryMap</span>
             </button>
@@ -175,6 +177,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
         initialMode={initialMode}
         onClose={() => setIsNewModalOpen(false)}
         onCreate={(opts) => onNewStory(opts)}
+      />
+      <CharterImportModal
+        isOpen={isCharterModalOpen}
+        onClose={() => setIsCharterModalOpen(false)}
+        onApply={(doc) => onNewStory({
+          title: doc.project?.name || 'Projet Charte',
+          mode: 'rich-document',
+          graphicCharter: doc,
+        })}
       />
     </div>
   );

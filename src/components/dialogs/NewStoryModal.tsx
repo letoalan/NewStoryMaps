@@ -3,17 +3,19 @@
  */
 
 import React, { useState } from 'react';
-import { X, Map, Layers, FileText, ChevronDown, ChevronUp, Image, Navigation, Palette, LayoutTemplate } from 'lucide-react';
+import { X, Map, Layers, FileText, ChevronDown, ChevronUp, Image, Navigation, Palette, LayoutTemplate, FileCode } from 'lucide-react';
 import { ProjectBrand, ProjectMode } from '../../types/project';
 import { PageFormat } from '../../types/grid';
 import { SharedThemeTokens, HeroConfig, RouteAnimationConfig, VehicleType } from '../../types/theme';
+import type { GraphicCharterDoc } from '../../types/graphicCharter';
 import { CreateStoryOptions } from '../../types/context';
-import { FONT_CATALOG, DEFAULT_THEME_TOKENS } from '../../core/themeResolver';
+import { FONT_CATALOG, DEFAULT_THEME_TOKENS, isDarkColor } from '../../core/themeResolver';
 import { VEHICLE_CATALOG } from '../../core/vehicleCatalog';
 import { cleanGoogleRedirectUrl } from '../../core/videoEmbed';
 import { PAGE_STRUCTURAL_TEMPLATES } from '../../core/layoutTemplates';
-
-const DEFAULT_HERO_PHOTO = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="450" viewBox="0 0 1200 450"><defs><linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0f172a"/><stop offset="55%" stop-color="#0369a1"/><stop offset="100%" stop-color="#0284c7"/></linearGradient></defs><rect width="1200" height="450" fill="url(#sky)"/><circle cx="960" cy="120" r="56" fill="#fde047" fill-opacity="0.88"/><path d="M0 340 L260 190 L510 310 L790 155 L1050 285 L1200 220 L1200 450 L0 450 Z" fill="#1e293b" fill-opacity="0.65"/><path d="M0 375 L340 240 L640 355 L930 215 L1200 330 L1200 450 L0 450 Z" fill="#0f172a" fill-opacity="0.85"/></svg>');
+import { createThemedHeroSvg, DEFAULT_HERO_PHOTO } from '../../core/heroRenderer';
+import { getCharterLogoForContext } from '../../core/charterContext';
+import { CharterImportModal } from './CharterImportModal';
 
 interface NewStoryModalProps {
   isOpen: boolean;
@@ -23,58 +25,56 @@ interface NewStoryModalProps {
 }
 
 export const NewStoryModal: React.FC<NewStoryModalProps> = ({ isOpen, initialMode = 'storymap', onClose, onCreate }) => {
-  const [title, setTitle] = useState('');
-  const [mode, setMode] = useState<ProjectMode>(initialMode);
-  const [format, setFormat] = useState<PageFormat>('a4-portrait');
-  const [templateId, setTemplateId] = useState<string>('');
-  const [cornerStyle, setCornerStyle] = useState<'rounded' | 'square'>('rounded');
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [logo, setLogo] = useState('');
-  const [headingFont, setHeadingFont] = useState('Inter');
-  const [bodyFont, setBodyFont] = useState('Inter');
-  const [primaryColor, setPrimaryColor] = useState('#0b7fb0');
-  const [secondaryColor, setSecondaryColor] = useState('#161b25');
-  const [accentColor, setAccentColor] = useState('#ffcf5c');
-  const [vehicle, setVehicle] = useState<VehicleType>('none');
-  const [heroEnabled, setHeroEnabled] = useState(false);
-  const [heroMediaType, setHeroMediaType] = useState<'photo' | 'video'>('photo');
-  const [heroMediaUrl, setHeroMediaUrl] = useState('');
-  const [heroPosterUrl, setHeroPosterUrl] = useState('');
+  const [title, setTitle] = useState(''), [mode, setMode] = useState<ProjectMode>(initialMode);
+  const [format, setFormat] = useState<PageFormat>('a4-portrait'), [templateId, setTemplateId] = useState<string>('');
+  const [cornerStyle, setCornerStyle] = useState<'rounded' | 'square'>('rounded'), [showAdvanced, setShowAdvanced] = useState(false);
+  const [logo, setLogo] = useState(''), [headingFont, setHeadingFont] = useState('Inter'), [bodyFont, setBodyFont] = useState('Inter');
+  const [primaryColor, setPrimaryColor] = useState('#0b7fb0'), [secondaryColor, setSecondaryColor] = useState('#161b25'), [accentColor, setAccentColor] = useState('#ffcf5c');
+  const [vehicle, setVehicle] = useState<VehicleType>('none'), [heroEnabled, setHeroEnabled] = useState(false);
+  const [heroMediaType, setHeroMediaType] = useState<'photo' | 'video'>('photo'), [heroMediaUrl, setHeroMediaUrl] = useState(''), [heroPosterUrl, setHeroPosterUrl] = useState('');
+  const [isCharterModalOpen, setIsCharterModalOpen] = useState(false), [importedCharter, setImportedCharter] = useState<GraphicCharterDoc | null>(null);
 
   if (!isOpen) return null;
 
+  const handleApplyCharter = (doc: GraphicCharterDoc) => {
+    setImportedCharter(doc);
+    if (!title.trim() || title.startsWith('Nouvelle ') || title.startsWith('Nouveau ')) if (doc.project?.name) setTitle(doc.project.name);
+    if (doc.colors.primary) setPrimaryColor(doc.colors.primary);
+    if (doc.colors.secondary) setSecondaryColor(doc.colors.secondary);
+    setAccentColor(doc.colors.accent || doc.colors.primary);
+    if (doc.typography?.heading?.family) setHeadingFont(doc.typography.heading.family);
+    if (doc.typography?.body?.family) setBodyFont(doc.typography.body.family);
+    if (doc.layout?.radiusPx !== undefined) setCornerStyle(doc.layout.radiusPx === 0 ? 'square' : 'rounded');
+    const resLogo = getCharterLogoForContext(doc, isDarkColor(doc.colors.background) ? 'dark' : (doc.context || 'light')) || doc.logo?.variants?.primary || doc.logo?.variants?.light || doc.logo?.variants?.dark;
+    if (resLogo) setLogo(resLogo);
+    setShowAdvanced(true);
+  };
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>, setter: (v: string) => void) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setter(String(reader.result || ''));
-    reader.readAsDataURL(file);
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader(); reader.onload = () => setter(String(reader.result || '')); reader.readAsDataURL(file);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const resolvedTitle = title.trim() || (mode === 'storymap' ? 'Nouvelle StoryMap' : mode === 'rich-document' ? 'Nouveau Document' : 'Nouvelle Brochure');
-    const brand: ProjectBrand = {
-      logo: logo || undefined, primaryFont: headingFont, secondaryFont: bodyFont,
-      fontTitle: headingFont, fontBody: bodyFont, colors: [primaryColor, secondaryColor, accentColor], primaryColor, secondaryColor,
-    };
-    const themeTokens: Partial<SharedThemeTokens> = {
-      ...DEFAULT_THEME_TOKENS, logo: logo || undefined, headingFont, bodyFont, fontTitle: headingFont, fontBody: bodyFont,
-      primaryColor, secondaryColor, accentColor, defaultVehicle: vehicle, radiusPx: cornerStyle === 'square' ? 0 : 8,
-    };
+    const isDark = importedCharter ? isDarkColor(importedCharter.colors.background) : false;
+    const pageBg = importedCharter?.colors.background || (isDark ? '#111827' : '#ffffff'), surfBg = importedCharter?.colors.surface || (isDark ? '#1F2937' : '#ffffff'), txtCol = importedCharter?.colors.text || (isDark ? '#F4F0E8' : '#1a1816');
+    const brand: ProjectBrand = { logo: logo || undefined, primaryFont: headingFont, secondaryFont: bodyFont, fontTitle: headingFont, fontBody: bodyFont, colors: [primaryColor, secondaryColor, accentColor], primaryColor, secondaryColor };
+    const themeTokens: Partial<SharedThemeTokens> = { ...DEFAULT_THEME_TOKENS, logo: logo || undefined, headingFont, bodyFont, fontTitle: headingFont, fontBody: bodyFont, primaryColor, secondaryColor, accentColor, pageBackground: pageBg, surfaceBackground: surfBg, textColor: txtCol, mutedTextColor: isDark ? 'rgba(244, 240, 232, 0.72)' : '#5c574f', borderColor: isDark ? 'rgba(244, 240, 232, 0.15)' : '#e2dfd9', titleSizePx: importedCharter?.typography?.heading?.sizePx || (isDark ? 40 : 32), bodySizePx: importedCharter?.typography?.body?.sizePx || 16, defaultVehicle: vehicle, radiusPx: cornerStyle === 'square' ? 0 : (importedCharter?.layout?.radiusPx ?? (isDark ? 2 : 8)) };
+    const fallbackImg = isDark ? createThemedHeroSvg(primaryColor, secondaryColor, pageBg) : DEFAULT_HERO_PHOTO;
     const hero: HeroConfig | undefined = heroEnabled || mode !== 'storymap' ? {
-      enabled: true, mediaType: heroMediaType, mediaUrl: cleanGoogleRedirectUrl(heroMediaUrl) || (heroMediaType === 'photo' ? DEFAULT_HERO_PHOTO : undefined), posterUrl: cleanGoogleRedirectUrl(heroPosterUrl) || DEFAULT_HERO_PHOTO,
-      fit: 'cover', focalPoint: { x: 50, y: 50 }, veilStyle: 'gradient', veilColor: primaryColor, veilOpacity: 0.45,
-      heightPreset: 'medium', contentAlign: 'center', title: resolvedTitle,
+      enabled: true, mediaType: heroMediaType, mediaUrl: cleanGoogleRedirectUrl(heroMediaUrl) || (heroMediaType === 'photo' ? fallbackImg : undefined), posterUrl: cleanGoogleRedirectUrl(heroPosterUrl) || fallbackImg,
+      fit: 'cover', focalPoint: { x: 50, y: 50 }, veilStyle: 'gradient', veilColor: primaryColor, veilOpacity: 0.45, heightPreset: 'medium', contentAlign: 'center', title: resolvedTitle, logoUrl: logo || undefined,
     } : undefined;
-    const routeAnimation: RouteAnimationConfig | undefined = vehicle !== 'none' ? {
-      enabled: true, vehicle, durationSec: 4, durationMs: 4000, loop: true, orientToRoute: true, progressiveTrail: true, cameraFollow: true, pace: 'normal', climbProfile: 'balanced',
-    } : undefined;
+    const routeAnimation: RouteAnimationConfig | undefined = vehicle !== 'none' ? { enabled: true, vehicle, durationSec: 4, durationMs: 4000, loop: true, orientToRoute: true, progressiveTrail: true, cameraFollow: true, pace: 'normal', climbProfile: 'balanced' } : undefined;
 
     onCreate({
       title: resolvedTitle, mode, format,
-      brand: showAdvanced ? brand : undefined, themeTokens: showAdvanced || cornerStyle === 'square' ? themeTokens : undefined,
+      brand: showAdvanced || importedCharter ? brand : undefined,
+      themeTokens: showAdvanced || cornerStyle === 'square' || importedCharter ? themeTokens : undefined,
       hero, routeAnimation, templateId: templateId || undefined,
+      graphicCharter: importedCharter || undefined,
     });
     onClose();
   };
@@ -122,27 +122,24 @@ export const NewStoryModal: React.FC<NewStoryModalProps> = ({ isOpen, initialMod
             </div>
             {mode !== 'storymap' && (
               <>
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>Format</label>
-                  <select className="input" style={{ width: '100%' }} value={format} onChange={(e) => setFormat(e.target.value as PageFormat)}><option value="a4-portrait">A4 Portrait</option><option value="a4-landscape">A4 Paysage</option><option value="screen-16-9">Écran 16/9</option><option value="responsive">Responsive</option></select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}><LayoutTemplate size={12} /> Structure</label>
-                  <select className="input" style={{ width: '100%' }} value={templateId} onChange={(e) => setTemplateId(e.target.value)}><option value="">Grille libre</option>{PAGE_STRUCTURAL_TEMPLATES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>Bords</label>
-                  <select className="input" style={{ width: '100%' }} value={cornerStyle} onChange={(e) => setCornerStyle(e.target.value as 'rounded' | 'square')}><option value="rounded">Bords arrondis</option><option value="square">Bords carrés</option></select>
-                </div>
+                <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>Format</label><select className="input" style={{ width: '100%' }} value={format} onChange={(e) => setFormat(e.target.value as PageFormat)}><option value="a4-portrait">A4 Portrait</option><option value="a4-landscape">A4 Paysage</option><option value="screen-16-9">Écran 16/9</option><option value="responsive">Responsive</option></select></div>
+                <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}><LayoutTemplate size={12} /> Structure</label><select className="input" style={{ width: '100%' }} value={templateId} onChange={(e) => setTemplateId(e.target.value)}><option value="">Grille libre</option>{PAGE_STRUCTURAL_TEMPLATES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</select></div>
+                <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>Bords</label><select className="input" style={{ width: '100%' }} value={cornerStyle} onChange={(e) => setCornerStyle(e.target.value as 'rounded' | 'square')}><option value="rounded">Bords arrondis</option><option value="square">Bords carrés</option></select></div>
               </>
             )}
           </div>
 
           <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
-            <button type="button" className="btn btn-ghost" style={{ width: '100%', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 0 }} onClick={() => setShowAdvanced(!showAdvanced)}>
-              <span style={{ fontSize: '12.5px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}><Palette size={14} color="var(--accent)" /> 3. Charte graphique, Couverture Hero & Parcours animé (facultatif)</span>
-              {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface-2)', padding: '6px 12px' }}>
+              <button type="button" className="btn btn-ghost btn-xs" style={{ padding: '4px', gap: '6px' }} onClick={() => setShowAdvanced(!showAdvanced)}>
+                <Palette size={14} color="var(--accent)" />
+                <span style={{ fontWeight: 600 }}>3. Charte graphique & Hero (facultatif)</span>
+                {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+              <button type="button" className="btn btn-ghost btn-xs" onClick={() => setIsCharterModalOpen(true)} title="Importer ou pré-remplir avec la charte JSON (Escale & Nature)">
+                <FileCode size={13} color="var(--accent)" /> <span>Importer charte JSON</span>
+              </button>
+            </div>
             {showAdvanced && (
               <div style={{ padding: '14px', background: 'var(--surface-2)', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '12px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -187,6 +184,7 @@ export const NewStoryModal: React.FC<NewStoryModalProps> = ({ isOpen, initialMod
           </div>
         </form>
       </div>
+      <CharterImportModal isOpen={isCharterModalOpen} onClose={() => setIsCharterModalOpen(false)} onApply={handleApplyCharter} initialCharter={importedCharter} />
     </div>
   );
 };

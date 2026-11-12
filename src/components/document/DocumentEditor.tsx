@@ -10,7 +10,7 @@ import { getGridDimensions, refitBlocksDetailed } from '../../core/grid';
 import { PAGE_STRUCTURAL_TEMPLATES, previewStructuralTemplate } from '../../core/layoutTemplates';
 import { Page, Block, NarrativeBinding, ProjectMap } from '../../types/project';
 import { createDefaultProjectMap, validateNarrativeBindings } from '../../core/mapScene';
-import { DEFAULT_THEME_TOKENS, extractProjectThemeTokens } from '../../core/themeResolver';
+import { DEFAULT_THEME_TOKENS, extractProjectThemeTokens, isDarkColor } from '../../core/themeResolver';
 import { MapStudioModal } from '../dialogs/MapStudioModal';
 import { BindingPickerModal } from '../dialogs/BindingPickerModal';
 import { ShareModal } from '../dialogs/ShareModal';
@@ -122,11 +122,11 @@ export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void 
     if (displayedPage.hero?.enabled) updateStory({ pages: pages.map((p, idx) => (idx === safeIndex ? { ...p, hero: { ...p.hero!, ...patch } } : p)) });
     else if (story.hero) updateStory({ hero: { ...story.hero, ...patch } });
   };
-  const tok = extractProjectThemeTokens(story);
+  const tok = extractProjectThemeTokens(story), isDark = isDarkColor(tok.pageBackground);
   const handleCornerStyleChange = (cornerStyle: 'rounded' | 'square') => updateStory({ themeTokens: { ...DEFAULT_THEME_TOKENS, ...tok, radiusPx: cornerStyle === 'square' ? 0 : 8 } });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--surface-2)' }}>
+    <div className="document-editor" style={{ '--charter-primary': tok.primaryColor, '--charter-secondary': tok.secondaryColor, '--charter-text': tok.textColor, '--charter-background': tok.pageBackground, '--charter-surface': tok.surfaceBackground, display: 'flex', flexDirection: 'column', height: '100vh', background: isDark ? '#0b0f19' : 'var(--surface-2)' } as React.CSSProperties}>
       <header style={{ height: '56px', background: 'var(--surface)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button className="btn btn-ghost" onClick={async () => { await flushSave(); onBack(); }} title="Retour"><ArrowLeft size={16} /> <span>Retour</span></button>
@@ -180,7 +180,7 @@ export const DocumentEditor: React.FC<{ onBack: () => void; onPlay?: () => void 
         </div>
       )}
 
-      <main style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 16px' }}>
+      <main style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 16px', background: isDark ? '#0b0f19' : undefined }}>
         <PageGrid format={currentFormat} blocks={displayedPage.blocks || []} onChangeBlocks={handleUpdateCurrentBlocks} onOpenBinding={(b) => setBindingBlock(b)} story={story} page={displayedPage} hero={activeHero} onUpdateHero={handleUpdateHero} mode={story.mode} outputProfile="editor" />
       </main>
 

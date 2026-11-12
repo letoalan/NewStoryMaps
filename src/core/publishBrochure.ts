@@ -51,7 +51,7 @@ export function generateBrochurePrintHTML(story: StoryMap): string {
           <span style="font-size:11px;color:#64748b;">${pageTitle}</span>
         </header>
         ${heroHtml}
-        <div class="sheet-grid" style="display:grid;grid-template-columns:repeat(${dims.cols}, 1fr);grid-template-rows:repeat(${dims.rows}, 1fr);gap:${dims.gapPx}px;flex:1;min-height:0;">
+        <div class="sheet-grid" style="display:grid;grid-template-columns:repeat(${dims.cols}, minmax(0, 1fr));grid-template-rows:repeat(${dims.rows}, minmax(0, 1fr));gap:${dims.gapPx}px;flex:1;min-height:0;box-sizing:border-box;">
           ${blocksHtml}
         </div>
         <footer class="sheet-footer">

@@ -161,8 +161,9 @@ export const Player: React.FC<{ onExit?: () => void }> = ({ onExit }) => {
     return () => clearTimeout(timer);
   }, [isPlaying, currentIdx, steps.length, story?.appearance?.autoplayInterval]);
 
+  const tok = story?.themeTokens;
   return (
-    <div className="player">
+    <div className="player" style={{ '--charter-primary': tok?.primaryColor, '--charter-secondary': tok?.secondaryColor, '--charter-text': tok?.textColor, '--charter-background': tok?.pageBackground, '--charter-surface': tok?.surfaceBackground } as React.CSSProperties}>
       <div ref={mapContainerRef} className="player-canvas" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
       {webglLost && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.92)', color: '#fff', padding: '16px', textAlign: 'center', gap: '10px' }}>

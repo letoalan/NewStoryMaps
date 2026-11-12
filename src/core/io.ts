@@ -7,16 +7,15 @@ import { generateStandaloneHTML, extractStoryFromHTML } from './publish';
 import { generateDocumentHTML } from './publishDocument';
 import { generateBrochurePrintHTML } from './publishBrochure';
 import { convertLegacyToModern, convertModernToLegacyV2 } from './adapter';
+import { parseGraphicCharterJson, createStoryFromCharter } from './graphicCharter';
 import { createZip, readZip, type ZipReadEntry } from './zip';
 
 export function exportStoryToBrochureHTML(story: StoryMap): void {
-  const blob = new Blob([generateBrochurePrintHTML(story)], { type: 'text/html;charset=utf-8' });
-  downloadBlob(blob, getFilename(story, 'brochure.html'));
+  downloadBlob(new Blob([generateBrochurePrintHTML(story)], { type: 'text/html;charset=utf-8' }), getFilename(story, 'brochure.html'));
 }
 
 export function exportStoryToJSON(story: StoryMap): void {
-  const blob = new Blob([JSON.stringify(story, null, 2)], { type: 'application/json;charset=utf-8' });
-  downloadBlob(blob, getFilename(story, 'storymap.json'));
+  downloadBlob(new Blob([JSON.stringify(story, null, 2)], { type: 'application/json;charset=utf-8' }), getFilename(story, 'storymap.json'));
 }
 
 export function exportStoryToLegacyV2JSON(story: StoryMap): void {
@@ -80,8 +79,11 @@ export async function parseStoryFile(file: File | Blob): Promise<StoryMap[]> {
 
 export function parseStoryJSON(jsonString: string): StoryMap {
   let parsed: unknown;
-  try { parsed = JSON.parse(jsonString); }
-  catch { throw new Error('Le fichier n’est pas un document JSON valide.'); }
+  try { parsed = JSON.parse(jsonString); } catch { throw new Error('Le fichier n’est pas un document JSON valide.'); }
+  if (parsed && typeof parsed === 'object' && (parsed as any).kind === 'graphic-charter') {
+    const res = parseGraphicCharterJson(parsed);
+    if (res.success) return createStoryFromCharter(res.doc);
+  }
   return convertLegacyToModern(parsed);
 }
 
@@ -93,9 +95,7 @@ function uint8ArrayToDataUrl(bytes: Uint8Array, filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase();
   const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : ext === 'svg' ? 'image/svg+xml' : ext === 'mp4' ? 'video/mp4' : ext === 'webm' ? 'video/webm' : 'image/jpeg';
   let binary = '';
-  for (let i = 0; i < bytes.length; i += 8192) {
-    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 8192)));
-  }
+  for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 8192)));
   return `data:${mime};base64,${btoa(binary)}`;
 }
 

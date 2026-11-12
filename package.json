@@ -22,7 +22,8 @@
     "test:n5": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-n5.mjs",
     "test:zoom": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-zoom.mjs",
     "test:mode3": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-mode3.mjs",
-    "test": "npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:p3 && npm run test:p4 && npm run test:p5 && npm run test:p6 && npm run test:n0 && npm run test:n1 && npm run test:n2 && npm run test:n3 && npm run test:n4 && npm run test:n5 && npm run test:zoom && npm run test:mode3"
+    "test:charter": "node --experimental-strip-types --loader ./scripts/loader.mjs --no-warnings scripts/verify-charter.mjs",
+    "test": "npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:p3 && npm run test:p4 && npm run test:p5 && npm run test:p6 && npm run test:n0 && npm run test:n1 && npm run test:n2 && npm run test:n3 && npm run test:n4 && npm run test:n5 && npm run test:zoom && npm run test:mode3 && npm run test:charter"
   },
   "dependencies": {
     "lucide-react": "^1.16.0",

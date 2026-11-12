@@ -103,7 +103,11 @@ export const PageGrid: React.FC<PageGridProps> = ({
   return (
     <div
       className="page-grid-container"
-      style={{ display: 'inline-block', padding: `${marginMm}mm`, background: pageStyle.pageBackground, color: pageStyle.textColor, fontFamily: pageStyle.bodyFont, boxShadow: 'var(--shadow-lg)', borderRadius: pageStyle.radiusCss, position: 'relative', userSelect: 'none', aspectRatio, width: format === 'screen-16-9' ? '1240px' : format === 'a4-landscape' ? '1180px' : format === 'a4-portrait' ? '740px' : '100%', maxWidth: '100%', boxSizing: 'border-box' }}
+      style={{
+        '--charter-primary': pageStyle.primaryColor, '--charter-secondary': pageStyle.secondaryColor,
+        '--charter-text': pageStyle.textColor, '--charter-background': pageStyle.pageBackground, '--charter-surface': pageStyle.surfaceBackground,
+        display: 'inline-block', padding: `${marginMm}mm`, background: pageStyle.pageBackground, color: pageStyle.textColor, fontFamily: pageStyle.bodyFont, boxShadow: 'var(--shadow-lg)', borderRadius: pageStyle.radiusCss, position: 'relative', userSelect: 'none', aspectRatio, width: format === 'screen-16-9' ? '1240px' : format === 'a4-landscape' ? '1180px' : format === 'a4-portrait' ? '740px' : '100%', maxWidth: '100%', boxSizing: 'border-box'
+      } as React.CSSProperties}
       onClick={() => { setSelectedBlockId(null); setActiveEmptyCell(null); }}
     >
       {hero?.enabled && !blocks.some((b) => b.type === 'title') && (
@@ -111,16 +115,16 @@ export const PageGrid: React.FC<PageGridProps> = ({
           <HeroSection hero={hero} fallbackTitle={page?.title || story?.title} fallbackSubtitle={story?.subtitle} fallbackLogo={story?.brand?.logo} outputProfile={effectiveProfile} isEditable={isEditable} onUpdateHero={onUpdateHero} charterColor={pageStyle.primaryColor} />
         </div>
       )}
-      <div className="page-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)`, gap: `${gapPx}px`, position: 'relative', width: '100%', height: '100%', boxSizing: 'border-box' }}>
+      <div className="page-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`, gap: `${gapPx}px`, position: 'relative', width: '100%', height: '100%', boxSizing: 'border-box' }}>
         {Array.from({ length: rows }).map((_, y) =>
           Array.from({ length: cols }).map((__, x) => {
             const isOccupied = !!occupiedMatrix[y][x];
             const isCurrentActive = activeEmptyCell?.x === x && activeEmptyCell?.y === y;
             return (
-              <div key={`cell-${x}-${y}`} style={{ gridColumn: x + 1, gridRow: y + 1, border: isOccupied || !isEditable ? 'none' : '1px dashed var(--border)', borderRadius: pageStyle.radiusCss, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div key={`cell-${x}-${y}`} style={{ gridColumn: x + 1, gridRow: y + 1, border: isOccupied || !isEditable ? 'none' : `1px dashed ${pageStyle.borderColor || 'rgba(148, 163, 184, 0.35)'}`, borderRadius: pageStyle.radiusCss, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {!isOccupied && isEditable && (
                   <>
-                    <button type="button" className="btn btn-ghost btn-icon" style={{ opacity: isCurrentActive ? 0.9 : 0.35, borderRadius: '50%', width: '28px', height: '28px' }} title={`Ajouter un bloc en (${x + 1}, ${y + 1})`} onClick={(e) => { e.stopPropagation(); setActiveEmptyCell({ x, y, anchorEl: e.currentTarget }); }}>
+                    <button type="button" className="btn btn-ghost btn-icon" style={{ opacity: isCurrentActive ? 0.9 : 0.4, borderRadius: '50%', width: '28px', height: '28px', color: pageStyle.textColor }} title={`Ajouter un bloc en (${x + 1}, ${y + 1})`} onClick={(e) => { e.stopPropagation(); setActiveEmptyCell({ x, y, anchorEl: e.currentTarget }); }}>
                       <Plus size={16} />
                     </button>
                     {isCurrentActive && <EmptyCellMenu x={x} y={y} anchorEl={activeEmptyCell.anchorEl} mode={effectiveMode} onSelectType={(t) => handleAddBlockToCell(x, y, t)} onClose={() => setActiveEmptyCell(null)} />}
@@ -139,7 +143,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
           return (
             <div
               key={b.id} data-block-id={b.id} data-style-mode={b.styleOverride?.styleMode || 'inherit'}
-              style={{ gridColumn: `${b.x + 1} / span ${b.w}`, gridRow: `${b.y + 1} / span ${b.h}`, position: 'relative', zIndex: isSelected ? 30 : 10, outline: editorOutline, outlineOffset: '2px', borderRadius: bStyle.radiusCss, background: isHero ? 'transparent' : bStyle.surfaceCssBackground, border: isHero ? 'none' : bStyle.borderCss, boxShadow: bStyle.shadowCss, color: bStyle.textColor, overflow: 'visible' }}
+              style={{ gridColumn: `${b.x + 1} / span ${b.w}`, gridRow: `${b.y + 1} / span ${b.h}`, position: 'relative', zIndex: isSelected ? 30 : 10, outline: editorOutline, outlineOffset: '2px', borderRadius: bStyle.radiusCss, background: isHero ? 'transparent' : bStyle.surfaceCssBackground, border: isHero ? 'none' : bStyle.borderCss, boxShadow: bStyle.shadowCss, color: bStyle.textColor, overflow: 'visible', minWidth: 0, minHeight: 0, boxSizing: 'border-box' }}
               onClick={(e) => { e.stopPropagation(); if (isEditable) setSelectedBlockId(b.id); }}
             >
               {isSelected && isEditable && (
@@ -152,7 +156,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
                   onOpenInspector={(tab) => setInspectedBlock({ id: b.id, tab })}
                 />
               )}
-              <div style={{ width: '100%', height: '100%', overflow: isHero ? 'hidden' : 'auto', borderRadius: bStyle.radiusCss, padding: isHero ? 0 : bStyle.paddingCss, color: bStyle.textColor, fontFamily: bStyle.bodyFont }}>
+              <div style={{ width: '100%', height: '100%', minWidth: 0, minHeight: 0, overflow: isHero ? 'hidden' : 'auto', borderRadius: bStyle.radiusCss, padding: isHero ? 0 : bStyle.paddingCss, color: bStyle.textColor, fontFamily: bStyle.bodyFont, boxSizing: 'border-box' }}>
                 <BlockRenderer block={b} onChange={(p) => handleUpdateBlockData(b.id, p)} isEditable={isEditable} visualStyle={bStyle} hero={hero} onUpdateHero={onUpdateHero} subtitle={story?.subtitle} />
               </div>
             </div>

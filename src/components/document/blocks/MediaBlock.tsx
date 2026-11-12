@@ -62,15 +62,15 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({ block, onChange, isEdita
           ))}
         </div>
       ) : currentImg ? (
-        <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+        <div style={{ flex: 1, position: 'relative', minHeight: 0, width: '100%', height: '100%', overflow: 'hidden' }}>
           <img
             src={currentImg}
             alt={caption || 'Média du récit'}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
           />
 
           {block.type === 'gallery' && images.length > 1 && (
-            <div style={{ position: 'absolute', bottom: '8px', right: '8px', display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.65)', padding: '2px 6px', borderRadius: '999px', alignItems: 'center' }}>
+            <div style={{ position: 'absolute', bottom: '8px', right: '8px', display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.65)', padding: '2px 6px', borderRadius: '999px', alignItems: 'center', zIndex: 10 }}>
               <button
                 type="button"
                 data-carousel-control="true"

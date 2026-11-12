@@ -138,7 +138,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
       <div style={{ position: 'relative', zIndex: 3, maxWidth: '680px', display: 'flex', flexDirection: 'column', alignItems, gap: '6px' }}>
         {state.logoUrl && <img src={state.logoUrl} alt="Logo" style={{ maxHeight: '44px', maxWidth: '160px', objectFit: 'contain', marginBottom: '6px' }} />}
-        {state.title && <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.45)' }} dangerouslySetInnerHTML={{ __html: sanitizeHTML(state.title) }} />}
+        {state.title && <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#ffffff', textShadow: 'none' }} dangerouslySetInnerHTML={{ __html: sanitizeHTML(state.title) }} />}
         {state.subtitle && <p style={{ margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.92)', lineHeight: 1.45 }} dangerouslySetInnerHTML={{ __html: sanitizeHTML(state.subtitle) }} />}
       </div>
 

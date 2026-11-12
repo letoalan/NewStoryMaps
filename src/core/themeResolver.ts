@@ -11,13 +11,17 @@ import type {
   BlockVisualOverride,
   PageVisualOverride,
 } from '../types/theme';
+import { selectCharterForContext, getCharterLogoForContext } from './charterContext';
 
 export const FONT_CATALOG: Array<{ family: string; label: string; category: string; license: string }> = [
   { family: 'Inter', label: 'Inter (Sans-serif)', category: 'sans-serif', license: 'SIL OFL 1.1' },
+  { family: 'Nunito', label: 'Nunito (Sans chaleureux)', category: 'sans-serif', license: 'SIL OFL 1.1' },
   { family: 'Lora', label: 'Lora (Serif éditorial)', category: 'serif', license: 'SIL OFL 1.1' },
   { family: 'Merriweather', label: 'Merriweather (Serif lisible)', category: 'serif', license: 'SIL OFL 1.1' },
   { family: 'Roboto', label: 'Roboto (Sans géométrique)', category: 'sans-serif', license: 'Apache 2.0' },
   { family: 'Cinzel', label: 'Cinzel (Titrage classique)', category: 'serif', license: 'SIL OFL 1.1' },
+  { family: 'Georgia', label: 'Georgia (Serif élégant)', category: 'serif', license: 'System' },
+  { family: 'Verdana', label: 'Verdana (Sans lisible)', category: 'sans-serif', license: 'System' },
 ];
 
 export const DEFAULT_THEME_TOKENS: SharedThemeTokens = {
@@ -64,13 +68,24 @@ export function hexToRgba(color: string, alpha: number): string {
   return color;
 }
 
+/** Détermine si une couleur hexadécimale est sombre (YIQ < 128) */
+export function isDarkColor(hex?: string | null): boolean {
+  if (!hex || hex === 'transparent') return false;
+  const clean = hex.trim().replace(/^#/, '');
+  if (clean.length < 3) return false;
+  const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean.padEnd(6, '0');
+  const r = parseInt(full.slice(0, 2), 16) || 0, g = parseInt(full.slice(2, 4), 16) || 0, b = parseInt(full.slice(4, 6), 16) || 0;
+  return (r * 299 + g * 587 + b * 114) / 1000 < 128;
+}
+
 /** Unifie `story.brand`, `story.appearance` et `story.themeTokens` sans divergence (N2.04) */
 export function extractProjectThemeTokens(story?: Partial<Story> | null): SharedThemeTokens {
-  const brand = story?.brand;
-  const app = story?.appearance;
-  const tok = story?.themeTokens;
+  const brand = story?.brand, app = story?.appearance, tok = story?.themeTokens;
   const primary = tok?.primaryColor || brand?.primaryColor || app?.accentColor || DEFAULT_THEME_TOKENS.primaryColor;
   const accent = tok?.accentColor || app?.accentColor || brand?.primaryColor || DEFAULT_THEME_TOKENS.accentColor;
+  const pageBg = tok?.pageBackground || DEFAULT_THEME_TOKENS.pageBackground;
+  const isDark = isDarkColor(pageBg);
+  const logo = tok?.logo || brand?.logo || story?.hero?.logoUrl || story?.graphicCharter?.logo?.variants?.primary || story?.graphicCharter?.logo?.variants?.light || story?.graphicCharter?.logo?.variants?.dark || undefined;
 
   return {
     headingFont: tok?.headingFont || brand?.fontTitle || app?.headingFont || DEFAULT_THEME_TOKENS.headingFont,
@@ -78,17 +93,21 @@ export function extractProjectThemeTokens(story?: Partial<Story> | null): Shared
     primaryColor: primary,
     secondaryColor: tok?.secondaryColor || brand?.secondaryColor || DEFAULT_THEME_TOKENS.secondaryColor,
     accentColor: accent,
-    pageBackground: tok?.pageBackground || DEFAULT_THEME_TOKENS.pageBackground,
-    surfaceBackground: tok?.surfaceBackground || app?.panelBackground || DEFAULT_THEME_TOKENS.surfaceBackground,
+    pageBackground: pageBg,
+    surfaceBackground: tok?.surfaceBackground || app?.panelBackground || (isDark ? '#1F2937' : DEFAULT_THEME_TOKENS.surfaceBackground),
     surfaceOpacity: tok?.surfaceOpacity ?? DEFAULT_THEME_TOKENS.surfaceOpacity,
-    textColor: tok?.textColor || app?.textColor || DEFAULT_THEME_TOKENS.textColor,
-    mutedTextColor: tok?.mutedTextColor || DEFAULT_THEME_TOKENS.mutedTextColor,
-    borderColor: tok?.borderColor || DEFAULT_THEME_TOKENS.borderColor,
+    textColor: tok?.textColor || app?.textColor || (isDark ? '#F4F0E8' : DEFAULT_THEME_TOKENS.textColor),
+    mutedTextColor: tok?.mutedTextColor || (isDark ? 'rgba(244, 240, 232, 0.72)' : DEFAULT_THEME_TOKENS.mutedTextColor),
+    borderColor: tok?.borderColor || (isDark ? 'rgba(244, 240, 232, 0.15)' : DEFAULT_THEME_TOKENS.borderColor),
     borderWidthPx: tok?.borderWidthPx ?? DEFAULT_THEME_TOKENS.borderWidthPx,
     borderStyle: tok?.borderStyle || DEFAULT_THEME_TOKENS.borderStyle,
-    radiusPx: tok?.radiusPx ?? DEFAULT_THEME_TOKENS.radiusPx,
+    radiusPx: tok?.radiusPx ?? (isDark ? 2 : DEFAULT_THEME_TOKENS.radiusPx),
     shadowPreset: tok?.shadowPreset || DEFAULT_THEME_TOKENS.shadowPreset,
     density: tok?.density || DEFAULT_THEME_TOKENS.density,
+    titleSizePx: tok?.titleSizePx, bodySizePx: tok?.bodySizePx,
+    mapRouteColor: tok?.mapRouteColor || tok?.secondaryColor,
+    mapFeatureColor: tok?.mapFeatureColor || tok?.primaryColor,
+    logo,
   };
 }
 
@@ -103,15 +122,18 @@ export function resolveVisualStyle(
   const pageOvr: PageVisualOverride | undefined = page?.styleOverride;
   const blockOvr: BlockVisualOverride | undefined = block?.styleOverride;
 
-  const pageBackground = pageOvr?.pageBackground || base.pageBackground;
-  const textColor = blockOvr?.textColor || pageOvr?.textColor || base.textColor;
-  const accentColor = blockOvr?.accentColor || pageOvr?.accentColor || base.accentColor;
+  const ch = story?.graphicCharter?.variants ? selectCharterForContext(story.graphicCharter, { theme: story.appearance?.theme, outputProfile, pageBackground: pageOvr?.pageBackground, mapStyle: story.mapStyle }) : story?.graphicCharter;
+  const pageBackground = pageOvr?.pageBackground || ch?.colors.background || base.pageBackground;
+  const isDarkTheme = isDarkColor(pageBackground);
+  const charterLogo = ch ? (getCharterLogoForContext(ch, isDarkTheme ? 'dark' : (ch.context || 'light')) || ch.logo?.variants?.primary || ch.logo?.variants?.light || ch.logo?.variants?.dark) : undefined;
+  const textColor = blockOvr?.textColor || pageOvr?.textColor || ch?.colors.text || base.textColor;
+  const accentColor = blockOvr?.accentColor || pageOvr?.accentColor || ch?.colors.accent || base.accentColor;
   const paddingPx = blockOvr?.paddingPx ?? pageOvr?.paddingPx ?? DENSITY_PADDING[base.density] ?? 14;
 
   const isFrameless = blockOvr?.styleMode === 'frameless';
   const isCustom = blockOvr?.styleMode === 'custom';
 
-  const surfaceBackground = isFrameless ? 'transparent' : (isCustom && blockOvr?.backgroundColor) || base.surfaceBackground;
+  const surfaceBackground = isFrameless ? 'transparent' : (isCustom && blockOvr?.backgroundColor) || ch?.colors.surface || base.surfaceBackground;
   const surfaceOpacity = isFrameless ? 0 : isCustom && blockOvr?.backgroundOpacity !== undefined ? blockOvr.backgroundOpacity : base.surfaceOpacity;
   const borderStyle = isFrameless ? 'none' : (isCustom && blockOvr?.borderStyle) || base.borderStyle;
   const borderWidthPx = isFrameless || borderStyle === 'none' ? 0 : isCustom && blockOvr?.borderWidthPx !== undefined ? blockOvr.borderWidthPx : base.borderWidthPx;
@@ -125,11 +147,14 @@ export function resolveVisualStyle(
     accentColor, pageBackground: isPrint && pageBackground === 'transparent' ? '#ffffff' : pageBackground,
     surfaceBackground, surfaceOpacity,
     surfaceCssBackground: isFrameless ? 'transparent' : hexToRgba(surfaceBackground, surfaceOpacity),
-    textColor, mutedTextColor: base.mutedTextColor,
+    textColor, mutedTextColor: base.mutedTextColor, borderColor,
     borderCss: borderWidthPx > 0 && borderStyle !== 'none' ? `${borderWidthPx}px ${borderStyle} ${borderColor}` : 'none',
-    radiusCss: `${radiusPx}px`, shadowCss: isPrint ? 'none' : SHADOW_MAP[shadowPreset] || 'none',
-    paddingCss: `${paddingPx}px`,
+    radiusCss: `${radiusPx}px`, borderRadiusPx: radiusPx, shadowCss: isPrint ? 'none' : SHADOW_MAP[shadowPreset] || 'none',
+    paddingCss: `${paddingPx}px`, paddingPx,
     showEditorGuide: outputProfile === 'editor' && (isFrameless || borderWidthPx === 0 || surfaceOpacity < 0.15),
+    titleSizePx: base.titleSizePx, bodySizePx: base.bodySizePx,
+    mapRouteColor: base.mapRouteColor, mapFeatureColor: base.mapFeatureColor,
+    logo: charterLogo || base.logo,
   };
 }
 

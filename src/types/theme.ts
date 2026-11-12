@@ -149,6 +149,7 @@ export interface ResolvedVisualStyle {
   surfaceCssBackground: string;
   textColor: string;
   mutedTextColor: string;
+  borderColor?: string;
   borderCss: string;
   radiusCss: string;
   borderRadiusPx?: number;

@@ -7,6 +7,7 @@ import { Map as MLMap, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Block, ProjectMap } from '../../../types/project';
 import { ResolvedVisualStyle } from '../../../types/theme';
+import { isDarkColor } from '../../../core/themeResolver';
 import { useStory } from '../../../context/StoryContext';
 import { resolveMapStyle } from '../../../types/map';
 import { createDefaultProjectMap, findFeatureInMap } from '../../../core/mapScene';
@@ -40,6 +41,7 @@ export const MapBlockPreview: React.FC<MapBlockPreviewProps> = ({ block, onChang
   const requestedMapId = (binding?.mapId || block.data.mapId) as string | undefined;
   const isMapMissing = !!requestedMapId && !maps.some((m) => m.id === requestedMapId);
   const targetMap: ProjectMap = (!isMapMissing && requestedMapId ? maps.find((m) => m.id === requestedMapId) : maps[0]) || maps[0];
+  const isDark = isDarkColor(visualStyle?.surfaceBackground || visualStyle?.pageBackground);
 
   useEffect(() => {
     if (!mapContainerRef.current || isMapMissing) return;
@@ -159,22 +161,20 @@ export const MapBlockPreview: React.FC<MapBlockPreviewProps> = ({ block, onChang
             <Link2 size={11} /> <span>{binding.numberIndex ? `#${binding.numberIndex} ` : ''}{binding.action || 'focus'}</span>
           </div>
         )}
-        <div style={{ position: 'absolute', bottom: '4px', right: '6px', background: 'rgba(255,255,255,0.85)', color: '#334155', padding: '1px 5px', borderRadius: '3px', fontSize: '9px', zIndex: 10, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', bottom: '4px', right: '6px', background: isDark ? 'rgba(17,24,39,0.88)' : 'rgba(255,255,255,0.85)', color: isDark ? '#e2e8f0' : '#334155', padding: '1px 5px', borderRadius: '3px', fontSize: '9px', zIndex: 10, pointerEvents: 'none' }}>
           {caption ? `${caption} · ` : ''}© OpenStreetMap · © CARTO
         </div>
       </div>
 
       {isEditable && (
-        <div style={{ padding: '4px 6px', background: 'rgba(15, 23, 42, 0.08)', borderTop: '1px solid rgba(148, 163, 184, 0.25)', display: 'flex', gap: '6px' }}>
+        <div style={{ padding: '4px 6px', background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.08)', borderTop: `1px solid ${visualStyle?.borderColor || 'rgba(148, 163, 184, 0.25)'}`, display: 'flex', gap: '6px' }}>
           <input
-            type="text" value={mapTitle} placeholder="Titre de la carte…"
-            onChange={(e) => onChange({ title: e.target.value })}
-            style={{ width: '45%', fontSize: '11px', height: '22px', background: 'rgba(255,255,255,0.2)', color: visualStyle?.textColor || 'inherit', border: '1px solid rgba(148,163,184,0.35)', borderRadius: '4px', padding: '0 6px', outline: 'none' }}
+            type="text" value={mapTitle} placeholder="Titre de la carte…" onChange={(e) => onChange({ title: e.target.value })}
+            style={{ width: '45%', fontSize: '11px', height: '22px', background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)', color: visualStyle?.textColor || 'inherit', border: `1px solid ${visualStyle?.borderColor || 'rgba(148,163,184,0.35)'}`, borderRadius: '4px', padding: '0 6px', outline: 'none' }}
           />
           <input
-            type="text" value={caption} placeholder="Légende / crédit cartographique…"
-            onChange={(e) => onChange({ caption: e.target.value })}
-            style={{ flex: 1, fontSize: '11px', height: '22px', background: 'rgba(255,255,255,0.2)', color: visualStyle?.textColor || 'inherit', border: '1px solid rgba(148,163,184,0.35)', borderRadius: '4px', padding: '0 6px', outline: 'none' }}
+            type="text" value={caption} placeholder="Légende / crédit cartographique…" onChange={(e) => onChange({ caption: e.target.value })}
+            style={{ flex: 1, fontSize: '11px', height: '22px', background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)', color: visualStyle?.textColor || 'inherit', border: `1px solid ${visualStyle?.borderColor || 'rgba(148,163,184,0.35)'}`, borderRadius: '4px', padding: '0 6px', outline: 'none' }}
           />
         </div>
       )}
