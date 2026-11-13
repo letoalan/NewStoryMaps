@@ -90,9 +90,9 @@ export function buildStoryRuntimeScript(safeAccent: string): string {
       const vp = (map.getContainer() && map.getContainer().clientWidth) || 1024;
       const leg = createStoryLegPath(pts, fromStep.camera, toStep.camera, vp, animCfg.pace);
       map.jumpTo({ center: pts[0], zoom: fromStep.camera.zoom, pitch: fromStep.camera.pitch || 0, bearing: 0 });
-      let start = performance.now();
+      let start = performance.now(), completed = false;
       vehicleTimer = setInterval(() => {
-        if (document.hidden) return;
+        if (document.hidden || completed) return;
         const t = Math.min(1, (performance.now() - start) / leg.durationMs);
         const sample = leg.sampleAtProgress(t);
         vehicleMarker.setLngLat(sample.coordinates);
@@ -101,6 +101,7 @@ export function buildStoryRuntimeScript(safeAccent: string): string {
         const pbar = document.getElementById('transfer-pbar');
         if (pbar) pbar.style.width = Math.round(t * 100) + '%';
         if (t >= 1) {
+          completed = true;
           clearInterval(vehicleTimer); vehicleTimer = null;
           if (animCfg.cameraFollow !== false) map.easeTo({ center: toStep.camera.center, zoom: toStep.camera.zoom, pitch: toStep.camera.pitch || 0, bearing: 0, duration: 180 });
           inTransfer = false; currentIdx = steps.indexOf(toStep); renderStep();

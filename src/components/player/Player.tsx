@@ -1,5 +1,5 @@
 /**
- * StoryMap — Lecteur plein écran interactif avec séparation étape statique / transfert van Wijk
+ * StoryMap — Lecteur plein écran interactif avec passage automatique et traversée unique
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -100,18 +100,28 @@ export const Player: React.FC<{ onExit?: () => void }> = ({ onExit }) => {
       vehicleMarkerRef.current = mk;
       map.jumpTo({ center: coords[0], zoom: fromStep.camera.zoom, pitch: fromStep.camera.pitch || 0, bearing: 0 });
 
+      let finished = false;
       const ctrl = createVehicleController({
-        coords, config: { ...effectiveCfg, durationSec: leg.durationMs / 1000, cameraFollow: effectiveCfg.cameraFollow !== false },
+        coords,
+        config: { ...effectiveCfg, loop: false, durationSec: leg.durationMs / 1000, cameraFollow: effectiveCfg.cameraFollow !== false },
         prefersReducedMotion: reduced,
         onSample: (_s, state) => {
-          const sample = leg.sampleAtProgress(ctrl.getProgress());
+          if (finished) return;
+          const progress = ctrl.getProgress();
+          const sample = leg.sampleAtProgress(progress);
           mk.setLngLat(sample.coordinates);
           if (effectiveCfg.orientToRoute !== false) innerIcon.style.transform = `rotate(${sample.heading}deg)`;
           if (ctrl.isCameraFollowActive()) map.jumpTo({ center: sample.coordinates, zoom: sample.zoom, pitch: sample.pitch, bearing: 0 });
-          setTransfer({ fromStep, toStep, progress: ctrl.getProgress() });
-          if (state === 'completed') {
-            if (ctrl.isCameraFollowActive()) map.easeTo({ center: toStep.camera.center, zoom: toStep.camera.zoom, pitch: toStep.camera.pitch || 0, bearing: 0, duration: 180 });
-            setTransfer(null); setCurrentIdx(targetIdx);
+          setTransfer({ fromStep, toStep, progress });
+          if (state === 'completed' || progress >= 1) {
+            finished = true;
+            ctrl.destroy();
+            vehicleCtrlRef.current = null;
+            if (ctrl.isCameraFollowActive()) {
+              map.easeTo({ center: toStep.camera.center, zoom: toStep.camera.zoom, pitch: toStep.camera.pitch || 0, bearing: 0, duration: 180 });
+            }
+            setTransfer(null);
+            setCurrentIdx(targetIdx);
           }
         },
       });
@@ -134,6 +144,7 @@ export const Player: React.FC<{ onExit?: () => void }> = ({ onExit }) => {
     }
   }, [currentIdx, currentStep, transfer, story, rebuildPlayerContents]);
 
+  // Enchaînement automatique : à la fin du temps d'étape statique, traversée unique vers l'étape suivante
   useEffect(() => {
     if (!isPlaying || transfer) return;
     const dwell = story?.appearance?.autoplayInterval || 5000;

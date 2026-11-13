@@ -57,6 +57,8 @@ assert.ok(playerSrc.includes('bearing: 0'), 'Player maintient la carte orientée
 assert.ok(playerSrc.includes('innerIcon.style.transform = `rotate(${sample.heading}deg)`'), 'Rotation circonscrite à l icône');
 assert.ok(playerSrc.includes('startTransfer'), 'Fonction de transfert interstitiel dédiée');
 assert.ok(playerSrc.includes('if (!isPlaying || transfer) return'), 'Autoplay bloqué pendant le transfert interstitiel');
+assert.ok(playerSrc.includes('loop: false'), 'Player force loop: false pour une traversée unique sans répétition');
+assert.ok(playerSrc.includes('finished = true'), 'Player détruit le contrôleur dès l arrivée pour passage immédiat');
 assert.ok(narrativeSrc.includes('isTransfer'), 'Volet narratif distingue étape statique et transfert');
 assert.ok(narrativeSrc.includes('Traversée de l’espace interstitiel'), 'Indication visuelle explicite de l espace interstitiel');
 console.log('   -> Player et PlayerNarrative séparent rigoureusement statique et transfert : OK.');
