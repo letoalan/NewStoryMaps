@@ -2,8 +2,8 @@
  * StoryMap — Modèles par défaut et génération de données initiales
  */
 
-import { StoryMap } from '../types/story';
-import { Step } from '../types/step';
+import type { StoryMap } from '../types/story';
+import type { Step } from '../types/step';
 
 export function createNewStep(index: number = 1): Step {
   return {

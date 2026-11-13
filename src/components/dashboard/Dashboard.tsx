@@ -101,9 +101,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
             <button className="btn btn-ghost" onClick={handleBackupAll} title="Sauvegarder tout en archive ZIP" disabled={stories.length === 0}>
               <Archive size={16} /> <span>Sauvegarder tout</span>
             </button>
-            <label className="btn btn-ghost" style={{ cursor: 'pointer' }} title="Importer un fichier .json, .html ou archive .zip">
+            <label className="btn btn-ghost" style={{ cursor: 'pointer' }} title="Importer un fichier .json, .html, .csv ou archive .zip">
               <Upload size={16} /> <span>Importer</span>
-              <input type="file" accept=".json,.html,.htm,.zip,application/json,text/html,application/zip" onChange={handleImport} style={{ display: 'none' }} />
+              <input type="file" accept=".json,.html,.htm,.zip,.csv,application/json,text/html,application/zip,text/csv" onChange={handleImport} style={{ display: 'none' }} />
             </label>
             <button className="btn btn-ghost" onClick={() => setIsCharterModalOpen(true)} title="Importer ou prévisualiser une charte graphique JSON">
               <FileCode size={16} /> <span>Charte JSON</span>

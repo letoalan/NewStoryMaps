@@ -4,12 +4,34 @@
 
 import React from 'react';
 import { useStory } from '../../context/StoryContext';
-import { Plus, Trash2, ArrowUp, ArrowDown, MapPin } from 'lucide-react';
+import { Plus, Trash2, ArrowUp, ArrowDown, MapPin, Upload } from 'lucide-react';
+import { parseCSVToSteps } from '../../core/csvParser';
 
 export const Outline: React.FC = () => {
-  const { story, activeStepIndex, setActiveStepIndex, addStep, deleteStep, reorderSteps } = useStory();
+  const { story, activeStepIndex, setActiveStepIndex, addStep, deleteStep, reorderSteps, updateStory } = useStory();
 
   if (!story) return null;
+
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = evt.target?.result as string;
+      if (!text) return;
+      const imported = parseCSVToSteps(text);
+      if (imported.length === 0) {
+        alert('Aucune étape valide détectée dans ce fichier CSV.');
+        return;
+      }
+      if (confirm(`Importer ${imported.length} étape(s) et remplacer les étapes actuelles ?`)) {
+        updateStory({ steps: imported });
+        setActiveStepIndex(0);
+      }
+    };
+    reader.readAsText(file, 'utf-8');
+    e.target.value = '';
+  };
 
   return (
     <aside className="outline">
@@ -82,11 +104,15 @@ export const Outline: React.FC = () => {
         })}
       </div>
 
-      <div className="ol-foot">
-        <button className="btn btn-soft btn-block" onClick={addStep}>
+      <div className="ol-foot" style={{ display: 'flex', gap: '6px' }}>
+        <button className="btn btn-soft" style={{ flex: 1 }} onClick={addStep} title="Ajouter une étape">
           <Plus size={15} />
           <span>Ajouter une étape</span>
         </button>
+        <label className="btn btn-ghost btn-icon" style={{ cursor: 'pointer' }} title="Importer des étapes depuis un fichier CSV">
+          <Upload size={15} />
+          <input type="file" accept=".csv,text/csv" onChange={handleImportCSV} style={{ display: 'none' }} />
+        </label>
       </div>
     </aside>
   );

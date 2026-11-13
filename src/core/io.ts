@@ -9,24 +9,20 @@ import { generateBrochurePrintHTML } from './publishBrochure';
 import { convertLegacyToModern, convertModernToLegacyV2 } from './adapter';
 import { parseGraphicCharterJson, createStoryFromCharter } from './graphicCharter';
 import { createZip, readZip, type ZipReadEntry } from './zip';
+import { parseStoryCSV } from './csvParser';
 
 export function exportStoryToBrochureHTML(story: StoryMap): void {
   downloadBlob(new Blob([generateBrochurePrintHTML(story)], { type: 'text/html;charset=utf-8' }), getFilename(story, 'brochure.html'));
 }
-
 export function exportStoryToJSON(story: StoryMap): void {
   downloadBlob(new Blob([JSON.stringify(story, null, 2)], { type: 'application/json;charset=utf-8' }), getFilename(story, 'storymap.json'));
 }
-
 export function exportStoryToLegacyV2JSON(story: StoryMap): void {
-  const blob = new Blob([JSON.stringify(convertModernToLegacyV2(story), null, 2)], { type: 'application/json;charset=utf-8' });
-  downloadBlob(blob, getFilename(story, 'v2.storymap.json'));
+  downloadBlob(new Blob([JSON.stringify(convertModernToLegacyV2(story), null, 2)], { type: 'application/json;charset=utf-8' }), getFilename(story, 'v2.storymap.json'));
 }
-
 export function exportStoryToStandaloneHTML(story: StoryMap): void {
   const html = (story.mode === 'rich-document' || story.mode === 'brochure') ? generateDocumentHTML(story) : generateStandaloneHTML(story);
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  downloadBlob(blob, getFilename(story, 'html'));
+  downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), getFilename(story, 'html'));
 }
 
 export async function exportStoryToSiteZip(story: StoryMap): Promise<void> {
@@ -71,6 +67,9 @@ export async function parseStoryFile(file: File | Blob): Promise<StoryMap[]> {
   const name = ((file as File).name || '').toLowerCase();
   if (name.endsWith('.zip') || file.type.includes('zip')) return parseZipArchive(file);
   const text = await (file as Blob).text();
+  if (name.endsWith('.csv') || file.type.includes('csv') || /^(ordre|titre|title|latitude|lat)[,;\t]/i.test(text.slice(0, 50))) {
+    return [parseStoryCSV(text, (file as File).name?.replace(/\.csv$/i, ''))];
+  }
   if (name.endsWith('.html') || name.endsWith('.htm') || /^\s*<(!doctype|html)/i.test(text)) {
     return [parseStoryHTML(text)];
   }

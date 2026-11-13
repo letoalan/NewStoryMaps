@@ -5,8 +5,9 @@
 import React from 'react';
 import { useStory } from '../../context/StoryContext';
 import { StoryStep } from '../../types/step';
-import { Plus, Trash2, ArrowUp, ArrowDown, Download } from 'lucide-react';
+import { Plus, Trash2, ArrowUp, ArrowDown, Download, Upload } from 'lucide-react';
 import { createDefaultStep } from '../../core/defaults';
+import { parseCSVToSteps } from '../../core/csvParser';
 
 export const SheetView: React.FC = () => {
   const { story, activeStepIndex, setActiveStepIndex, updateStory } = useStory();
@@ -15,14 +16,9 @@ export const SheetView: React.FC = () => {
 
   const steps = story.steps;
 
-  const handleCellChange = (
-    index: number,
-    field: keyof StoryStep | 'lat' | 'lng' | 'zoom',
-    value: string | number
-  ) => {
+  const handleCellChange = (index: number, field: keyof StoryStep | 'lat' | 'lng' | 'zoom', value: string | number) => {
     const updated = [...steps];
     const step = { ...updated[index] };
-
     if (field === 'lat' || field === 'lng' || field === 'zoom') {
       const camera = { ...step.camera };
       if (field === 'lat') camera.center = [camera.center[0], Number(value) || 0];
@@ -32,7 +28,6 @@ export const SheetView: React.FC = () => {
     } else {
       (step as Record<string, unknown>)[field] = value;
     }
-
     updated[index] = step;
     updateStory({ steps: updated });
   };
@@ -47,9 +42,7 @@ export const SheetView: React.FC = () => {
     if (steps.length <= 1) return;
     const updated = steps.filter((_, i) => i !== index);
     updateStory({ steps: updated });
-    if (activeStepIndex >= updated.length) {
-      setActiveStepIndex(updated.length - 1);
-    }
+    if (activeStepIndex >= updated.length) setActiveStepIndex(updated.length - 1);
   };
 
   const handleMove = (index: number, direction: 'up' | 'down') => {
@@ -65,22 +58,34 @@ export const SheetView: React.FC = () => {
   const exportCSV = () => {
     const headers = ['Ordre', 'Titre', 'Latitude', 'Longitude', 'Zoom', 'Description', 'Image'];
     const rows = steps.map((s, i) => [
-      i + 1,
-      `"${(s.title || '').replace(/"/g, '""')}"`,
-      s.camera.center[1],
-      s.camera.center[0],
-      s.camera.zoom,
-      `"${(s.description || '').replace(/"/g, '""')}"`,
-      `"${(s.media?.url || '').replace(/"/g, '""')}"`,
+      i + 1, `"${(s.title || '').replace(/"/g, '""')}"`, s.camera.center[1], s.camera.center[0],
+      s.camera.zoom, `"${(s.description || '').replace(/"/g, '""')}"`, `"${(s.media?.url || '').replace(/"/g, '""')}"`,
     ]);
-    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${story.id || 'storymap'}-etapes.csv`;
-    a.click();
+    const blob = new Blob([[headers.join(','), ...rows.map((r) => r.join(','))].join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = `${story.id || 'storymap'}-etapes.csv`; a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = evt.target?.result as string;
+      if (!text) return;
+      const imported = parseCSVToSteps(text);
+      if (imported.length === 0) {
+        alert('Aucune étape valide détectée dans ce fichier CSV.');
+        return;
+      }
+      if (confirm(`Importer ${imported.length} étape(s) et remplacer les étapes actuelles ?`)) {
+        updateStory({ steps: imported });
+        setActiveStepIndex(0);
+      }
+    };
+    reader.readAsText(file, 'utf-8');
+    e.target.value = '';
   };
 
   return (
@@ -93,6 +98,10 @@ export const SheetView: React.FC = () => {
           <button className="btn btn-ghost" onClick={exportCSV}>
             <Download size={16} /> Exporter CSV
           </button>
+          <label className="btn btn-ghost" style={{ cursor: 'pointer' }} title="Importer des étapes depuis un fichier CSV">
+            <Upload size={16} /> Importer CSV
+            <input type="file" accept=".csv,text/csv" onChange={handleImportCSV} style={{ display: 'none' }} />
+          </label>
         </div>
         <span style={{ color: 'var(--text-3)', fontSize: '13px', alignSelf: 'center' }}>
           {steps.length} étape(s) enregistrée(s)
