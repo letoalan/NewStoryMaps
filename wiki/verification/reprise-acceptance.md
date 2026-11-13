@@ -55,3 +55,27 @@ Le script [`scripts/verify-r1.mjs`](file:///scripts/verify-r1.mjs) :
 2. **Navigateur réel / PDF** :
    - Les fichiers HTML exportés autonomes sont archivés dans [`wiki/verification/fixtures/baseline/`](file:///wiki/verification/fixtures/baseline/) et peuvent être ouverts directement dans n'importe quel navigateur Chromium/Firefox/WebKit sans serveur local ni dépendance npm.
    - Les contrôles Playwright / PDF matériel seront tracés au fur et à mesure des lots suivants (R2–R7).
+
+
+---
+
+## 4. Correction Mode 1 : Centrage Dynamique Van Wijk, Orientation Nord Fixe & Synchronisation Autoplay
+
+### 4.1 Problématiques Résolues
+1. **Sortie de carte à grande échelle & Déconnexion du suivi caméra** :
+   - MapLibre déclenchait l'événement `zoomstart` lors des appels programmatiques à `map.jumpTo({ zoom })`. L'écouteur sans contrôle d'`e.originalEvent` déclenchait prématurément `notifyUserMapInteraction()`, suspendant le suivi caméra dès la première frame.
+   - *Correction* : Filtrage strict sur `e?.originalEvent` garantissant que les interactions utilisateur (souris, touch, molette) suspendent le suivi, mais pas les rafraîchissements programmatiques.
+2. **Rotation intempestive de la carte** :
+   - Le cap du segment de route était injecté directement dans la caméra (`bearing: sample.bearing`), faisant tourner toute la carte au lieu de la maintenir orientée Nord.
+   - *Correction* : La caméra conserve `bearing: 0` (Nord fixe) en permanence ; seule l'icône du véhicule pivote (`innerIcon.style.transform = rotate(${sample.heading}deg)`).
+3. **Modèle de déplacement van Wijk & Nuij** :
+   - Module dédié [`src/core/storyCameraPath.ts`](file:///src/core/storyCameraPath.ts) calculant la longueur $S$ du chemin dans l'espace $(x, y, w)$ position/échelle.
+   - La durée est proportionnelle à la complexité du trajet (distance physique pondérée par le ratio d'échelle $\Delta z$).
+   - Le zoom de croisière assure un dézoom automatique sur les trajets longs pour maintenir le véhicule et son contexte visibles en permanence.
+4. **Synchronisation Autoplay centrée sur les étapes** :
+   - L'intervalle autoplay (3s, 5s, 8s configuré dans le menu) démarre son compte à rebours **uniquement après l'arrivée du véhicule à destination** (`state === 'completed'`), sans raccourcir le temps de lecture de l'étape.
+
+### 4.2 Preuves et Validation
+- Nouveau script de test automatisé : `npm run test:storymap-camera` ([`scripts/verify-storymap-camera.mjs`](file:///scripts/verify-storymap-camera.mjs)).
+- 22 suites de tests automatisées `npm test` : 100% au vert.
+- Limite stricte des 195 lignes respectée sur 100% des fichiers du dépôt (`npm run test:n5`).
