@@ -150,13 +150,13 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
                 <div>
                   <label style={{ fontWeight: 600 }}>Style du tracé</label>
                   <select className="select" style={{ width: '100%' }} value={app.routeStyle || 'dashed'} onChange={(e) => updateStory({ appearance: { ...app, routeStyle: e.target.value as RouteLineStyle } })}>
-                    <option value="dashed">Pointillés</option><option value="solid">Ligne pleine</option><option value="dotted">Points fins</option><option value="curved">Arc incurvé</option><option value="arrow">Flèches</option><option value="airplane">Avion</option><option value="ship">Navire</option><option value="none">Aucun tracé</option>
+                    <option value="dashed">Pointillés</option><option value="solid">Ligne pleine</option><option value="dotted">Points fins</option><option value="curved">Arc incurvé</option><option value="arrow">Flèches</option><option value="airplane">Avion</option><option value="ship">Navire</option><option value="train">Train / Voie ferrée</option><option value="none">Aucun tracé</option>
                   </select>
                 </div>
                 <div>
                   <label style={{ fontWeight: 600 }}>Forme des marqueurs</label>
                   <select className="select" style={{ width: '100%' }} value={app.markerShape || 'pin'} onChange={(e) => updateStory({ appearance: { ...app, markerShape: e.target.value as MarkerShape } })}>
-                    <option value="pin">Épingle</option><option value="number">Numéroté</option><option value="circle">Pastille</option><option value="square">Carré</option><option value="flag">Drapeau</option><option value="star">Étoile</option>
+                    <option value="pin">Épingle</option><option value="number">Numéroté</option><option value="circle">Pastille</option><option value="square">Carré</option><option value="flag">Drapeau</option><option value="star">Étoile</option><option value="train">Train</option>
                   </select>
                 </div>
               </div>

@@ -62,7 +62,7 @@ export const VEHICLE_CATALOG: VehicleCatalogItem[] = [
     emoji: '🚆',
     license: 'CC0 1.0 Public Domain (StoryMap Vector)',
     defaultDurationSec: 4,
-    svgPath: 'M8 2H16L18 6V18L15 21H9L6 18V6L8 2ZM8 7V12H16V7H8ZM9 15A1.5 1.5 0 1 0 9 18A1.5 1.5 0 1 0 9 15ZM15 15A1.5 1.5 0 1 0 15 18A1.5 1.5 0 1 0 15 15Z',
+    svgPath: 'M12 2C14.5 2 17 4.5 17 8V19C17 20.1 16.1 21 15 21H9C7.9 21 7 20.1 7 19V8C7 4.5 9.5 2 12 2ZM9 8H15V6.5C14.2 5.6 13.1 5 12 5C10.9 5 9.8 5.6 9 6.5V8ZM10 16A1.5 1.5 0 1 0 10 19A1.5 1.5 0 1 0 10 16ZM14 16A1.5 1.5 0 1 0 14 19A1.5 1.5 0 1 0 14 16Z',
   },
   {
     id: 'bike',

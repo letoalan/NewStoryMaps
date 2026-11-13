@@ -43,6 +43,16 @@ export function getRouteIconSVG(style: RouteLineStyle, color: string): string | 
     </svg>`;
   }
 
+  if (style === 'train') {
+    const trainColor = color === '#0b7fb0' ? '#10b981' : color;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+      <g transform="rotate(90 12 12)">
+        <path d="M12 2C14.5 2 17 4.5 17 8V19C17 20.1 16.1 21 15 21H9C7.9 21 7 20.1 7 19V8C7 4.5 9.5 2 12 2ZM9 8H15V6.5C14.2 5.6 13.1 5 12 5C10.9 5 9.8 5.6 9 6.5V8Z"
+              fill="${trainColor}" stroke="#ffffff" stroke-width="1.2" stroke-linejoin="round"/>
+      </g>
+    </svg>`;
+  }
+
   return null;
 }
 

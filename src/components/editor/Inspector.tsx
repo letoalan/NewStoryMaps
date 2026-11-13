@@ -4,9 +4,10 @@
 
 import React, { useRef } from 'react';
 import { useStory } from '../../context/StoryContext';
-import { Sliders, Image, MapPin, Type, Upload } from 'lucide-react';
+import { Sliders, Image, MapPin, Type, Upload, Navigation } from 'lucide-react';
 import { RichTextToolbar } from './RichTextToolbar';
 import { extractGpsFromExif } from '../../core/exif';
+import { VEHICLE_CATALOG } from '../../core/vehicleCatalog';
 
 export const Inspector: React.FC = () => {
   const { story, activeStepIndex, updateStep } = useStory();
@@ -18,29 +19,16 @@ export const Inspector: React.FC = () => {
   const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const dataUrl = evt.target?.result as string;
-      updateStep(activeStepIndex, {
-        media: { type: 'image', url: dataUrl, caption: file.name },
-      });
+      updateStep(activeStepIndex, { media: { type: 'image', url: evt.target?.result as string, caption: file.name } });
     };
     reader.readAsDataURL(file);
 
-    // Extraction EXIF GPS
     const bufReader = new FileReader();
     bufReader.onload = (evt) => {
-      const buffer = evt.target?.result as ArrayBuffer;
-      const coords = extractGpsFromExif(buffer);
-      if (coords) {
-        updateStep(activeStepIndex, {
-          camera: {
-            ...currentStep.camera,
-            center: [coords.longitude, coords.latitude],
-          },
-        });
-      }
+      const coords = extractGpsFromExif(evt.target?.result as ArrayBuffer);
+      if (coords) updateStep(activeStepIndex, { camera: { ...currentStep.camera, center: [coords.longitude, coords.latitude] } });
     };
     bufReader.readAsArrayBuffer(file);
   };
@@ -48,39 +36,19 @@ export const Inspector: React.FC = () => {
   return (
     <aside className="inspector scroll">
       <div className="panel-head">
-        <h2 className="panel-title">
-          <Sliders size={16} color="var(--accent)" />
-          <span>Propriétés de l’étape {activeStepIndex + 1}</span>
-        </h2>
+        <h2 className="panel-title"><Sliders size={16} color="var(--accent)" /><span>Propriétés de l’étape {activeStepIndex + 1}</span></h2>
       </div>
 
       <div className="insp-body" style={{ padding: '16px' }}>
         <div className="field">
           <label className="field-label"><Type size={14} /> Titre de l'étape</label>
-          <input
-            type="text"
-            className="input"
-            value={currentStep.title}
-            onChange={(e) => updateStep(activeStepIndex, { title: e.target.value })}
-            placeholder="Ex : Arrivée à Paris"
-          />
+          <input type="text" className="input" value={currentStep.title} onChange={(e) => updateStep(activeStepIndex, { title: e.target.value })} placeholder="Ex : Arrivée à Paris" />
         </div>
 
         <div className="field">
           <label className="field-label">Description du récit</label>
-          <RichTextToolbar
-            textareaRef={textareaRef}
-            value={currentStep.description}
-            onChange={(val) => updateStep(activeStepIndex, { description: val })}
-          />
-          <textarea
-            ref={textareaRef}
-            className="textarea"
-            rows={5}
-            value={currentStep.description}
-            onChange={(e) => updateStep(activeStepIndex, { description: e.target.value })}
-            placeholder="Racontez les événements associés à ce lieu…"
-          />
+          <RichTextToolbar textareaRef={textareaRef} value={currentStep.description} onChange={(val) => updateStep(activeStepIndex, { description: val })} />
+          <textarea ref={textareaRef} className="textarea" rows={5} value={currentStep.description} onChange={(e) => updateStep(activeStepIndex, { description: e.target.value })} placeholder="Racontez les événements associés à ce lieu…" />
         </div>
 
         <div className="divider" />
@@ -94,38 +62,31 @@ export const Inspector: React.FC = () => {
             </label>
           </div>
           <input
-            type="text"
-            className="input"
-            value={currentStep.media?.url || ''}
-            onChange={(e) =>
-              updateStep(activeStepIndex, {
-                media: e.target.value
-                  ? { type: 'image', url: e.target.value, caption: currentStep.media?.caption }
-                  : undefined,
-              })
-            }
-            placeholder="https://exemple.com/image.jpg ou fichier"
+            type="text" className="input" value={currentStep.media?.url || ''} placeholder="https://exemple.com/image.jpg ou fichier"
+            onChange={(e) => updateStep(activeStepIndex, { media: e.target.value ? { type: 'image', url: e.target.value, caption: currentStep.media?.caption } : undefined })}
           />
           {currentStep.media?.url && (
             <div style={{ marginTop: '8px' }}>
-              <input
-                type="text"
-                className="input input-sm"
-                value={currentStep.media.caption || ''}
-                onChange={(e) =>
-                  updateStep(activeStepIndex, {
-                    media: { ...currentStep.media!, caption: e.target.value },
-                  })
-                }
-                placeholder="Légende de l'image"
-              />
-              <img
-                src={currentStep.media.url}
-                alt="Aperçu"
-                style={{ width: '100%', maxHeight: '120px', objectFit: 'cover', borderRadius: '6px', marginTop: '6px' }}
-              />
+              <input type="text" className="input input-sm" value={currentStep.media.caption || ''} onChange={(e) => updateStep(activeStepIndex, { media: { ...currentStep.media!, caption: e.target.value } })} placeholder="Légende de l'image" />
+              <img src={currentStep.media.url} alt="Aperçu" style={{ width: '100%', maxHeight: '120px', objectFit: 'cover', borderRadius: '6px', marginTop: '6px' }} />
             </div>
           )}
+        </div>
+
+        <div className="divider" />
+
+        <div className="field">
+          <label className="field-label"><Navigation size={14} /> Véhicule vers cette étape</label>
+          <select
+            className="select input-sm" style={{ width: '100%' }}
+            value={currentStep.routeAnimation?.vehicle || ''}
+            onChange={(e) => updateStep(activeStepIndex, {
+              routeAnimation: e.target.value ? { enabled: true, vehicle: e.target.value as any, loop: false } : undefined
+            })}
+          >
+            <option value="">Par défaut ({story.routeAnimation?.vehicle ? story.routeAnimation.vehicle : 'aucun'})</option>
+            {VEHICLE_CATALOG.filter((v) => v.id !== 'none').map((v) => <option key={v.id} value={v.id}>{v.emoji} {v.label}</option>)}
+          </select>
         </div>
 
         <div className="divider" />
@@ -135,50 +96,22 @@ export const Inspector: React.FC = () => {
           <div className="field-grid">
             <div>
               <span className="field-hint">Longitude</span>
-              <input
-                type="number"
-                step="0.0001"
-                className="input input-sm"
-                value={currentStep.camera.center[0]}
-                onChange={(e) => updateStep(activeStepIndex, {
-                  camera: { ...currentStep.camera, center: [parseFloat(e.target.value) || 0, currentStep.camera.center[1]] },
-                })}
-              />
+              <input type="number" step="0.0001" className="input input-sm" value={currentStep.camera.center[0]} onChange={(e) => updateStep(activeStepIndex, { camera: { ...currentStep.camera, center: [parseFloat(e.target.value) || 0, currentStep.camera.center[1]] } })} />
             </div>
             <div>
               <span className="field-hint">Latitude</span>
-              <input
-                type="number"
-                step="0.0001"
-                className="input input-sm"
-                value={currentStep.camera.center[1]}
-                onChange={(e) => updateStep(activeStepIndex, {
-                  camera: { ...currentStep.camera, center: [currentStep.camera.center[0], parseFloat(e.target.value) || 0] },
-                })}
-              />
+              <input type="number" step="0.0001" className="input input-sm" value={currentStep.camera.center[1]} onChange={(e) => updateStep(activeStepIndex, { camera: { ...currentStep.camera, center: [currentStep.camera.center[0], parseFloat(e.target.value) || 0] } })} />
             </div>
           </div>
 
           <div className="field-grid" style={{ marginTop: '6px' }}>
             <div>
               <span className="field-hint">Zoom : {currentStep.camera.zoom.toFixed(1)}</span>
-              <input
-                type="range" min="1" max="20" step="0.5" className="range"
-                value={currentStep.camera.zoom}
-                onChange={(e) => updateStep(activeStepIndex, {
-                  camera: { ...currentStep.camera, zoom: parseFloat(e.target.value) },
-                })}
-              />
+              <input type="range" min="1" max="20" step="0.5" className="range" value={currentStep.camera.zoom} onChange={(e) => updateStep(activeStepIndex, { camera: { ...currentStep.camera, zoom: parseFloat(e.target.value) } })} />
             </div>
             <div>
               <span className="field-hint">Inclinaison : {Math.round(currentStep.camera.pitch)}°</span>
-              <input
-                type="range" min="0" max="60" step="5" className="range"
-                value={currentStep.camera.pitch}
-                onChange={(e) => updateStep(activeStepIndex, {
-                  camera: { ...currentStep.camera, pitch: parseFloat(e.target.value) },
-                })}
-              />
+              <input type="range" min="0" max="60" step="5" className="range" value={currentStep.camera.pitch} onChange={(e) => updateStep(activeStepIndex, { camera: { ...currentStep.camera, pitch: parseFloat(e.target.value) } })} />
             </div>
           </div>
         </div>

@@ -20,6 +20,7 @@ export type RouteLineStyle =
   | 'double-arrow'
   | 'airplane'
   | 'ship'
+  | 'train'
   | 'none';
 
 export type MarkerShape =
@@ -29,6 +30,7 @@ export type MarkerShape =
   | 'number'
   | 'airplane'
   | 'ship'
+  | 'train'
   | 'flag'
   | 'star';
 

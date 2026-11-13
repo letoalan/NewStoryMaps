@@ -79,6 +79,8 @@ export function createMarkerElement(opts: MarkerElementOptions): HTMLElement {
     svgContent = `<svg width="24" height="24" viewBox="0 0 24 24" fill="${color}" stroke="#ffffff" stroke-width="1.5"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>`;
   } else if (shape === 'ship') {
     svgContent = `<svg width="24" height="24" viewBox="0 0 24 24" fill="${color}" stroke="#ffffff" stroke-width="1.5"><path d="M20 21c-1.39 0-2.78-.47-4-1.32-2.44 1.71-5.56 1.71-8 0C6.78 20.53 5.39 21 4 21H2v2h2c1.38 0 2.74-.35 4-.99 2.52 1.29 5.48 1.29 8 0 1.26.65 2.62.99 4 .99h2v-2h-2zM3.95 19H4c1.6 0 3.02-.88 4-2 .98 1.12 2.4 2 4 2s3.02-.88 4-2c.98 1.12 2.4 2 4 2h.05l1.89-6.68c.08-.26.06-.54-.06-.78s-.34-.42-.6-.47L19 11V7l-4-4H9L5 7v4l-2.28.47c-.26.05-.48.23-.6.47s-.14.52-.06.78L3.95 19z"/></svg>`;
+  } else if (shape === 'train') {
+    svgContent = `<svg width="24" height="24" viewBox="0 0 24 24" fill="${color}" stroke="#ffffff" stroke-width="1.5"><path d="M12 2C14.5 2 17 4.5 17 8V19C17 20.1 16.1 21 15 21H9C7.9 21 7 20.1 7 19V8C7 4.5 9.5 2 12 2ZM9 8H15V6.5C14.2 5.6 13.1 5 12 5C10.9 5 9.8 5.6 9 6.5V8Z"/></svg>`;
   } else if (shape === 'flag') {
     svgContent = `<svg width="24" height="24" viewBox="0 0 24 24" fill="${color}" stroke="#ffffff" stroke-width="1.5"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z"/></svg>`;
   } else if (shape === 'star') {

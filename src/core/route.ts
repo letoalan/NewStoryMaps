@@ -11,7 +11,7 @@ export interface RouteOptions {
 }
 
 export function isCurvedRouteStyle(style?: RouteLineStyle): boolean {
-  return style === 'curved' || style === 'airplane' || style === 'ship';
+  return style === 'curved' || style === 'airplane' || style === 'ship' || style === 'train';
 }
 
 // Calcul de points intermédiaires incurvés (arc de cercle / Bézier)
@@ -139,6 +139,16 @@ export function getRouteLayerConfig(style: RouteLineStyle = 'dashed', color = '#
           'line-color': color === '#0b7fb0' ? '#0284c7' : color,
           'line-width': 3,
           'line-dasharray': [5, 3],
+        },
+        layout: defaultLayout,
+      };
+    case 'train':
+      // Style Voie ferrée : tracé rail à tirets réguliers
+      return {
+        paint: {
+          'line-color': color === '#0b7fb0' ? '#10b981' : color,
+          'line-width': 3.5,
+          'line-dasharray': [2, 2],
         },
         layout: defaultLayout,
       };
