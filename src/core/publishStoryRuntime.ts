@@ -1,6 +1,6 @@
 /**
  * StoryMap — Script runtime autonome pour export Mode 1 (StoryMap)
- * Intègre le modèle van Wijk & Nuij, maintien du Nord caméra, et autoplay centré sur les étapes.
+ * Intègre le modèle van Wijk & Nuij, maintien du Nord caméra, et séparation étape statique / transfert.
  */
 
 import { VEHICLE_SVG_PATHS } from './vehicleCatalog';
@@ -17,7 +17,7 @@ export function buildStoryRuntimeScript(safeAccent: string): string {
     const vehiclePaths = ${vehiclePathsJson};
     const ${legFnCode};
     const safeAccent = '${safeAccent}';
-    let currentIdx = 0, map, activeMarkers = [], vehicleMarker = null, vehicleTimer = null, autoplayTimer = null;
+    let currentIdx = 0, inTransfer = false, map, activeMarkers = [], vehicleMarker = null, vehicleTimer = null, autoplayTimer = null;
 
     function buildSegCoords(p1, p2) {
       const rStyle = (story.appearance && story.appearance.routeStyle) || 'dashed';
@@ -69,59 +69,63 @@ export function buildStoryRuntimeScript(safeAccent: string): string {
       if (autoplayTimer) clearTimeout(autoplayTimer);
       const dwell = (story.appearance && story.appearance.autoplayInterval) || 5000;
       if (currentIdx < steps.length - 1) {
-        autoplayTimer = setTimeout(() => { nextStep(); }, dwell);
+        autoplayTimer = setTimeout(() => { startTransfer(currentIdx + 1); }, dwell);
       }
     }
 
-    function animateSegmentVehicle(fromCam, toCam, animCfg) {
-      if (vehicleTimer) { clearInterval(vehicleTimer); vehicleTimer = null; }
-      if (vehicleMarker) { vehicleMarker.remove(); vehicleMarker = null; }
-      if (!map || !toCam) { scheduleAutoplay(); return; }
-      const fromCoord = fromCam && fromCam.center ? fromCam.center : null, toCoord = toCam.center;
-      const hasV = animCfg && animCfg.enabled && animCfg.vehicle !== 'none';
-      if (!hasV || !toCoord) {
-        map.flyTo({ center: toCoord, zoom: toCam.zoom, pitch: toCam.pitch || 0, bearing: 0, essential: true, duration: reducedMotion ? 0 : 1800 });
-        scheduleAutoplay();
+    function animateSegmentVehicle(fromStep, toStep, animCfg) {
+      if (!map || reducedMotion || !animCfg || !animCfg.enabled || animCfg.vehicle === 'none') {
+        map && map.flyTo({ center: toStep.camera.center, zoom: toStep.camera.zoom, pitch: toStep.camera.pitch || 0, bearing: 0, essential: true, duration: reducedMotion ? 0 : 1600 });
+        inTransfer = false; currentIdx = steps.indexOf(toStep); renderStep();
         return;
       }
-      const nextCam = steps[currentIdx + 1] && steps[currentIdx + 1].camera ? steps[currentIdx + 1].camera : null;
-      const pts = fromCoord ? buildSegCoords(fromCoord, toCoord) : (nextCam ? buildSegCoords(toCoord, nextCam.center) : [toCoord, toCoord]);
+      const pts = buildSegCoords(fromStep.camera.center, toStep.camera.center);
       const wrap = document.createElement('div'); wrap.className = 'vehicle-marker-wrap';
       wrap.style.cssText = 'width:28px;height:28px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:25;';
       const icon = document.createElement('div'); icon.className = 'vehicle-marker-icon';
       icon.style.cssText = 'width:100%;height:100%;';
       icon.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="' + safeAccent + '" stroke="#fff" stroke-width="1.5"><path d="' + (vehiclePaths[animCfg.vehicle] || vehiclePaths.airplane) + '"/></svg>';
       wrap.appendChild(icon);
-      if (!fromCoord || reducedMotion) {
-        vehicleMarker = new maplibregl.Marker({ element: wrap }).setLngLat(toCoord).addTo(map);
-        map.jumpTo({ center: toCoord, zoom: toCam.zoom, pitch: toCam.pitch || 0, bearing: 0 });
-        scheduleAutoplay();
-        return;
-      }
       vehicleMarker = new maplibregl.Marker({ element: wrap }).setLngLat(pts[0]).addTo(map);
       const vp = (map.getContainer() && map.getContainer().clientWidth) || 1024;
-      const leg = createStoryLegPath(pts, fromCam, toCam, vp, animCfg.pace);
-      map.jumpTo({ center: pts[0], zoom: fromCam.zoom, pitch: fromCam.pitch || 0, bearing: 0 });
+      const leg = createStoryLegPath(pts, fromStep.camera, toStep.camera, vp, animCfg.pace);
+      map.jumpTo({ center: pts[0], zoom: fromStep.camera.zoom, pitch: fromStep.camera.pitch || 0, bearing: 0 });
       let start = performance.now();
       vehicleTimer = setInterval(() => {
         if (document.hidden) return;
-        const now = performance.now();
-        const t = Math.min(1, (now - start) / leg.durationMs);
+        const t = Math.min(1, (performance.now() - start) / leg.durationMs);
         const sample = leg.sampleAtProgress(t);
         vehicleMarker.setLngLat(sample.coordinates);
         if (animCfg.orientToRoute !== false) icon.style.transform = 'rotate(' + sample.heading.toFixed(1) + 'deg)';
         if (animCfg.cameraFollow !== false) map.jumpTo({ center: sample.coordinates, zoom: sample.zoom, pitch: sample.pitch, bearing: 0 });
+        const pbar = document.getElementById('transfer-pbar');
+        if (pbar) pbar.style.width = Math.round(t * 100) + '%';
         if (t >= 1) {
           clearInterval(vehicleTimer); vehicleTimer = null;
-          if (animCfg.cameraFollow !== false) map.easeTo({ center: toCam.center, zoom: toCam.zoom, pitch: toCam.pitch || 0, bearing: 0, duration: 180 });
-          scheduleAutoplay();
+          if (animCfg.cameraFollow !== false) map.easeTo({ center: toStep.camera.center, zoom: toStep.camera.zoom, pitch: toStep.camera.pitch || 0, bearing: 0, duration: 180 });
+          inTransfer = false; currentIdx = steps.indexOf(toStep); renderStep();
         }
       }, 35);
     }
 
+    function startTransfer(targetIdx) {
+      if (targetIdx < 0 || targetIdx >= steps.length) return;
+      if (vehicleTimer) { clearInterval(vehicleTimer); vehicleTimer = null; }
+      if (vehicleMarker) { vehicleMarker.remove(); vehicleMarker = null; }
+      inTransfer = true;
+      const fromStep = steps[currentIdx], toStep = steps[targetIdx];
+      const animCfg = toStep.routeAnimation || story.routeAnimation;
+      document.getElementById('step-badge').textContent = 'Transfert · Étape ' + (currentIdx + 1) + ' → ' + (targetIdx + 1);
+      document.getElementById('step-title').textContent = 'En route vers ' + toStep.title;
+      const body = document.getElementById('step-body');
+      body.innerHTML = '<div style="padding:16px 0;display:flex;flex-direction:column;gap:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;color:#858e9e"><span>Départ : ' + fromStep.title + '</span><span>Arrivée : ' + toStep.title + '</span></div><div style="width:100%;height:8px;background:rgba(128,128,128,0.2);border-radius:4px;overflow:hidden"><div id="transfer-pbar" style="width:0%;height:100%;background:' + safeAccent + '"></div></div><p style="margin:0;font-size:11px;color:#858e9e;text-align:center">Traversée de l\\'espace interstitiel...</p></div>';
+      animateSegmentVehicle(fromStep, toStep, animCfg);
+    }
+
     function renderStep() {
+      inTransfer = false;
       const step = steps[currentIdx] || { title: '', description: '' };
-      document.getElementById('step-badge').textContent = 'Étape ' + (currentIdx + 1);
+      document.getElementById('step-badge').textContent = 'Étape ' + (currentIdx + 1) + ' sur ' + (steps.length || 1);
       document.getElementById('step-title').textContent = step.title;
       const body = document.getElementById('step-body'); body.textContent = '';
       if (currentIdx === 0) { const tpl = document.getElementById('hero-template'); if (tpl && tpl.innerHTML) { const h = document.createElement('div'); h.innerHTML = tpl.innerHTML; body.appendChild(h); } }
@@ -133,15 +137,19 @@ export function buildStoryRuntimeScript(safeAccent: string): string {
       if (map && step.camera) {
         activeMarkers.forEach(m => m.remove()); activeMarkers = [];
         (step.markers || [{ coordinates: step.camera.center }]).forEach(m => activeMarkers.push(new maplibregl.Marker({ color: safeAccent }).setLngLat(m.coordinates).addTo(map)));
-        const prevS = currentIdx > 0 ? steps[currentIdx - 1] : null;
-        animateSegmentVehicle(prevS && prevS.camera ? prevS.camera : null, step.camera, step.routeAnimation || story.routeAnimation);
-      } else {
-        scheduleAutoplay();
+        map.jumpTo({ center: step.camera.center, zoom: step.camera.zoom, pitch: step.camera.pitch || 0, bearing: 0 });
       }
+      scheduleAutoplay();
     }
 
-    function nextStep() { if (currentIdx < steps.length - 1) { currentIdx++; renderStep(); } }
-    function prevStep() { if (currentIdx > 0) { currentIdx--; renderStep(); } }
+    function nextStep() {
+      if (inTransfer) { inTransfer = false; if (vehicleTimer) clearInterval(vehicleTimer); currentIdx = Math.min(steps.length - 1, currentIdx + 1); renderStep(); }
+      else if (currentIdx < steps.length - 1) { startTransfer(currentIdx + 1); }
+    }
+    function prevStep() {
+      if (inTransfer) { inTransfer = false; if (vehicleTimer) clearInterval(vehicleTimer); renderStep(); }
+      else if (currentIdx > 0) { currentIdx--; renderStep(); }
+    }
     window.addEventListener('DOMContentLoaded', initMap);
   `;
 }

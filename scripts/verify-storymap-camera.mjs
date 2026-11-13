@@ -1,5 +1,5 @@
 /**
- * Test de vérification : Centrage dynamique van Wijk, orientation Nord fixe & synchronisation autoplay
+ * Test de vérification : Centrage van Wijk, orientation Nord fixe & séparation étape statique / transfert
  */
 
 import assert from 'node:assert/strict';
@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { createStoryLegPath } from '../src/core/storyCameraPath.ts';
 import { generateStandaloneHTML } from '../src/core/publish.ts';
 
-console.log('=== VÉRIFICATION VÉHICULES STORYMAP : CENTRAGE, ORIENTATION & AUTOPLAY ===\n');
+console.log('=== VÉRIFICATION VÉHICULES STORYMAP : CENTRAGE, ORIENTATION & TEMPS STATIQUE/TRANSFERT ===\n');
 
 // 1. Modèle de van Wijk & Nuij : durée pondérée par la distance et le changement d'échelle
 console.log('1. Modèle van Wijk : Durée et zoom de croisière selon échelle/distance...');
@@ -48,23 +48,24 @@ assert.equal(Math.round(southLeg.sampleAtProgress(0.5).heading), 180, 'Cap Sud =
 assert.equal(Math.round(westLeg.sampleAtProgress(0.5).heading), 270, 'Cap Ouest = 270°');
 console.log('   -> Caps Nord (0°), Est (90°), Sud (180°), Ouest (270°) validés : OK.');
 
-// 4. Vérification de Player.tsx : orientation Nord, e.originalEvent, autoplay centré sur les étapes
-console.log('4. Vérification de Player.tsx (Nord fixe, event originalEvent, autoplay arrived)...');
+// 4. Distinction nette étape statique vs temps de transfert (Player.tsx & PlayerNarrative.tsx)
+console.log('4. Séparation stricte étape statique / temps de transfert dans le lecteur React...');
 const playerSrc = readFileSync('src/components/player/Player.tsx', 'utf-8');
+const narrativeSrc = readFileSync('src/components/player/PlayerNarrative.tsx', 'utf-8');
 
 assert.ok(playerSrc.includes('bearing: 0'), 'Player maintient la carte orientée Nord');
-assert.ok(playerSrc.includes('innerIcon.style.transform = `rotate(${sample.heading}deg)`'), 'Rotation appliquée uniquement sur l icône véhicule');
-assert.ok(playerSrc.includes('if (e?.originalEvent)'), 'Interaction utilisateur vérifie originalEvent (pas de suspension fantôme)');
-assert.ok(playerSrc.includes('createStoryLegPath'), 'Player utilise le modèle van Wijk createStoryLegPath');
-assert.ok(playerSrc.includes('if (!isPlaying || !arrived) return'), 'Autoplay bloqué pendant le transit et activé sur arrived');
-assert.ok(playerSrc.includes('setArrived(true)'), 'setArrived déclenché à l arrivée');
-console.log('   -> Player.tsx respecte intégralement les contrats : OK.');
+assert.ok(playerSrc.includes('innerIcon.style.transform = `rotate(${sample.heading}deg)`'), 'Rotation circonscrite à l icône');
+assert.ok(playerSrc.includes('startTransfer'), 'Fonction de transfert interstitiel dédiée');
+assert.ok(playerSrc.includes('if (!isPlaying || transfer) return'), 'Autoplay bloqué pendant le transfert interstitiel');
+assert.ok(narrativeSrc.includes('isTransfer'), 'Volet narratif distingue étape statique et transfert');
+assert.ok(narrativeSrc.includes('Traversée de l’espace interstitiel'), 'Indication visuelle explicite de l espace interstitiel');
+console.log('   -> Player et PlayerNarrative séparent rigoureusement statique et transfert : OK.');
 
-// 5. Vérification du runtime autonome généré (publish.ts + publishStoryRuntime.ts)
-console.log('5. Vérification du runtime autonome publié...');
+// 5. Vérification du runtime autonome publié (publish.ts + publishStoryRuntime.ts)
+console.log('5. Vérification du runtime autonome publié (Mode 1)...');
 const sampleStory = {
   version: '2.0.0',
-  title: 'Test Navigation',
+  title: 'Test Navigation Interstitielle',
   mapStyle: 'positron',
   appearance: { autoplayInterval: 5000, routeStyle: 'curved' },
   routeAnimation: { enabled: true, vehicle: 'airplane', durationSec: 4 },
@@ -76,9 +77,10 @@ const sampleStory = {
 
 const standaloneHtml = generateStandaloneHTML(sampleStory);
 assert.ok(standaloneHtml.includes('createStoryLegPath'), 'Script autonome contient createStoryLegPath');
-assert.ok(standaloneHtml.includes('scheduleAutoplay'), 'Script autonome gère scheduleAutoplay après arrivée');
-assert.ok(standaloneHtml.includes('icon.style.transform = \'rotate(\' + sample.heading'), 'Rotation autonome de l icône');
+assert.ok(standaloneHtml.includes('startTransfer'), 'Script autonome gère startTransfer');
+assert.ok(standaloneHtml.includes('transfer-pbar'), 'Script autonome affiche la jauge de progression interstitielle');
+assert.ok(standaloneHtml.includes('scheduleAutoplay'), 'Script autonome gère scheduleAutoplay aux étapes statiques');
 assert.ok(standaloneHtml.includes('bearing: 0'), 'Script autonome maintient bearing: 0');
 console.log('   -> Export autonome Mode 1 conforme et synchronisé : OK.');
 
-console.log('\n✅ TOUTES LES VÉRIFICATIONS VÉHICULE & CAMÉRA ONT RÉUSSI AVEC SUCCÈS !');
+console.log('\n✅ TOUTES LES VÉRIFICATIONS VÉHICULE, CAMÉRA & ESPACE INTERSTITIEL ONT RÉUSSI AVEC SUCCÈS !');

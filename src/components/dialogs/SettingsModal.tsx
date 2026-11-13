@@ -170,7 +170,7 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div><label style={{ fontWeight: 600 }}>Disposition volet (Mode 1)</label><select className="select" style={{ width: '100%' }} value={app.panelPosition} onChange={(e) => updateStory({ appearance: { ...app, panelPosition: e.target.value as 'left' | 'right' | 'center' } })}><option value="left">Volet gauche</option><option value="right">Volet droite</option><option value="center">Carte basse</option></select></div>
-                <div><label style={{ fontWeight: 600 }}>Intervalle lecture auto</label><select className="select" style={{ width: '100%' }} value={app.autoplayInterval || 5000} onChange={(e) => updateStory({ appearance: { ...app, autoplayInterval: Number(e.target.value) } })}><option value={3000}>3 s</option><option value={5000}>5 s</option><option value={8000}>8 s</option></select></div>
+                <div><label style={{ fontWeight: 600 }}>Temps aux étapes statiques</label><select className="select" style={{ width: '100%' }} value={app.autoplayInterval || 5000} onChange={(e) => updateStory({ appearance: { ...app, autoplayInterval: Number(e.target.value) } })}><option value={3000}>3 s (rapide)</option><option value={5000}>5 s (standard)</option><option value={8000}>8 s (détaillé)</option></select></div>
               </div>
             </>
           )}

@@ -79,3 +79,12 @@ Le script [`scripts/verify-r1.mjs`](file:///scripts/verify-r1.mjs) :
 - Nouveau script de test automatisé : `npm run test:storymap-camera` ([`scripts/verify-storymap-camera.mjs`](file:///scripts/verify-storymap-camera.mjs)).
 - 22 suites de tests automatisées `npm test` : 100% au vert.
 - Limite stricte des 195 lignes respectée sur 100% des fichiers du dépôt (`npm run test:n5`).
+
+
+### 4.3 Distinction Statique / Transfert dans l'Espace Interstitiel
+1. **Séparation État Statique vs Transfert Interstitiel** :
+   - **Étape statique** : Le véhicule est stationné à l'étape, le volet narratif présente le contenu intégral (titre, média, récit, hero d'ouverture), et la temporisation correspond rigoureusement à la durée paramétrée dans le menu (`autoplayInterval` : 3s rapide, 5s standard, 8s détaillé).
+   - **Temps de transfert** : Phase cinématique où le véhicule traverse l'espace interstitiel entre les deux étapes. Le volet narratif affiche un état interstitiel dédié (`Transfert · Étape A → Étape B`, mentions de départ/arrivée, jauge de progression en temps réel).
+   - L'étape destination ne s'active en mode statique qu'à l'arrivée effective du véhicule, garantissant que le temps de transfert n'empiète jamais sur le temps d'attention accordé à l'étape narrative.
+2. **Parité Runtime React & Publication Autonome** :
+   - Le lecteur React (`Player.tsx` & `PlayerNarrative.tsx`) et le runtime autonome (`publishStoryRuntime.ts`) partagent rigoureusement la même machine à états et la même restitution visuelle (jauge `#transfer-pbar`, libellés et orientation Nord).
