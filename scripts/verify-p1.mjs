@@ -125,38 +125,46 @@ async function testBrandAndModeRoundtrip() {
   console.log('  -> OK : F03 / F08 validés.');
 }
 
-// 3. F04, F05, F06 : Inspection de la landing page (retrait vidéo & 3 modes)
+// 3. Inspection de la landing page (suppression connecteur historique, 3 modes disponibles & 3 vidéos FR)
 async function testLandingPageCompliance() {
-  console.log('Test 3 : Conformité de la landing page (F04, F05, F06)...');
+  console.log('Test 3 : Conformité de la landing page (3 modes & 3 vidéos FR, sans version historique)...');
   const landingHtml = fs.readFileSync('public/landing.html', 'utf8');
+  const headerTsx = fs.readFileSync('src/components/common/Header.tsx', 'utf8');
 
-  // Pas de vidéo promotionnelle (F04)
-  assert(!landingHtml.includes('<video'), 'La balise <video> promotionnelle doit être retirée');
-  assert(!landingHtml.includes('id="lp-player"'), 'Le lecteur vidéo id="lp-player" doit être retiré');
+  // Suppression du connecteur vers la version historique
+  assert(!landingHtml.includes('app.html'), 'Le connecteur app.html doit être supprimé de landing.html');
+  assert(!landingHtml.includes('Version historique'), 'Le bouton Version historique doit être supprimé');
+  assert(!headerTsx.includes('app.html'), 'Le connecteur app.html doit être supprimé de Header.tsx');
 
-  // Présence des 3 modes avec statut exact (F06)
+  // Présence des 3 modes disponibles
   assert(landingHtml.includes('Mode 1 · Disponible'), 'Mode 1 doit être marqué Disponible');
-  assert(landingHtml.includes('Mode 2 · En finalisation'), 'Mode 2 doit être marqué En finalisation');
-  assert(landingHtml.includes('Mode 3 · En finalisation'), 'Mode 3 doit être marqué En finalisation');
+  assert(landingHtml.includes('Mode 2 · Disponible'), 'Mode 2 doit être marqué Disponible');
+  assert(landingHtml.includes('Mode 3 · Disponible'), 'Mode 3 doit être marqué Disponible');
 
-  // Liens d’accès conservés (F05)
-  assert(landingHtml.includes('app.html'), 'Accès de secours à l’application historique préservé');
-  console.log('  -> OK : F04, F05, F06 validés.');
+  // Intégration des 3 vidéos de présentation en français
+  assert(landingHtml.includes('media/video-mode1-storymap.mp4'), 'Vidéo Mode 1 intégrée');
+  assert(landingHtml.includes('media/video-mode2-document.mp4'), 'Vidéo Mode 2 intégrée');
+  assert(landingHtml.includes('media/video-mode3-brochure.mp4'), 'Vidéo Mode 3 intégrée');
+  assert(fs.existsSync('public/media/video-mode1-storymap.mp4'), 'Fichier vidéo 1 présent');
+  assert(fs.existsSync('public/media/video-mode2-document.mp4'), 'Fichier vidéo 2 présent');
+  assert(fs.existsSync('public/media/video-mode3-brochure.mp4'), 'Fichier vidéo 3 présent');
+  console.log('  -> OK : Landing page et 3 vidéos FR validées.');
 }
 
-// 4. F09 : Navigation et redirection des anciens liens hash
-async function testLegacyHashSupport() {
-  console.log('Test 4 : Support des redirections de liens historiques (F09)...');
+// 4. Script de la landing page (thème et gestion des vidéos)
+async function testLandingScriptSupport() {
+  console.log('Test 4 : Script interactif de la landing page...');
   const landingJs = fs.readFileSync('public/js/landing.js', 'utf8');
-  assert(landingJs.includes('location.replace(\'app.html\' + location.hash)'), 'Redirection hash #/ préservée');
-  console.log('  -> OK : F09 validé.');
+  assert(!landingJs.includes('app.html'), 'Aucune redirection vers app.html dans landing.js');
+  assert(landingJs.includes('.lp-mode-video'), 'Gestion des 3 vidéos présente dans landing.js');
+  console.log('  -> OK : Script landing.js validé.');
 }
 
 async function run() {
   await testUnifiedDataModel();
   await testBrandAndModeRoundtrip();
   await testLandingPageCompliance();
-  await testLegacyHashSupport();
+  await testLandingScriptSupport();
   console.log('\n======================================================');
   console.log('RAPPORT P1 : TOUS LES TESTS SONT AU VERT');
   console.log('======================================================');

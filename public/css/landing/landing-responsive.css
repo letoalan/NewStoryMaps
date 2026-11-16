@@ -3,7 +3,9 @@
    ========================================================================== */
 
 @media (max-width: 980px) {
-    .lp-steps {
+    .lp-steps,
+    .lp-modes-grid,
+    .lp-video-card {
         grid-template-columns: 1fr;
     }
 

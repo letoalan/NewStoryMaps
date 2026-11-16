@@ -48,12 +48,12 @@ export const Header: React.FC<HeaderProps> = ({ onNewStory, onGoHome, title }) =
       )}
 
       <a
-        href="./app.html"
+        href="./landing.html"
         className="btn btn-ghost btn-sm"
-        title="Accéder à l'ancienne version historique (secours)"
-        style={{ fontSize: '12px', color: 'var(--text-3)' }}
+        title="Découvrir la page de présentation et les vidéos des 3 modes"
+        style={{ fontSize: '12px', color: 'var(--text-2)' }}
       >
-        Version historique
+        Présentation
       </a>
 
       <button

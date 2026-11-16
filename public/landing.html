@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>StoryMap — racontez vos histoires sur une carte</title>
-    <meta name="description" content="StoryMap est un éditeur visuel, libre et gratuit, pour créer des récits interactifs sur une carte : sans compte, sans installation et sans une ligne de code.">
+    <title>StoryMap — Studio de récits cartographiques, documents enrichis et brochures A4</title>
+    <meta name="description" content="StoryMap est un studio visuel libre et gratuit pour créer des récits cartographiques animés (Mode 1), des documents web enrichis (Mode 2) et des brochures éditoriales A4 (Mode 3), sans compte ni code.">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b7fb0'/%3E%3Cpath d='M7.5 10.2 13 8l6 2.2L24.5 8v13.8L19 24l-6-2.2-5.5 2.2z' fill='none' stroke='%23fff' stroke-width='1.9' stroke-linejoin='round'/%3E%3Cpath d='M13 8v13.8M19 10.2V24' stroke='%23fff' stroke-width='1.9' opacity='.6'/%3E%3C/svg%3E">
     <script src="js/landing.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,17 +26,18 @@
                 </svg>
                 <span class="lp-brand-text">
                     <span class="lp-brand-name">StoryMap</span>
-                    <span class="lp-brand-tag">Éditeur visuel de storymaps</span>
+                    <span class="lp-brand-tag">Studio cartographique &amp; éditorial</span>
                 </span>
             </a>
             <nav class="lp-nav" aria-label="Sections de la page">
-                <a href="#modes">Modes</a>
-                <a href="#creer">Créer</a>
+                <a href="#modes">Les 3 Modes</a>
+                <a href="#videos">Vidéos</a>
+                <a href="#creer">Fonctionnalités</a>
                 <a href="#partager">Partager</a>
                 <a href="#garanties">Garanties</a>
             </nav>
-            <div style="display:flex;gap:8px;">
-                <a class="btn lp-btn-header" href="app.html" title="Éditeur historique v2">Secours v2</a>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button id="lp-theme-toggle" class="btn btn-ghost lp-btn-header" type="button" title="Basculer le thème clair / sombre" aria-label="Basculer le thème">Thème</button>
                 <a class="btn btn-primary lp-btn-header" href="./">Ouvrir l’application</a>
             </div>
         </div>
@@ -45,44 +46,141 @@
     <main>
         <section class="lp-hero">
             <div class="lp-wrap">
-                <p class="lp-eyebrow">Libre et gratuit · sans compte · dans votre navigateur</p>
-                <h1>Racontez vos histoires <span>sur une carte</span></h1>
-                <p class="lp-lead">StoryMap est un éditeur visuel de récits cartographiques. Vos lecteurs parcourent la page, la carte les emmène d’étape en étape. Un cours d’histoire, une étude de géographie, une sortie scolaire ou un itinéraire territorial : tout ce qui se déroule quelque part peut se raconter ainsi.</p>
+                <p class="lp-eyebrow">Libre et gratuit · sans compte · 3 ateliers complémentaires dans votre navigateur</p>
+                <h1>Racontez vos territoires <span>sur une carte, un atlas ou une brochure</span></h1>
+                <p class="lp-lead">StoryMap réunit dans un seul studio visuel trois modes de création : le récit guidé étape par étape avec véhicules animés, le document web enrichi multi-cartes et l’atelier PAO de brochures A4 prêtes à imprimer.</p>
                 <div class="lp-cta">
                     <a class="btn btn-primary lp-btn" href="./">Lancer l'application</a>
-                    <a class="btn lp-btn" href="app.html">Version historique</a>
+                    <a class="btn lp-btn" href="#videos">Voir les 3 vidéos de présentation</a>
                 </div>
-                <p class="lp-note">Aucune inscription requise : vos données restent enregistrées localement.</p>
+                <ul class="lp-tags" style="justify-content:center;margin-top:28px;">
+                    <li>🚆 7 véhicules animés (Train, Avion, Navire…)</li>
+                    <li>🧭 Caméra van Wijk &amp; Nord fixe</li>
+                    <li>📊 Import / Export CSV &amp; Tableur</li>
+                    <li>🎨 Charte graphique JSON &amp; Logo Hero</li>
+                    <li>🖨️ Brochure A4 &amp; Contrôle 300 DPI</li>
+                </ul>
+                <p class="lp-note">Aucune inscription requise : vos projets restent enregistrés localement dans votre navigateur.</p>
             </div>
         </section>
 
         <!-- ---------- Trois modes ---------- -->
-        <section class="lp-section" id="modes" style="padding-top:1rem;">
+        <section class="lp-section" id="modes" style="padding-top:1.5rem;">
             <div class="lp-wrap">
-                <p class="lp-kicker">Trois modes</p>
-                <h2>Choisissez votre mode de restitution</h2>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;margin-top:1.5rem;">
-                    <div class="lp-card">
+                <p class="lp-kicker">Architecture unifiée · Trois modes</p>
+                <h2>Choisissez l'atelier adapté à votre projet</h2>
+                <p class="lp-sub">Passez d’un itinéraire narratif animé à un dossier territorial interactif ou une fiche patrimoniale A4 tout en conservant votre charte graphique.</p>
+                <div class="lp-modes-grid">
+                    <div class="lp-card lp-mode-card">
                         <span class="badge" style="background:#dcfce7;color:#15803d;font-weight:700;">Mode 1 · Disponible</span>
-                        <h3 style="margin:0.8rem 0 0.4rem;">StoryMap classique</h3>
-                        <p>Récit guidé étape par étape, transitions cartographiques 3D, tableur intégré et médias.</p>
-                        <p class="lp-small"><strong>Sorties :</strong> Web interactif, HTML autonome, JSON v2, Site ZIP.</p>
-                        <a class="btn btn-primary lp-btn-sm" style="margin-top:10px;display:inline-block;" href="./?mode=storymap">Créer une StoryMap</a>
+                        <h3>StoryMap Interactive</h3>
+                        <p>Récit guidé étape par étape avec traversées animées (train, avion, navire, voiture, vélo, bus, marcheur), centrage dynamique van Wijk, maintien du Nord et tableur CSV intégré.</p>
+                        <p class="lp-small" style="margin-top:12px;"><strong>Sorties :</strong> Page HTML autonome, Archive ZIP, CSV, JSON.</p>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">
+                            <a class="btn btn-primary lp-btn-sm" href="./?mode=storymap">Créer une StoryMap</a>
+                            <a class="btn btn-ghost lp-btn-sm" href="#video-mode-1">Voir la vidéo</a>
+                        </div>
                     </div>
-                    <div class="lp-card">
-                        <span class="badge" style="background:#f3e8ff;color:#7e22ce;font-weight:700;">Mode 2 · En finalisation</span>
-                        <h3 style="margin:0.8rem 0 0.4rem;">Document enrichi</h3>
-                        <p>Grille de blocs rectangulaires, cartes interactives synchronisées et mode présentation.</p>
-                        <p class="lp-small"><strong>Sorties :</strong> Document HTML interactif, export ZIP.</p>
-                        <a class="btn lp-btn-sm" style="margin-top:10px;display:inline-block;" href="./?mode=rich-document">Créer un document</a>
+                    <div class="lp-card lp-mode-card">
+                        <span class="badge" style="background:#f3e8ff;color:#7e22ce;font-weight:700;">Mode 2 · Disponible</span>
+                        <h3>Document Web Enrichi</h3>
+                        <p>Grille éditoriale modulaire combinant textes, galeries médias, tableaux, bannière Hero vidéo/photo avec logo et cartes multiples synchronisées par boutons d’action.</p>
+                        <p class="lp-small" style="margin-top:12px;"><strong>Sorties :</strong> Document HTML interactif autonome, Charte JSON, Archive ZIP.</p>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">
+                            <a class="btn btn-primary lp-btn-sm" href="./?mode=rich-document">Créer un document</a>
+                            <a class="btn btn-ghost lp-btn-sm" href="#video-mode-2">Voir la vidéo</a>
+                        </div>
                     </div>
-                    <div class="lp-card">
-                        <span class="badge" style="background:#fef3c7;color:#b45309;font-weight:700;">Mode 3 · En finalisation</span>
-                        <h3 style="margin:0.8rem 0 0.4rem;">Brochure statique A4</h3>
-                        <p>Mise en page éditoriale A4 portrait/paysage, cartes statiques éditables dans le projet et repères numérotés.</p>
-                        <p class="lp-small"><strong>Sorties :</strong> Brochure A4 imprimable, export PDF prévu en phase P5.</p>
-                        <a class="btn lp-btn-sm" style="margin-top:10px;display:inline-block;" href="./?mode=brochure">Créer une brochure</a>
+                    <div class="lp-card lp-mode-card">
+                        <span class="badge" style="background:#fef3c7;color:#b45309;font-weight:700;">Mode 3 · Disponible</span>
+                        <h3>Brochure Éditoriale A4</h3>
+                        <p>Atelier PAO calibré au format A4 portrait ou paysage : alignement et distribution de blocs, repères numérotés automatiques sur carte et contrôle prévol 300 DPI.</p>
+                        <p class="lp-small" style="margin-top:12px;"><strong>Sorties :</strong> Brochure HTML A4 haute définition prête à imprimer / PDF.</p>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">
+                            <a class="btn btn-primary lp-btn-sm" href="./?mode=brochure">Créer une brochure</a>
+                            <a class="btn btn-ghost lp-btn-sm" href="#video-mode-3">Voir la vidéo</a>
+                        </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ---------- 3 Vidéos de présentation en français ---------- -->
+        <section class="lp-section lp-alt" id="videos">
+            <div class="lp-wrap">
+                <p class="lp-kicker">Démonstrations vidéo en français</p>
+                <h2>Découvrez les trois parties de l’application en vidéo</h2>
+                <p class="lp-sub">Trois courtes vidéos en version française vous présentent le fonctionnement concret de chaque atelier de StoryMap.</p>
+
+                <div class="lp-videos-stack">
+                    <!-- Vidéo 1 -->
+                    <article class="lp-video-card" id="video-mode-1">
+                        <div class="lp-video-info">
+                            <span class="badge" style="background:#dcfce7;color:#15803d;font-weight:700;">Partie 1 · Mode StoryMap</span>
+                            <h3>Récit cartographique guidé, véhicules animés et import CSV</h3>
+                            <p>Découvrez comment structurer vos étapes, animer un train ou un navire le long du parcours avec suivi caméra van Wijk et orientation Nord fixe, ou importer directement vos étapes depuis un fichier CSV.</p>
+                            <ul class="lp-list" style="margin-top:14px;">
+                                <li>Séparation claire entre pause à l’étape et traversée interstitielle unique</li>
+                                <li>7 véhicules vectoriels (Train TGV, Avion, Navire, Voiture, Vélo, Bus, Marcheur)</li>
+                                <li>Édition rapide en mode Tableur avec import et export CSV</li>
+                            </ul>
+                            <div style="margin-top:20px;">
+                                <a class="btn btn-primary" href="./?mode=storymap">Lancer l'atelier StoryMap</a>
+                            </div>
+                        </div>
+                        <div class="lp-video-frame">
+                            <video class="lp-mode-video" controls preload="metadata" poster="media/poster-mode1-storymap.jpg" width="1280" height="720">
+                                <source src="media/video-mode1-storymap.mp4" type="video/mp4">
+                                Votre navigateur ne prend pas en charge la lecture vidéo HTML5.
+                            </video>
+                        </div>
+                    </article>
+
+                    <!-- Vidéo 2 -->
+                    <article class="lp-video-card" id="video-mode-2">
+                        <div class="lp-video-info">
+                            <span class="badge" style="background:#f3e8ff;color:#7e22ce;font-weight:700;">Partie 2 · Mode Document Enrichi</span>
+                            <h3>Atlas web multi-blocs, cartes synchronisées et charte graphique</h3>
+                            <p>Apprenez à composer des pages web éditoriales sur grille modulaire : associez textes, tableaux, bannière Hero avec logo et boutons d’action qui pilotent plusieurs cartes simultanément.</p>
+                            <ul class="lp-list" style="margin-top:14px;">
+                                <li>Grille intelligente sans collision et gabarits éditoriaux prêts à l’emploi</li>
+                                <li>Importation directe de charte graphique JSON (couleurs, typographies, logo Hero)</li>
+                                <li>Liaisons narratives interactives (cadrage, survol, filtrage de couches)</li>
+                            </ul>
+                            <div style="margin-top:20px;">
+                                <a class="btn btn-primary" href="./?mode=rich-document">Lancer l'atelier Document</a>
+                            </div>
+                        </div>
+                        <div class="lp-video-frame">
+                            <video class="lp-mode-video" controls preload="metadata" poster="media/poster-mode2-document.jpg" width="1280" height="720">
+                                <source src="media/video-mode2-document.mp4" type="video/mp4">
+                                Votre navigateur ne prend pas en charge la lecture vidéo HTML5.
+                            </video>
+                        </div>
+                    </article>
+
+                    <!-- Vidéo 3 -->
+                    <article class="lp-video-card" id="video-mode-3">
+                        <div class="lp-video-info">
+                            <span class="badge" style="background:#fef3c7;color:#b45309;font-weight:700;">Partie 3 · Mode Brochure A4</span>
+                            <h3>Mise en page PAO A4, repères numérotés et contrôle 300 DPI</h3>
+                            <p>Explorez l’atelier de publication imprimable calibré au millimètre : alignez vos blocs, générez des repères numérotés reliés à vos légendes et validez la résolution 300 DPI avant impression.</p>
+                            <ul class="lp-list" style="margin-top:14px;">
+                                <li>Formats physiques A4 Portrait et Paysage avec commandes d’alignement PAO</li>
+                                <li>Pastilles numérotées automatiques synchronisées entre carte et encadrés</li>
+                                <li>Contrôle prévol bidimensionnel (DPI des images, débordements, contrastes)</li>
+                            </ul>
+                            <div style="margin-top:20px;">
+                                <a class="btn btn-primary" href="./?mode=brochure">Lancer l'atelier Brochure A4</a>
+                            </div>
+                        </div>
+                        <div class="lp-video-frame">
+                            <video class="lp-mode-video" controls preload="metadata" poster="media/poster-mode3-brochure.jpg" width="1280" height="720">
+                                <source src="media/video-mode3-brochure.mp4" type="video/mp4">
+                                Votre navigateur ne prend pas en charge la lecture vidéo HTML5.
+                            </video>
+                        </div>
+                    </article>
                 </div>
             </div>
         </section>
@@ -90,23 +188,23 @@
         <!-- ---------- Créer ---------- -->
         <section class="lp-section" id="creer">
             <div class="lp-wrap">
-                <p class="lp-kicker">Créer</p>
-                <h2>Trois gestes, pas une ligne de code</h2>
+                <p class="lp-kicker">Fonctionnalités clés</p>
+                <h2>Une prise en main immédiate, sans une ligne de code</h2>
                 <ol class="lp-steps">
                     <li class="lp-card">
                         <span class="lp-ico"><svg class="icon" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.8 3.6a2.3 2.3 0 0 1 3.3 3.3L7.8 19.2 3 21l1.8-4.8z" /><path d="m15 5.5 3.5 3.5" /></svg></span>
-                        <h3><span class="lp-num">1</span>Écrivez sur la carte</h3>
-                        <p>Titres, textes, images, vidéos : vous écrivez dans le panneau, comme dans un traitement de texte.</p>
+                        <h3><span class="lp-num">1</span>Écrivez et illustrez</h3>
+                        <p>Titres, textes enrichis, photographies géolocalisées (EXIF), vidéos et bannières Hero avec logo s’intègrent en quelques clics.</p>
                     </li>
                     <li class="lp-card">
                         <span class="lp-ico"><svg class="icon" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M12 2v5M12 17v5M2 12h5M17 12h5" /></svg></span>
-                        <h3><span class="lp-num">2</span>Cadrez chaque chapitre</h3>
-                        <p>Déplacez, zoomez, inclinez la carte : la vue est enregistrée automatiquement avec 8 fonds cartographiques.</p>
+                        <h3><span class="lp-num">2</span>Cadrez et animez</h3>
+                        <p>Choisissez parmi 8 fonds cartographiques et animez vos trajets avec des véhicules vectoriels suivis en temps réel tout en gardant le Nord en haut.</p>
                     </li>
                     <li class="lp-card">
                         <span class="lp-ico"><svg class="icon" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9.5h18M3 14.8h18M9 9.5V20" /></svg></span>
-                        <h3><span class="lp-num">3</span>Ou partez de vos données</h3>
-                        <p>Un tableur intégré, une ligne par chapitre, ou un fichier CSV/GeoJSON : chaque lieu devient un chapitre.</p>
+                        <h3><span class="lp-num">3</span>Importez vos données</h3>
+                        <p>Chargez un fichier CSV dans le tableur, importez des couches GeoJSON ou appliquez une charte graphique JSON complète.</p>
                     </li>
                 </ol>
             </div>
@@ -116,13 +214,13 @@
         <section class="lp-section lp-alt" id="partager">
             <div class="lp-wrap lp-split">
                 <div class="lp-split-text">
-                    <p class="lp-kicker">Partager</p>
-                    <h2>Une page web autonome, à publier ou à envoyer</h2>
-                    <p class="lp-sub">L’export produit un seul fichier autonome incluant vos récits et le lecteur. Déposez-le sur tout hébergement statique ou partagez-le directement.</p>
+                    <p class="lp-kicker">Partager &amp; Pérenniser</p>
+                    <h2>Une publication autonome, prête à diffuser partout</h2>
+                    <p class="lp-sub">Chaque création s’exporte en un fichier HTML autonome ou une archive ZIP complète contenant le moteur de lecture, les cartes et vos médias encodés.</p>
                     <ul class="lp-list">
-                        <li>Page web autonome (.html) ou archive complète (.zip)</li>
-                        <li>Fichier .json pour sauvegarder et réimporter vos projets</li>
-                        <li>Barre de progression, sommaire et navigation clavier accessible</li>
+                        <li>Page web autonome (.html) ou archive de site complète (.zip)</li>
+                        <li>Import et export CSV pour travailler vos étapes dans un tableur</li>
+                        <li>Sauvegarde JSON complète et réimportation fidèle d’un clic</li>
                     </ul>
                 </div>
                 <div class="lp-devices">
@@ -135,12 +233,12 @@
         <section class="lp-section" id="garanties">
             <div class="lp-wrap">
                 <p class="lp-kicker">Garanties</p>
-                <h2>Simple, libre, sans compte</h2>
+                <h2>Simple, libre, respectueux de vos données</h2>
                 <ul class="lp-grid4">
-                    <li class="lp-card"><h3>Sans installation</h3><p>Fonctionne intégralement dans votre navigateur.</p></li>
-                    <li class="lp-card"><h3>Sans compte</h3><p>Aucune inscription requise ni collecte de données.</p></li>
-                    <li class="lp-card"><h3>Libre et gratuit</h3><p>Logiciel sous licence open-source MIT.</p></li>
-                    <li class="lp-card"><h3>Vos récits chez vous</h3><p>Persistance locale sécurisée en IndexedDB.</p></li>
+                    <li class="lp-card"><h3>Sans installation</h3><p>Fonctionne intégralement dans votre navigateur web moderne.</p></li>
+                    <li class="lp-card"><h3>Sans compte</h3><p>Aucune inscription requise, aucun pistage ni collecte de données.</p></li>
+                    <li class="lp-card"><h3>Libre et gratuit</h3><p>Logiciel open-source distribué sous licence MIT.</p></li>
+                    <li class="lp-card"><h3>Vos récits chez vous</h3><p>Persistance locale rapide et sécurisée via IndexedDB.</p></li>
                 </ul>
             </div>
         </section>
@@ -148,7 +246,7 @@
 
     <footer class="lp-footer">
         <div class="lp-wrap">
-            <p>StoryMap — logiciel libre sous licence MIT. Fonds de carte © CARTO, © OpenStreetMap, © Esri.</p>
+            <p>StoryMap — Studio libre sous licence MIT. Fonds de carte © CARTO, © OpenStreetMap, © Esri.</p>
         </div>
     </footer>
 </body>
