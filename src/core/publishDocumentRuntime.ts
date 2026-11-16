@@ -18,10 +18,7 @@ function resolveStyle(s) {
     if (s === 'ofm-positron' || s === 'ofm-dark') return 'https://tiles.openfreemap.org/styles/' + s.slice(4);
     return (s === 'satellite' || s === 'esri-satellite') ? RAST_SAT : (s === 'hybrid' || s === 'esri-hybrid') ? RAST_HYB : /^(https?:|data:|\\/)/.test(s) ? s : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 }
-function featCenter(f) {
-    const c = f && f.coordinates; if (!Array.isArray(c) || !c.length) return null;
-    return f.geometryType === 'Point' ? [c[0], c[1]] : f.geometryType === 'LineString' ? c[Math.floor(c.length / 2)] : (f.geometryType === 'Polygon' && Array.isArray(c[0]) && c[0].length) ? c[0][0] : null;
-}
+function featCenter(f) { const c = f && f.coordinates; return (!Array.isArray(c) || !c.length) ? null : f.geometryType === 'Point' ? [c[0], c[1]] : f.geometryType === 'LineString' ? c[Math.floor(c.length / 2)] : (f.geometryType === 'Polygon' && Array.isArray(c[0]) && c[0].length) ? c[0][0] : null; }
 function expandLineCoords(base) {
     const rStyle = (storyData.appearance && storyData.appearance.routeStyle) || 'dashed';
     if (!Array.isArray(base) || base.length < 2 || (rStyle !== 'curved' && rStyle !== 'airplane' && rStyle !== 'ship')) return base || [];
