@@ -6,8 +6,9 @@ import React, { useState, useEffect } from 'react';
 import { StoryListItem } from '../../types/story';
 import { db } from '../../core/db';
 import { StoryCard } from './StoryCard';
+import { CreationIllustration } from './CreationIllustration';
 import { Header } from '../common/Header';
-import { Plus, Upload, Search, Map, BookOpen, Archive, FileCode } from 'lucide-react';
+import { Plus, Upload, Search, BookOpen, Archive, FileCode } from 'lucide-react';
 import { parseStoryFile, exportAllStoriesBackupZip } from '../../core/io';
 import { EXAMPLE_STORY } from '../../data/exampleStory';
 import { NewStoryModal } from '../dialogs/NewStoryModal';
@@ -148,8 +149,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenStory, onPlayStory, 
                 </button>
               </div>
             </div>
-            <div className="dash-empty-art" style={{ display: 'grid', placeItems: 'center', background: 'var(--surface-3)' }}>
-              <Map size={84} opacity={0.3} color="var(--accent)" />
+            <div className="dash-empty-art">
+              <CreationIllustration />
             </div>
           </div>
         ) : (

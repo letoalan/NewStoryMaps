@@ -5,6 +5,7 @@
 import React from 'react';
 import { StoryListItem } from '../../types/story';
 import { MapPin, Calendar, Trash2, Edit3, Play } from 'lucide-react';
+import { CreationIllustration } from './CreationIllustration';
 
 interface StoryCardProps {
   item: StoryListItem;
@@ -33,9 +34,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({ item, onOpen, onPlay, onDe
         {item.coverImage ? (
           <img src={item.coverImage} alt={item.title} />
         ) : (
-          <div style={{ height: '100%', display: 'grid', placeItems: 'center', background: 'var(--surface-3)', color: 'var(--text-3)' }}>
-            <MapPin size={36} opacity={0.5} />
-          </div>
+          <CreationIllustration />
         )}
         <div className="thumb-badges" style={{ display: 'flex', gap: '6px' }}>
           <span className="badge" style={modeBadgeStyle}>{modeLabel}</span>

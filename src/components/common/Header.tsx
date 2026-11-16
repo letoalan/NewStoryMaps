@@ -22,13 +22,17 @@ export const Header: React.FC<HeaderProps> = ({ onNewStory, onGoHome, title }) =
 
   return (
     <header className="app-header">
-      <button className="brand" onClick={onGoHome} style={{ background: 'none', border: 0, cursor: 'pointer' }}>
+      <button
+        className="brand"
+        onClick={onGoHome || (() => { window.location.href = './landing.html'; })}
+        style={{ background: 'none', border: 0, cursor: 'pointer' }}
+      >
         <div style={{ background: 'var(--accent)', borderRadius: '8px', padding: '6px', display: 'grid', placeItems: 'center', color: '#fff' }}>
           <Compass size={20} />
         </div>
         <div className="brand-text">
           <span className="brand-name">StoryMap</span>
-          <span className="brand-tag">Éditeur React / TypeScript</span>
+          <span className="brand-tag">Studio cartographique & éditorial</span>
         </div>
       </button>
 
@@ -40,21 +44,21 @@ export const Header: React.FC<HeaderProps> = ({ onNewStory, onGoHome, title }) =
 
       <div className="spacer" />
 
-      {onNewStory && (
-        <button className="btn btn-primary" onClick={onNewStory}>
-          <Plus size={16} />
-          <span>Nouveau récit</span>
-        </button>
-      )}
-
       <a
         href="./landing.html"
         className="btn btn-ghost btn-sm"
-        title="Découvrir la page de présentation et les vidéos des 3 modes"
-        style={{ fontSize: '12px', color: 'var(--text-2)' }}
+        title="Retourner à la page de présentation et aux vidéos des 3 modes"
+        style={{ fontSize: '13px', color: 'var(--text-2)' }}
       >
         Présentation
       </a>
+
+      {onNewStory && (
+        <button className="btn btn-primary" onClick={onNewStory}>
+          <Plus size={16} />
+          <span>Créer un nouveau récit</span>
+        </button>
+      )}
 
       <button
         className="btn btn-ghost btn-icon"
