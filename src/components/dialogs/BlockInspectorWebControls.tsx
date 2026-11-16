@@ -5,7 +5,7 @@
 import React from 'react';
 import { Block, ProjectMode } from '../../types/project';
 import {
-  ButtonTriggerType, ButtonVariant, ButtonSize, ButtonAlign, ButtonIconType,
+  ButtonTriggerType, ButtonVariant, ButtonSize, ButtonAlign, ButtonShape, ButtonIconType,
   FORM_PRESETS, FormFieldConfig, FormFieldType, FormPresetId, FormSubmissionMode, getDefaultFormBlockData,
 } from '../../core/webFormCatalog';
 import { Plus, Trash2 } from 'lucide-react';
@@ -88,11 +88,11 @@ export const BlockInspectorWebControls: React.FC<BlockInspectorWebControlsProps>
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
           <div>
             <label style={{ fontSize: '10px', fontWeight: 600, display: 'block' }}>Style</label>
             <select className="input" style={{ width: '100%', fontSize: '11px' }} value={(d.variant as ButtonVariant) || 'primary'} onChange={(e) => patch({ variant: e.target.value })}>
-              <option value="primary">Primaire</option><option value="accent">Accent</option><option value="outline">Contour</option><option value="ghost">Discret</option>
+              <option value="primary">Primaire</option><option value="accent">Accent</option><option value="soft">Doux</option><option value="outline">Contour</option><option value="ghost">Discret</option>
             </select>
           </div>
           <div>
@@ -102,7 +102,13 @@ export const BlockInspectorWebControls: React.FC<BlockInspectorWebControlsProps>
             </select>
           </div>
           <div>
-            <label style={{ fontSize: '10px', fontWeight: 600, display: 'block' }}>Alignement</label>
+            <label style={{ fontSize: '10px', fontWeight: 600, display: 'block' }}>Forme</label>
+            <select className="input" style={{ width: '100%', fontSize: '11px' }} value={(d.shape as ButtonShape) || 'rounded'} onChange={(e) => patch({ shape: e.target.value })}>
+              <option value="rounded">Arrondi</option><option value="pill">Pilule</option><option value="square">Droit</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: '10px', fontWeight: 600, display: 'block' }}>Align.</label>
             <select className="input" style={{ width: '100%', fontSize: '11px' }} value={(d.align as ButtonAlign) || 'center'} onChange={(e) => patch({ align: e.target.value })}>
               <option value="left">Gauche</option><option value="center">Centre</option><option value="right">Droite</option>
             </select>
@@ -110,7 +116,7 @@ export const BlockInspectorWebControls: React.FC<BlockInspectorWebControlsProps>
           <div>
             <label style={{ fontSize: '10px', fontWeight: 600, display: 'block' }}>Icône</label>
             <select className="input" style={{ width: '100%', fontSize: '11px' }} value={(d.icon as ButtonIconType) || 'compass'} onChange={(e) => patch({ icon: e.target.value })}>
-              <option value="compass">Boussole</option><option value="external">Lien ↗</option><option value="arrow">Flèche →</option><option value="mail">Email ✉</option><option value="calendar">Agenda</option><option value="download">Téléch.</option><option value="none">Aucune</option>
+              <option value="compass">Boussole</option><option value="external">Lien ↗</option><option value="arrow">Flèche →</option><option value="mail">Email ✉</option><option value="calendar">Agenda</option><option value="download">Téléch.</option><option value="search">Loupe 🔍</option><option value="check">Coché ✓</option><option value="none">Aucune</option>
             </select>
           </div>
         </div>

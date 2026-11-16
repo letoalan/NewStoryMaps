@@ -7,10 +7,11 @@ import type { ResolvedVisualStyle } from '../types/theme';
 import { escapeAttr, sanitizeHTML, sanitizeSafeUrl, clampInt } from './sanitize';
 
 export type ButtonTriggerType = 'map' | 'url' | 'page' | 'prefill-form';
-export type ButtonVariant = 'primary' | 'accent' | 'outline' | 'ghost';
+export type ButtonVariant = 'primary' | 'accent' | 'soft' | 'outline' | 'ghost';
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'full';
 export type ButtonAlign = 'left' | 'center' | 'right';
-export type ButtonIconType = 'compass' | 'external' | 'arrow' | 'mail' | 'calendar' | 'download' | 'none';
+export type ButtonShape = 'rounded' | 'pill' | 'square';
+export type ButtonIconType = 'compass' | 'external' | 'arrow' | 'mail' | 'calendar' | 'download' | 'search' | 'check' | 'none';
 
 export type FormSubmissionMode = 'webhook' | 'html-post' | 'mailto';
 export type FormPresetId = 'contact' | 'reservation' | 'signalement';
@@ -28,9 +29,7 @@ export interface FormFieldConfig {
 
 export const FORM_PRESETS: Record<FormPresetId, { label: string; title: string; submitLabel: string; fields: FormFieldConfig[] }> = {
   contact: {
-    label: 'Contact rapide',
-    title: 'Contactez-nous',
-    submitLabel: 'Envoyer le message',
+    label: 'Contact rapide', title: 'Contactez-nous', submitLabel: 'Envoyer le message',
     fields: [
       { id: 'f-name', name: 'nom', label: 'Nom complet', type: 'text', required: true, placeholder: 'Votre nom' },
       { id: 'f-email', name: 'email', label: 'Adresse e-mail', type: 'email', required: true, placeholder: 'nom@domaine.fr' },
@@ -39,9 +38,7 @@ export const FORM_PRESETS: Record<FormPresetId, { label: string; title: string; 
     ],
   },
   reservation: {
-    label: 'Réservation / Inscription itinéraire',
-    title: 'Réserver une étape ou un circuit',
-    submitLabel: 'Envoyer la demande de réservation',
+    label: 'Réservation / Inscription itinéraire', title: 'Réserver une étape ou un circuit', submitLabel: 'Envoyer la demande de réservation',
     fields: [
       { id: 'f-name', name: 'nom', label: 'Nom & Prénom', type: 'text', required: true, placeholder: 'Votre nom' },
       { id: 'f-email', name: 'email', label: 'E-mail', type: 'email', required: true, placeholder: 'nom@domaine.fr' },
@@ -52,9 +49,7 @@ export const FORM_PRESETS: Record<FormPresetId, { label: string; title: string; 
     ],
   },
   signalement: {
-    label: 'Contribution / Signalement territorial',
-    title: 'Contribuer à l’observatoire territorial',
-    submitLabel: 'Transmettre l’observation',
+    label: 'Contribution / Signalement territorial', title: 'Contribuer à l’observatoire territorial', submitLabel: 'Transmettre l’observation',
     fields: [
       { id: 'f-name', name: 'auteur', label: 'Contributeur', type: 'text', required: false, placeholder: 'Nom ou structure' },
       { id: 'f-email', name: 'email', label: 'E-mail de suivi', type: 'email', required: true, placeholder: 'contact@territoire.fr' },
@@ -68,31 +63,60 @@ export const FORM_PRESETS: Record<FormPresetId, { label: string; title: string; 
 export function getDefaultFormBlockData(preset: FormPresetId = 'contact'): Record<string, unknown> {
   const tpl = FORM_PRESETS[preset] || FORM_PRESETS.contact;
   return {
-    preset,
-    title: tpl.title,
-    endpointUrl: 'https://formspree.io/f/exemple-client',
-    submissionMode: 'webhook' as FormSubmissionMode,
-    submitLabel: tpl.submitLabel,
-    successMessage: 'Merci ! Votre formulaire a bien été transmis.',
-    includeMapContext: true,
+    preset, title: tpl.title, endpointUrl: 'https://formspree.io/f/exemple-client',
+    submissionMode: 'webhook' as FormSubmissionMode, submitLabel: tpl.submitLabel,
+    successMessage: 'Merci ! Votre formulaire a bien été transmis.', includeMapContext: true,
     fields: tpl.fields.map((f) => ({ ...f })),
   };
 }
 
+export function isColorLight(hex: string): boolean {
+  let c = (hex || '').replace('#', '').trim();
+  if (c.length === 3) c = c.split('').map((x) => x + x).join('');
+  if (c.length !== 6) return false;
+  const num = parseInt(c, 16);
+  return (0.299 * ((num >> 16) & 255) + 0.587 * ((num >> 8) & 255) + 0.114 * (num & 255)) / 255 > 0.55;
+}
+
+export function hexToRgba(hex: string, alpha: number): string {
+  let c = (hex || '#0284c7').replace('#', '').trim();
+  if (c.length === 3) c = c.split('').map((x) => x + x).join('');
+  if (c.length !== 6) return `rgba(2,132,199,${alpha})`;
+  const num = parseInt(c, 16);
+  return `rgba(${(num >> 16) & 255},${(num >> 8) & 255},${num & 255},${alpha})`;
+}
+
+export interface ButtonVisualMetrics {
+  bg: string; fg: string; border: string; pad: string; fontSize: string; width: string; height: string; shadow: string; iconSize: number; radius: string;
+}
+
 export function getButtonVisualCss(
-  variant: ButtonVariant,
-  size: ButtonSize,
-  effectiveAccent: string,
-  primaryColor: string
-): { bg: string; fg: string; border: string; pad: string; fontSize: string; width: string } {
-  const baseCol = variant === 'accent' ? effectiveAccent : primaryColor || effectiveAccent;
-  const bg = variant === 'outline' || variant === 'ghost' ? 'transparent' : baseCol;
-  const fg = variant === 'outline' || variant === 'ghost' ? baseCol : '#ffffff';
-  const border = variant === 'outline' ? `2px solid ${baseCol}` : variant === 'ghost' ? '1px solid transparent' : 'none';
-  const pad = size === 'sm' ? '5px 11px' : size === 'lg' ? '12px 24px' : size === 'full' ? '11px 18px' : '8px 16px';
-  const fontSize = size === 'sm' ? '11.5px' : size === 'lg' ? '15px' : '13px';
+  variant: ButtonVariant = 'primary', size: ButtonSize = 'md',
+  effectiveAccent = '#0284c7', primaryColor = '', shape: ButtonShape = 'rounded', radiusCss = '8px'
+): ButtonVisualMetrics {
+  const baseCol = variant === 'accent' ? effectiveAccent : primaryColor || effectiveAccent || '#0284c7';
+  const light = isColorLight(baseCol);
+  const solidFg = light ? '#0f172a' : '#ffffff';
+  let bg = baseCol; let fg = solidFg;
+  let border = '1px solid rgba(0,0,0,0.06)';
+  let shadow = '0 2px 5px -1px rgba(0,0,0,0.12), 0 1px 3px -1px rgba(0,0,0,0.08)';
+
+  if (variant === 'soft') {
+    bg = hexToRgba(baseCol, 0.14); fg = light ? '#0f172a' : baseCol;
+    border = `1px solid ${hexToRgba(baseCol, 0.28)}`; shadow = 'none';
+  } else if (variant === 'outline') {
+    bg = 'transparent'; fg = baseCol; border = `1.5px solid ${baseCol}`; shadow = 'none';
+  } else if (variant === 'ghost') {
+    bg = 'transparent'; fg = baseCol; border = '1px solid transparent'; shadow = 'none';
+  }
+
+  const height = size === 'sm' ? '32px' : size === 'lg' ? '46px' : size === 'full' ? '40px' : '38px';
+  const pad = size === 'sm' ? '0 12px' : size === 'lg' ? '0 22px' : '0 16px';
+  const fontSize = size === 'sm' ? '12px' : size === 'lg' ? '15px' : '13.5px';
+  const iconSize = size === 'sm' ? 13 : size === 'lg' ? 18 : 15;
   const width = size === 'full' ? '100%' : 'auto';
-  return { bg, fg, border, pad, fontSize, width };
+  const radius = shape === 'pill' ? '9999px' : shape === 'square' ? '2px' : (radiusCss || '8px');
+  return { bg, fg, border, pad, fontSize, width, height, shadow, iconSize, radius };
 }
 
 export function renderPublishedButtonBlockHTML(b: Block, effectiveAccent: string, vStyle: ResolvedVisualStyle): string {
@@ -101,36 +125,34 @@ export function renderPublishedButtonBlockHTML(b: Block, effectiveAccent: string
   const variant = ((b.data.variant as ButtonVariant) || 'primary');
   const size = ((b.data.size as ButtonSize) || 'md');
   const align = ((b.data.align as ButtonAlign) || 'center');
+  const shape = ((b.data.shape as ButtonShape) || 'rounded');
   const icon = ((b.data.icon as ButtonIconType) || 'compass');
-  const iconGlyph = icon === 'external' ? '↗' : icon === 'arrow' ? '→' : icon === 'mail' ? '✉' : icon === 'calendar' ? '📅' : icon === 'download' ? '⬇' : icon === 'none' ? '' : '⌖';
+  const iconGlyph = icon === 'external' ? '↗' : icon === 'arrow' ? '→' : icon === 'mail' ? '✉' : icon === 'calendar' ? '📅' : icon === 'download' ? '⬇' : icon === 'search' ? '🔍' : icon === 'check' ? '✓' : icon === 'none' ? '' : '⌖';
 
-  const css = getButtonVisualCss(variant, size, effectiveAccent, vStyle.primaryColor);
+  const css = getButtonVisualCss(variant, size, effectiveAccent, vStyle.primaryColor, shape, vStyle.radiusCss);
   const justify = align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center';
-  const commonStyle = `display:inline-flex;align-items:center;justify-content:center;gap:6px;background:${escapeAttr(css.bg)};color:${escapeAttr(css.fg)};border:${escapeAttr(css.border)};padding:${css.pad};border-radius:${escapeAttr(vStyle.radiusCss)};cursor:pointer;font-weight:600;font-size:${css.fontSize};width:${css.width};text-decoration:none;box-shadow:${variant === 'ghost' ? 'none' : escapeAttr(vStyle.shadowCss)};box-sizing:border-box;`;
+  const commonStyle = `display:inline-flex;align-items:center;justify-content:center;gap:8px;background:${escapeAttr(css.bg)};color:${escapeAttr(css.fg)};border:${escapeAttr(css.border)};padding:${css.pad};height:${css.height};border-radius:${escapeAttr(css.radius)};cursor:pointer;font-weight:600;font-size:${css.fontSize};width:${css.width};max-width:100%;white-space:nowrap;text-decoration:none;box-shadow:${escapeAttr(css.shadow)};box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;letter-spacing:-0.01em;transition:all 0.18s ease;`;
+  const iconSpan = iconGlyph ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;font-size:1.1em;">${iconGlyph}</span>` : '';
+  const labelSpan = `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${btnLabel}</span>`;
 
   if (triggerType === 'url') {
-    const url = sanitizeSafeUrl((b.data.url as string) || '#');
-    const target = b.data.targetBlank === false ? '_self' : '_blank';
-    return `<div style="display:flex;align-items:center;justify-content:${justify};height:100%;width:100%;"><a href="${url}" target="${target}" rel="noopener noreferrer" class="doc-action-btn" style="${commonStyle}">${iconGlyph ? `<span>${iconGlyph}</span>` : ''}<span>${btnLabel}</span></a></div>`;
+    const url = sanitizeSafeUrl((b.data.url as string) || '#'); const target = b.data.targetBlank === false ? '_self' : '_blank';
+    return `<div style="display:flex;align-items:center;justify-content:${justify};height:100%;width:100%;"><a href="${url}" target="${target}" rel="noopener noreferrer" class="doc-action-btn" style="${commonStyle}">${iconSpan}${labelSpan}</a></div>`;
   }
   if (triggerType === 'page') {
     const pageIdx = clampInt(b.data.targetPageIndex, 0, 99, 0);
-    return `<div style="display:flex;align-items:center;justify-content:${justify};height:100%;width:100%;"><button type="button" class="doc-action-btn" data-action="goto-page" data-page-idx="${pageIdx}" style="${commonStyle}">${iconGlyph ? `<span>${iconGlyph}</span>` : ''}<span>${btnLabel}</span></button></div>`;
+    return `<div style="display:flex;align-items:center;justify-content:${justify};height:100%;width:100%;"><button type="button" class="doc-action-btn" data-action="goto-page" data-page-idx="${pageIdx}" style="${commonStyle}">${iconSpan}${labelSpan}</button></div>`;
   }
   if (triggerType === 'prefill-form') {
     const prefill = escapeAttr((b.data.prefillValue as string) || btnLabel);
-    return `<div style="display:flex;align-items:center;justify-content:${justify};height:100%;width:100%;"><button type="button" class="doc-action-btn" data-action="prefill-form" data-prefill-value="${prefill}" style="${commonStyle}">${iconGlyph ? `<span>${iconGlyph}</span>` : ''}<span>${btnLabel}</span></button></div>`;
+    return `<div style="display:flex;align-items:center;justify-content:${justify};height:100%;width:100%;"><button type="button" class="doc-action-btn" data-action="prefill-form" data-prefill-value="${prefill}" style="${commonStyle}">${iconSpan}${labelSpan}</button></div>`;
   }
-
   const mapId = escapeAttr((b.binding?.mapId || (b.data.mapId as string) || ''));
   const featId = escapeAttr((b.binding?.targetFeatureId || (b.data.targetFeatureId as string) || ''));
   const action = escapeAttr((b.binding?.action || (b.data.action as string) || 'zoom'));
-  const hasCustomCoords = typeof b.data.targetLng === 'number' && typeof b.data.targetLat === 'number';
-  const coordAttrs = hasCustomCoords
-    ? ` data-target-lng="${Number(b.data.targetLng)}" data-target-lat="${Number(b.data.targetLat)}" data-target-zoom="${Number(b.data.targetZoom || 14)}"`
-    : '';
-
-  return `<div style="display:flex;align-items:center;justify-content:${justify};height:100%;width:100%;"><button type="button" class="doc-action-btn" data-action="narrative-binding" data-map-id="${mapId}" data-feature-id="${featId}" data-binding-action="${action}"${coordAttrs} style="${commonStyle}">${iconGlyph ? `<span>${iconGlyph}</span>` : ''}<span>${btnLabel}</span></button></div>`;
+  const hasCoords = typeof b.data.targetLng === 'number' && typeof b.data.targetLat === 'number';
+  const coordAttrs = hasCoords ? ` data-target-lng="${Number(b.data.targetLng)}" data-target-lat="${Number(b.data.targetLat)}" data-target-zoom="${Number(b.data.targetZoom || 14)}"` : '';
+  return `<div style="display:flex;align-items:center;justify-content:${justify};height:100%;width:100%;"><button type="button" class="doc-action-btn" data-action="narrative-binding" data-map-id="${mapId}" data-feature-id="${featId}" data-binding-action="${action}"${coordAttrs} style="${commonStyle}">${iconSpan}${labelSpan}</button></div>`;
 }
 
 export function renderPublishedFormBlockHTML(b: Block, effectiveAccent: string, vStyle: ResolvedVisualStyle, storyTitle = ''): string {
@@ -146,23 +168,16 @@ export function renderPublishedFormBlockHTML(b: Block, effectiveAccent: string, 
     : FORM_PRESETS.contact.fields;
 
   const fieldsHtml = rawFields.map((f) => {
-    const fName = escapeAttr(f.name || f.id || 'champ');
-    const fLabel = sanitizeHTML(f.label || fName);
-    const fPh = escapeAttr(f.placeholder || '');
-    const reqAttr = f.required ? ' required' : '';
-    const inputStyle = `width:100%;padding:6px 9px;border:1px solid #cbd5e1;border-radius:${escapeAttr(vStyle.radiusCss)};font-size:12px;box-sizing:border-box;background:#fff;color:#0f172a;`;
-    if (f.type === 'textarea') {
-      return `<div style="display:flex;flex-direction:column;gap:3px;"><label style="font-size:11px;font-weight:600;">${fLabel}${f.required ? ' *' : ''}</label><textarea name="${fName}" rows="2" placeholder="${fPh}"${reqAttr} style="${inputStyle}resize:vertical;"></textarea></div>`;
-    }
+    const fName = escapeAttr(f.name || f.id || 'champ'); const fLabel = sanitizeHTML(f.label || fName);
+    const fPh = escapeAttr(f.placeholder || ''); const req = f.required ? ' required' : '';
+    const st = `width:100%;padding:6px 9px;border:1px solid #cbd5e1;border-radius:${escapeAttr(vStyle.radiusCss)};font-size:12px;box-sizing:border-box;background:#fff;color:#0f172a;`;
+    if (f.type === 'textarea') return `<div style="display:flex;flex-direction:column;gap:3px;"><label style="font-size:11px;font-weight:600;">${fLabel}${f.required ? ' *' : ''}</label><textarea name="${fName}" rows="2" placeholder="${fPh}"${req} style="${st}resize:vertical;"></textarea></div>`;
     if (f.type === 'select') {
-      const opts = (Array.isArray(f.options) && f.options.length > 0 ? f.options : ['Option 1', 'Option 2'])
-        .map((o) => `<option value="${escapeAttr(o)}">${sanitizeHTML(o)}</option>`).join('');
-      return `<div style="display:flex;flex-direction:column;gap:3px;"><label style="font-size:11px;font-weight:600;">${fLabel}${f.required ? ' *' : ''}</label><select name="${fName}"${reqAttr} style="${inputStyle}">${opts}</select></div>`;
+      const opts = (Array.isArray(f.options) && f.options.length > 0 ? f.options : ['Option 1', 'Option 2']).map((o) => `<option value="${escapeAttr(o)}">${sanitizeHTML(o)}</option>`).join('');
+      return `<div style="display:flex;flex-direction:column;gap:3px;"><label style="font-size:11px;font-weight:600;">${fLabel}${f.required ? ' *' : ''}</label><select name="${fName}"${req} style="${st}">${opts}</select></div>`;
     }
-    if (f.type === 'checkbox') {
-      return `<label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;"><input type="checkbox" name="${fName}" value="oui"${reqAttr}/><span>${fLabel}${f.required ? ' *' : ''}</span></label>`;
-    }
-    return `<div style="display:flex;flex-direction:column;gap:3px;"><label style="font-size:11px;font-weight:600;">${fLabel}${f.required ? ' *' : ''}</label><input type="${escapeAttr(f.type || 'text')}" name="${fName}" placeholder="${fPh}"${reqAttr} style="${inputStyle}"/></div>`;
+    if (f.type === 'checkbox') return `<label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;"><input type="checkbox" name="${fName}" value="oui"${req}/><span>${fLabel}${f.required ? ' *' : ''}</span></label>`;
+    return `<div style="display:flex;flex-direction:column;gap:3px;"><label style="font-size:11px;font-weight:600;">${fLabel}${f.required ? ' *' : ''}</label><input type="${escapeAttr(f.type || 'text')}" name="${fName}" placeholder="${fPh}"${req} style="${st}"/></div>`;
   }).join('');
 
   return `<form class="doc-client-form" id="form-${safeId}" action="${endpointUrl}" method="POST" data-endpoint="${endpointUrl}" data-submission-mode="${mode}" data-include-context="${includeCtx}" data-story-title="${escapeAttr(storyTitle)}" data-success-msg="${successMsg}" style="display:flex;flex-direction:column;gap:8px;height:100%;box-sizing:border-box;">

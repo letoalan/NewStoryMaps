@@ -44,9 +44,17 @@ export const DocumentReader: React.FC<{ onExit: () => void }> = ({ onExit }) => 
 
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    const onGoto = (e: Event) => {
+      const ce = e as CustomEvent<{ pageIndex: number }>;
+      if (typeof ce.detail?.pageIndex === 'number') goToPage(ce.detail.pageIndex);
+    };
     document.addEventListener('fullscreenchange', onFsChange);
-    return () => document.removeEventListener('fullscreenchange', onFsChange);
-  }, []);
+    window.addEventListener('storymap:goto-page', onGoto);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFsChange);
+      window.removeEventListener('storymap:goto-page', onGoto);
+    };
+  }, [totalPages, profile]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
