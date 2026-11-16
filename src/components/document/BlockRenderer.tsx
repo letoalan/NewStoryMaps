@@ -3,13 +3,14 @@
  */
 
 import React from 'react';
-import { Block } from '../../types/project';
+import { Block, ProjectMode } from '../../types/project';
 import { ResolvedVisualStyle, HeroConfig } from '../../types/theme';
 import { TextBlock } from './blocks/TextBlock';
 import { MediaBlock } from './blocks/MediaBlock';
 import { TableBlock } from './blocks/TableBlock';
 import { MapBlockPreview } from './blocks/MapBlockPreview';
 import { ButtonBlock } from './blocks/ButtonBlock';
+import { FormBlock } from './blocks/FormBlock';
 
 interface BlockRendererProps {
   block: Block;
@@ -19,15 +20,34 @@ interface BlockRendererProps {
   hero?: HeroConfig | null;
   onUpdateHero?: (patch: Partial<HeroConfig>) => void;
   subtitle?: string;
+  storyTitle?: string;
+  mode?: ProjectMode;
   onTriggerAction?: (mapId: string, featureId?: string, action?: string) => void;
 }
 
-export const BlockRenderer: React.FC<BlockRendererProps> = ({ block, onChange, isEditable = true, visualStyle, hero, onUpdateHero, subtitle, onTriggerAction }) => {
+export const BlockRenderer: React.FC<BlockRendererProps> = ({
+  block,
+  onChange,
+  isEditable = true,
+  visualStyle,
+  hero,
+  onUpdateHero,
+  subtitle,
+  storyTitle,
+  mode = 'rich-document',
+  onTriggerAction,
+}) => {
+  if (mode === 'brochure' && (block.type === 'button' || block.type === 'form')) {
+    return null;
+  }
   if (['title', 'text', 'callout', 'source', 'legend'].includes(block.type)) {
     return <TextBlock block={block} onChange={onChange} isEditable={isEditable} visualStyle={visualStyle} hero={hero} onUpdateHero={onUpdateHero} subtitle={subtitle} />;
   }
   if (block.type === 'button') {
     return <ButtonBlock block={block} onChange={onChange} isEditable={isEditable} visualStyle={visualStyle} onTriggerAction={onTriggerAction} />;
+  }
+  if (block.type === 'form') {
+    return <FormBlock block={block} onChange={onChange} isEditable={isEditable} visualStyle={visualStyle} storyTitle={storyTitle} />;
   }
   if (block.type === 'image' || block.type === 'gallery') {
     return <MediaBlock block={block} onChange={onChange} isEditable={isEditable} visualStyle={visualStyle} />;

@@ -67,8 +67,13 @@ export const BLOCK_RENDER_MATRIX: Record<BlockType, BlockCapabilityEntry> = {
   },
   button: {
     type: 'button', category: 'Texte', allowedModes: ['rich-document'],
-    profiles: { editor: 'interactive', web: 'interactive', presentation: 'interactive', print: 'static' },
-    staticFallback: 'Bouton d’action cartographique ou lien externe',
+    profiles: { editor: 'interactive', web: 'interactive', presentation: 'interactive', print: 'converted' },
+    staticFallback: 'Exclu en mode Brochure et StoryMap (réservé au mode page web)',
+  },
+  form: {
+    type: 'form', category: 'Documentation', allowedModes: ['rich-document'],
+    profiles: { editor: 'interactive', web: 'interactive', presentation: 'interactive', print: 'converted' },
+    staticFallback: 'Exclu en mode Brochure et StoryMap (réservé au mode page web)',
   },
 };
 

@@ -6,19 +6,15 @@ import React, { useState } from 'react';
 import { Block, BlockType, ProjectMode } from '../../types/project';
 import { BlockVisualOverride, BlockStyleMode } from '../../types/theme';
 import { getAvailableCatalogItems } from '../../core/blockCatalog';
+import { BlockInspectorWebControls } from './BlockInspectorWebControls';
 import { X, Sliders, RotateCcw, Check, Link2 } from 'lucide-react';
 
 export interface BlockInspectorModalProps {
-  isOpen: boolean;
-  block: Block | null;
-  mode: ProjectMode;
-  initialTab?: 'content' | 'replace' | 'style';
+  isOpen: boolean; block: Block | null; mode: ProjectMode; initialTab?: 'content' | 'replace' | 'style';
   onUpdateData: (id: string, patch: Record<string, unknown>) => void;
   onChangeType: (id: string, newType: BlockType) => void;
   onUpdateStyle: (id: string, override?: BlockVisualOverride) => void;
-  onResetBlock?: (id: string) => void;
-  onOpenBinding?: () => void;
-  onClose: () => void;
+  onResetBlock?: (id: string) => void; onOpenBinding?: () => void; onClose: () => void;
 }
 
 const BlockInspectorContent: React.FC<Omit<BlockInspectorModalProps, 'isOpen' | 'block'> & { block: Block }> = ({
@@ -97,6 +93,8 @@ const BlockInspectorContent: React.FC<Omit<BlockInspectorModalProps, 'isOpen' | 
                   </div>
                 </div>
               )}
+
+              <BlockInspectorWebControls block={block} mode={mode} onUpdateData={onUpdateData} />
 
               {onOpenBinding && (
                 <div style={{ paddingTop: '6px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

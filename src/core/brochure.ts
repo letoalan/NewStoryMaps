@@ -95,7 +95,14 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
   const convertedPages: Page[] = [];
 
   sourcePages.forEach((page, pIdx) => {
-    const adaptedBlocks: Block[] = (page.blocks || []).map((b) => {
+    const webOnlyFiltered = (page.blocks || []).filter((b) => {
+      if (b.type === 'button' || b.type === 'form') {
+        notes.push(`Page ${pIdx + 1} : Bloc web "${b.id}" (${b.type}) exclu en mode brochure.`);
+        return false;
+      }
+      return true;
+    });
+    const adaptedBlocks: Block[] = webOnlyFiltered.map((b) => {
       let cloned: Block = { ...b, data: { ...b.data }, binding: b.binding ? { ...b.binding } : undefined };
 
       if (cloned.type === 'gallery') {
@@ -113,18 +120,6 @@ export function convertRichDocumentToBrochure(source: StoryMap): {
           },
         };
         notes.push(`Page ${pIdx + 1} : Galerie "${b.id}" développée en planche contact de ${items.length} image(s).`);
-      }
-
-      if (cloned.type === 'button') {
-        cloned = {
-          ...cloned,
-          type: 'text',
-          data: {
-            ...cloned.data,
-            text: `<p><strong>${String(cloned.data.label || 'Action')}</strong></p>`,
-          },
-        };
-        notes.push(`Page ${pIdx + 1} : Bouton "${b.id}" converti en texte informatif statique.`);
       }
 
       if (cloned.binding && cloned.type !== 'map') {

@@ -2,8 +2,11 @@ import assert from 'node:assert';
 import vm from 'node:vm';
 import { createCanonicalMode2TerritorialDoc } from '../src/core/canonicalFixtures.ts';
 import { generateDocumentHTML } from '../src/core/publishDocument.ts';
+import { generateBrochurePrintHTML } from '../src/core/publishBrochure.ts';
 import { extractStoryFromHTML } from '../src/core/publish.ts';
 import { validateNarrativeBindings } from '../src/core/mapScene.ts';
+import { isBlockAllowedInBrochure, convertRichDocumentToBrochure } from '../src/core/brochure.ts';
+import { getDefaultFormBlockData } from '../src/core/webFormCatalog.ts';
 
 console.log('--- Test Porte R4 : Tranche Mode 2, Bouton d’action et cartes liées ---');
 const mode2Story = createCanonicalMode2TerritorialDoc();
@@ -137,6 +140,39 @@ const mode2Story = createCanonicalMode2TerritorialDoc();
   assert.strictEqual(calls.seineFlyTo, 2, 'Overview doit réinitialiser la vue de la carte Seine');
   assert.strictEqual(calls.nordFlyTo, 0, 'La carte Nord reste strictement isolée');
   console.log('✅ R4.4 / R4.5 : Exécution partagée, actions zoom/overview et isolation validées');
+}
+
+// 4. Boutons d'action calibrables, Formulaire client connecté et exclusion stricte de Brochure / StoryMap
+{
+  assert.strictEqual(isBlockAllowedInBrochure('button'), false, 'Bouton interdit en mode brochure');
+  assert.strictEqual(isBlockAllowedInBrochure('form'), false, 'Formulaire interdit en mode brochure');
+
+  const webDoc = JSON.parse(JSON.stringify(mode2Story));
+  webDoc.pages[0].blocks.push(
+    {
+      id: 'b-btn-cal', type: 'button', x: 0, y: 5, w: 2, h: 1,
+      data: { label: 'Réserver Lyon', triggerType: 'prefill-form', prefillValue: 'Étape Lyon', variant: 'outline', size: 'lg', align: 'left', icon: 'calendar' },
+    },
+    {
+      id: 'b-form-client', type: 'form', x: 2, y: 5, w: 4, h: 2,
+      data: { ...getDefaultFormBlockData('reservation'), endpointUrl: 'https://hook.example.com/client-lead' },
+    }
+  );
+
+  const webHtml = generateDocumentHTML(webDoc);
+  assert.ok(webHtml.includes('data-action="prefill-form"'), 'Bouton calibré prefill-form rendu en Mode 2');
+  assert.ok(webHtml.includes('data-prefill-value="Étape Lyon"'), 'Valeur prefill présente');
+  assert.ok(webHtml.includes('class="doc-client-form"'), 'Formulaire client rendu en Mode 2');
+  assert.ok(webHtml.includes('data-endpoint="https://hook.example.com/client-lead"'), 'Adresse web cible connectée');
+  assert.ok(webHtml.includes('name="_gotcha"'), 'Champ anti-spam honeypot présent');
+
+  const { brochure } = convertRichDocumentToBrochure(webDoc);
+  const brochureBlocks = brochure.pages.flatMap((p) => p.blocks);
+  assert.strictEqual(brochureBlocks.some((b) => b.type === 'button' || b.type === 'form'), false, 'Aucun bouton ni formulaire dans la brochure convertie');
+  const printHtml = generateBrochurePrintHTML(webDoc);
+  assert.ok(!printHtml.includes('class="doc-client-form"'), 'Aucun formulaire web dans le HTML brochure A4');
+  assert.ok(!printHtml.includes('class="doc-action-btn"'), 'Aucun bouton web dans le HTML brochure A4');
+  console.log('✅ Boutons calibrables, Formulaire client connecté et exclusion Mode 1 / Mode 3 validés');
 }
 
 console.log('Tous les tests de la Porte R4 sont validés avec succès !');

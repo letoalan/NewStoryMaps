@@ -3,6 +3,7 @@
  */
 
 import type { Block, BlockType, ProjectMode } from '../types/project';
+import { getDefaultFormBlockData } from './webFormCatalog';
 
 export type CatalogCategory = 'Texte' | 'Médias' | 'Carte' | 'Documentation';
 
@@ -56,12 +57,17 @@ export const BLOCK_CATALOG: BlockCatalogItem[] = [
     category: 'Documentation', allowedModes: ['rich-document', 'brochure'],
   },
   {
-    type: 'button', label: 'Bouton d’action', description: 'Commande interactive liée à la carte ou navigation',
+    type: 'button', label: 'Bouton d’action', description: 'Commande interactive calibrable (carte, lien, page, formulaire)',
     category: 'Texte', allowedModes: ['rich-document'],
+  },
+  {
+    type: 'form', label: 'Formulaire client', description: 'Formulaire web connectable à une adresse URL / Webhook',
+    category: 'Documentation', allowedModes: ['rich-document'],
   },
 ];
 
 export function getAvailableCatalogItems(mode: ProjectMode = 'rich-document'): BlockCatalogItem[] {
+  if (mode === 'storymap') return [];
   const effectiveMode = mode === 'brochure' ? 'brochure' : 'rich-document';
   return BLOCK_CATALOG.filter((item) => item.allowedModes.includes(effectiveMode));
 }
@@ -103,6 +109,10 @@ export function convertBlockTypePreservingContent(block: Block, newType: BlockTy
   }
   if (newType === 'button' && !nextData.label) {
     nextData.label = preservedText || 'Bouton d’action';
+  }
+  if (newType === 'form' && !Array.isArray(nextData.fields)) {
+    Object.assign(nextData, getDefaultFormBlockData('contact'));
+    if (preservedText) nextData.title = preservedText;
   }
 
   return {

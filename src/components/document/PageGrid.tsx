@@ -157,7 +157,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
                 />
               )}
               <div style={{ width: '100%', height: '100%', minWidth: 0, minHeight: 0, overflow: isHero ? 'hidden' : 'auto', borderRadius: bStyle.radiusCss, padding: isHero ? 0 : bStyle.paddingCss, color: bStyle.textColor, fontFamily: bStyle.bodyFont, boxSizing: 'border-box' }}>
-                <BlockRenderer block={b} onChange={(p) => handleUpdateBlockData(b.id, p)} isEditable={isEditable} visualStyle={bStyle} hero={hero} onUpdateHero={onUpdateHero} subtitle={story?.subtitle} />
+                <BlockRenderer block={b} onChange={(p) => handleUpdateBlockData(b.id, p)} isEditable={isEditable} visualStyle={bStyle} hero={hero} onUpdateHero={onUpdateHero} subtitle={story?.subtitle} storyTitle={story?.title} mode={effectiveMode} />
               </div>
             </div>
           );
@@ -168,7 +168,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
         isOpen={!!activeInspectedBlock} block={activeInspectedBlock} mode={effectiveMode}
         initialTab={inspectedBlock?.tab || 'content'} onClose={() => setInspectedBlock(null)}
         onUpdateData={handleUpdateBlockData} onChangeType={handleTypeChange} onUpdateStyle={handleStyleChange}
-        onResetBlock={handleReset}
+        onResetBlock={handleReset} onOpenBinding={activeInspectedBlock && onOpenBinding ? () => onOpenBinding(activeInspectedBlock) : undefined}
       />
     </div>
   );

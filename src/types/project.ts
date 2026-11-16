@@ -30,7 +30,8 @@ export type BlockType =
   | 'table'
   | 'callout'
   | 'gallery'
-  | 'button';
+  | 'button'
+  | 'form';
 
 export type NarrativeBindingAction = 'highlight' | 'zoom' | 'filter' | 'overview';
 

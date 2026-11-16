@@ -99,45 +99,35 @@ function initDocMaps() {
         });
     });
 }
-function triggerNarrativeBinding(mapId, featId, action) {
-    const maps = storyData.maps || [], scene = maps.find(m => m.id === mapId);
+function triggerNarrativeBinding(mapId, featId, action, btn) {
+    const maps = storyData.maps || [], scene = mapId ? maps.find(m => m.id === mapId) : maps[0];
     if (!scene) return;
     let targetFeat = null;
     (scene.layers || []).forEach(l => (l.features || []).forEach(f => { if (f.id === featId) targetFeat = f; }));
-    const pt = featCenter(targetFeat);
+    const cLng = btn && btn.getAttribute ? btn.getAttribute('data-target-lng') : null, cLat = btn && btn.getAttribute ? btn.getAttribute('data-target-lat') : null, cZoom = btn && btn.getAttribute ? Number(btn.getAttribute('data-target-zoom') || 14) : 14;
+    const pt = (cLng !== null && cLat !== null && cLng !== '' && cLat !== '') ? [Number(cLng), Number(cLat)] : featCenter(targetFeat);
     document.querySelectorAll('.doc-map-canvas').forEach(el => {
-        if (el.getAttribute('data-map-id') !== mapId) return;
+        if (mapId && el.getAttribute('data-map-id') !== mapId) return;
         const m = mapInstances[el.id]; if (!m) return;
         if (action === 'overview') {
             if (scene.view && scene.view.bounds) m.fitBounds(scene.view.bounds, { duration: reducedMotion ? 0 : 800 });
             else if (scene.view && scene.view.center) m.flyTo({ center: scene.view.center, zoom: scene.view.zoom || 12, duration: reducedMotion ? 0 : 800 });
-        } else if (action === 'zoom' && pt) m.flyTo({ center: pt, zoom: 14, duration: reducedMotion ? 0 : 800 });
+        } else if (action === 'zoom' && pt) m.flyTo({ center: pt, zoom: cZoom, duration: reducedMotion ? 0 : 800 });
         else if (action === 'highlight') {
             if (pt) m.panTo(pt, { duration: reducedMotion ? 0 : 500 });
             el.querySelectorAll('.doc-map-marker-wrap').forEach(w => {
                 const pin = w.querySelector('.doc-map-marker-pin');
-                if (pin && w.getAttribute('data-feat-id') === featId) {
-                    w.style.zIndex = '100'; pin.style.transform = 'scale(1.4)'; pin.style.boxShadow = '0 0 0 4px #e11d48';
-                    setTimeout(() => { w.style.zIndex = '1'; pin.style.transform = 'scale(1)'; pin.style.boxShadow = 'none'; }, 2500);
-                }
+                if (pin && w.getAttribute('data-feat-id') === featId) { w.style.zIndex = '100'; pin.style.transform = 'scale(1.4)'; pin.style.boxShadow = '0 0 0 4px #e11d48'; setTimeout(() => { w.style.zIndex = '1'; pin.style.transform = 'scale(1)'; pin.style.boxShadow = 'none'; }, 2500); }
             });
             try {
                 if (m.getLayer('feat-hl')) m.removeLayer('feat-hl');
-                if (targetFeat && targetFeat.geometryType !== 'Point') {
-                    m.addLayer({ id: 'feat-hl', type: 'line', source: 'scene-shapes', filter: ['==', ['get', 'id'], featId], paint: { 'line-color': '#e11d48', 'line-width': 6 } });
-                    setTimeout(() => { try { if (m.getLayer('feat-hl')) m.removeLayer('feat-hl'); } catch (_) {} }, 2500);
-                }
+                if (targetFeat && targetFeat.geometryType !== 'Point') { m.addLayer({ id: 'feat-hl', type: 'line', source: 'scene-shapes', filter: ['==', ['get', 'id'], featId], paint: { 'line-color': '#e11d48', 'line-width': 6 } }); setTimeout(() => { try { if (m.getLayer('feat-hl')) m.removeLayer('feat-hl'); } catch (_) {} }, 2500); }
             } catch (_) {}
         } else if (action === 'filter') {
             try {
                 const isReset = (el.getAttribute('data-active-filter') === featId);
-                if (isReset || !targetFeat) {
-                    el.removeAttribute('data-active-filter'); m.setFilter('scene-lines-layer', ['!=', ['geometry-type'], 'Point']); m.setFilter('scene-polygons-fill', ['==', ['geometry-type'], 'Polygon']);
-                    el.querySelectorAll('.doc-map-marker-wrap').forEach(w => { w.style.display = 'flex'; });
-                } else {
-                    el.setAttribute('data-active-filter', featId); m.setFilter('scene-lines-layer', ['==', ['get', 'id'], featId]); m.setFilter('scene-polygons-fill', ['==', ['get', 'id'], featId]);
-                    el.querySelectorAll('.doc-map-marker-wrap').forEach(w => { w.style.display = (w.getAttribute('data-feat-id') === featId) ? 'flex' : 'none'; });
-                }
+                if (isReset || !targetFeat) { el.removeAttribute('data-active-filter'); m.setFilter('scene-lines-layer', ['!=', ['geometry-type'], 'Point']); m.setFilter('scene-polygons-fill', ['==', ['geometry-type'], 'Polygon']); el.querySelectorAll('.doc-map-marker-wrap').forEach(w => { w.style.display = 'flex'; }); }
+                else { el.setAttribute('data-active-filter', featId); m.setFilter('scene-lines-layer', ['==', ['get', 'id'], featId]); m.setFilter('scene-polygons-fill', ['==', ['get', 'id'], featId]); el.querySelectorAll('.doc-map-marker-wrap').forEach(w => { w.style.display = (w.getAttribute('data-feat-id') === featId) ? 'flex' : 'none'; }); }
             } catch (_) {}
         }
     });
@@ -177,12 +167,24 @@ document.addEventListener('fullscreenchange', () => { document.getElementById('f
 document.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action]'); if (!btn) return;
     const act = btn.getAttribute('data-action');
-    if (act === 'narrative-binding') triggerNarrativeBinding(btn.getAttribute('data-map-id'), btn.getAttribute('data-feature-id'), btn.getAttribute('data-binding-action'));
+    if (act === 'narrative-binding') triggerNarrativeBinding(btn.getAttribute('data-map-id'), btn.getAttribute('data-feature-id'), btn.getAttribute('data-binding-action'), btn);
+    else if (act === 'prefill-form') { const fm = document.querySelector('.doc-client-form'); if (fm) { if (fm.scrollIntoView) fm.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'center' }); const inp = fm.querySelector('input[name="objet"], input[name="secteur"], input[type="text"]:not([name="_gotcha"])'); if (inp) { inp.value = btn.getAttribute('data-prefill-value') || ''; if (inp.focus) inp.focus(); } } }
     else if (act === 'toggle-hero-video') { const v = document.getElementById(btn.getAttribute('data-video-id')); if (v) { if (v.paused) { v.play().catch(()=>{}); btn.textContent = 'Pause vidéo'; } else { v.pause(); btn.textContent = 'Lire vidéo'; } } }
     else if (act === 'gallery-prev' || act === 'gallery-next') stepGallery(btn.getAttribute('data-gallery-id'), act === 'gallery-prev' ? -1 : 1);
     else if (act === 'goto-page') { setPage(Number(btn.getAttribute('data-page-idx'))); toggleToc(false); }
     else if (act === 'toggle-toc') toggleToc(); else if (act === 'set-profile') setProfile(btn.getAttribute('data-profile'));
     else if (act === 'toggle-fs') toggleFs(); else if (act === 'prev-page') setPage(curPage - 1); else if (act === 'next-page') setPage(curPage + 1);
+});
+document.addEventListener('submit', (e) => {
+    const fm = e.target && e.target.closest ? e.target.closest('.doc-client-form') : null; if (!fm) return;
+    const mode = fm.getAttribute('data-submission-mode') || 'webhook', ep = fm.getAttribute('data-endpoint') || fm.action || '', st = fm.querySelector('.doc-form-status'), okMsg = fm.getAttribute('data-success-msg') || 'Envoyé !';
+    if (mode === 'html-post' && !ep.startsWith('mailto:')) return;
+    e.preventDefault(); const fd = new FormData(fm); if (fd.get('_gotcha')) return;
+    const payload = {}; fd.forEach((v, k) => { if (k !== '_gotcha') payload[k] = v; });
+    if (fm.getAttribute('data-include-context') === 'true') { payload._storyTitle = fm.getAttribute('data-story-title') || ''; payload._pageIndex = curPage + 1; }
+    if (mode === 'mailto' || ep.startsWith('mailto:')) { window.location.href = 'mailto:' + ep.replace(/^mailto:/i, '') + '?subject=' + encodeURIComponent(payload.objet || payload.secteur || 'Contact StoryMap') + '&body=' + encodeURIComponent(Object.keys(payload).map(k => k + ' : ' + payload[k]).join('\\n')); if (st) st.textContent = okMsg; return; }
+    if (st) st.textContent = 'Envoi en cours…';
+    fetch(ep, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) }).then(r => { if (!r.ok) throw new Error(); if (st) st.textContent = okMsg; if (fm.reset) fm.reset(); }).catch(() => { if (st) st.textContent = 'Erreur de connexion à l’adresse web.'; });
 });
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { toggleToc(false); return; }

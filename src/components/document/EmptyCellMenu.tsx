@@ -12,7 +12,7 @@ import {
   computeFloatingPalettePosition,
   FloatingPalettePlacement,
 } from '../../core/blockCatalog';
-import { Type, Heading, Quote, Image, Layers, Table, Map, BookOpen, Bookmark, Compass, X, LucideIcon } from 'lucide-react';
+import { Type, Heading, Quote, Image, Layers, Table, Map, BookOpen, Bookmark, Compass, ClipboardList, X, LucideIcon } from 'lucide-react';
 
 export interface EmptyCellMenuProps {
   x: number;
@@ -28,7 +28,7 @@ export interface EmptyCellMenuProps {
 const ICONS_BY_TYPE: Record<BlockType, LucideIcon> = {
   title: Heading, text: Type, callout: Quote, image: Image,
   gallery: Layers, map: Map, table: Table, legend: BookOpen, source: Bookmark,
-  button: Compass,
+  button: Compass, form: ClipboardList,
 };
 
 export const EmptyCellMenu: React.FC<EmptyCellMenuProps> = ({
